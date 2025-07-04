@@ -38,4 +38,30 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::post('/contact', function (Request $request) {
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|max:255',
+        'subject' => 'required|in:general,support,sales,partnership,feedback',
+        'phone' => 'nullable|string|max:20',
+        'company' => 'nullable|string|max:255',
+        'message' => 'required|string|min:10|max:2000',
+        'privacy' => 'required|accepted'
+    ], [
+        'name.required' => 'El nombre es obligatorio.',
+        'email.required' => 'El email es obligatorio.',
+        'email.email' => 'Debe ser un email válido.',
+        'subject.required' => 'Debe seleccionar un asunto.',
+        'message.required' => 'El mensaje es obligatorio.',
+        'message.min' => 'El mensaje debe tener al menos 10 caracteres.',
+        'privacy.required' => 'Debe aceptar la política de privacidad.'
+    ]);
+
+    // TODO: Enviar email o guardar en BD
+    
+    return redirect()->route('contact')->with('success', 
+        '¡Gracias por contactarnos! Hemos recibido tu mensaje y te responderemos pronto.'
+    );
+})->name('contact.store');
+
 require __DIR__.'/auth.php';
