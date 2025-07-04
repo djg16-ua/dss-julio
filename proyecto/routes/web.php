@@ -16,7 +16,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('welcome');
+
+// Página sobre nosotros
+Route::get('/about', function () {
+    return view('about');
+})->name('about');
+
+// Página de contacto (mostrar formulario)
+Route::get('/contact', function () {
+    return view('contact');
+})->name('contact');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
