@@ -25,8 +25,10 @@ return new class extends Migration
             ])->default('DEVELOPMENT');
             $table->enum('status', ['PENDING', 'ACTIVE', 'DONE', 'PAUSED', 'CANCELLED'])
                 ->default('PENDING');
-            $table->foreignId('technical_lead_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->decimal('estimated_hours', 8, 2)->nullable();
+
+            // CLAVE: Module depende de Project
+            $table->foreignId('project_id')->constrained()->onDelete('cascade');
+            $table->foreignId('depends_on')->nullable()->constrained('modules')->onDelete('set null');
             $table->boolean('is_core')->default(false);
             $table->timestamps();
 
@@ -35,8 +37,12 @@ return new class extends Migration
             $table->index('category');
             $table->index('status');
             $table->index('name');
-            $table->index('technical_lead_id');
+            $table->index('project_id'); // IMPORTANTE
+
             $table->index('is_core');
+
+            // Constraint: nombre único por proyecto
+            $table->unique(['project_id', 'name']);
         });
     }
 

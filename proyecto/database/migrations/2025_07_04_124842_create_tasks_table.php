@@ -18,8 +18,9 @@ return new class extends Migration
             $table->datetime('end_date')->nullable();
             $table->timestamp('completed_at')->nullable();
 
-            // Foreign Keys
+            // CLAVE: Task depende de Module (y por tanto de Project)
             $table->foreignId('module_id')->constrained()->onDelete('cascade');
+
             $table->foreignId('assigned_to')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
 
@@ -32,11 +33,14 @@ return new class extends Migration
             $table->index('status');
             $table->index('priority');
             $table->index('end_date');
-            $table->index('module_id');
+            $table->index('module_id'); // IMPORTANTE
             $table->index('assigned_to');
             $table->index('created_by');
             $table->index('depends_on');
             $table->index('completed_at');
+
+            // Constraint: título único por módulo
+            $table->unique(['module_id', 'title']);
         });
     }
 

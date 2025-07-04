@@ -11,13 +11,20 @@ return new class extends Migration
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
             $table->text('content');
+
+            // CORREGIDO: Comment es específico entre User y Task
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->morphs('commentable'); // Esto YA crea el índice automáticamente
+            $table->foreignId('task_id')->constrained()->onDelete('cascade');
+
             $table->timestamps();
 
-            // Índices adicionales (sin duplicar el morphs)
+            // Índices
             $table->index('user_id');
+            $table->index('task_id');
             $table->index('created_at');
+
+            // CONSTRAINT: Un usuario solo puede comentar una vez por task
+            $table->unique(['user_id', 'task_id']);
         });
     }
 
