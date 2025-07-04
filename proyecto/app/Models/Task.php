@@ -56,9 +56,9 @@ class Task extends Model
         return $this->hasMany(Task::class, 'depends_on');
     }
 
-    public function comment(): HasOne
+    public function comments(): HasMany
     {
-        return $this->hasOne(Comment::class);
+        return $this->hasMany(Comment::class);
     }
 
     // Scopes

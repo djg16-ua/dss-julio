@@ -22,9 +22,7 @@ return new class extends Migration
             $table->index('user_id');
             $table->index('task_id');
             $table->index('created_at');
-
-            // CONSTRAINT: Un usuario solo puede comentar una vez por task
-            $table->unique(['user_id', 'task_id']);
+            $table->index(['user_id', 'task_id']); // Optimización de búsqueda pero no restricción
         });
     }
 
