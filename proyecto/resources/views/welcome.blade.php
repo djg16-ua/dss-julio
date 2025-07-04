@@ -1,96 +1,82 @@
 @extends('layouts.app')
 
-@section('title', 'Sobre Nosotros - TaskFlow')
+@section('title', 'Bienvenido a TaskFlow - Gestión de Proyectos')
 
 @section('content')
 <!-- Hero Section -->
 <section class="hero-section">
     <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">
+                    Gestiona tus proyectos con <span class="text-warning">TaskFlow</span>
+                </h1>
+                <p class="lead mb-4">
+                    La plataforma definitiva para organizar equipos, gestionar tareas y hacer seguimiento del progreso de tus proyectos de forma eficiente y colaborativa.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="#" class="btn btn-light btn-lg">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Comenzar Gratis
+                    </a>
+                    <a href="#" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="mt-5 mt-lg-0">
+                    <i class="bi bi-kanban-fill display-1 text-warning"></i>
+                    <div class="mt-3">
+                        <i class="bi bi-people-fill fs-1 text-light me-3"></i>
+                        <i class="bi bi-graph-up-arrow fs-1 text-warning me-3"></i>
+                        <i class="bi bi-clock-fill fs-1 text-light"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="container">
         <div class="row text-center">
-            <div class="col-lg-8 mx-auto">
-                <h1 class="display-4 fw-bold mb-4">Sobre TaskFlow</h1>
-                <p class="lead">
-                    Somos un equipo apasionado por transformar la manera en que los equipos gestionan sus proyectos y colaboran hacia el éxito.
-                </p>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-item">
+                    <div class="stat-number">1000+</div>
+                    <div class="stat-label">Proyectos Completados</div>
+                </div>
             </div>
-        </div>
-    </div>
-</section>
-
-<!-- Mission Section -->
-<section class="py-5">
-    <div class="container">
-        <div class="row align-items-center mb-5">
-            <div class="col-lg-6">
-                <h2 class="section-title">Nuestra Misión</h2>
-                <p class="lead">
-                    Empoderar a equipos de todo el mundo con herramientas intuitivas y potentes que simplifiquen la gestión de proyectos y potencien la colaboración.
-                </p>
-                <p>
-                    Creemos que cada proyecto merece las mejores herramientas para alcanzar el éxito. Por eso, hemos desarrollado TaskFlow con un enfoque en la simplicidad, la eficiencia y la experiencia del usuario.
-                </p>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-item">
+                    <div class="stat-number">50+</div>
+                    <div class="stat-label">Equipos Activos</div>
+                </div>
             </div>
-            <div class="col-lg-6">
-                <div class="text-center">
-                    <i class="bi bi-bullseye display-1 text-primary"></i>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-item">
+                    <div class="stat-number">99%</div>
+                    <div class="stat-label">Tiempo de Actividad</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-item">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Soporte Disponible</div>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Values Section -->
-<section class="py-5 bg-light">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-8 mx-auto text-center mb-5">
-                <h2 class="section-title">Nuestros Valores</h2>
-                <p class="section-subtitle">
-                    Los principios que guían nuestro trabajo y definen nuestra cultura
-                </p>
-            </div>
-        </div>
-
-        <div class="row g-4">
-            <div class="col-lg-4 col-md-6">
-                <div class="text-center">
-                    <div class="feature-icon primary mx-auto">
-                        <i class="bi bi-lightbulb"></i>
-                    </div>
-                    <h4 class="fw-bold">Innovación</h4>
-                    <p>Constantemente buscamos formas nuevas y mejores de resolver los desafíos de la gestión de proyectos.</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="text-center">
-                    <div class="feature-icon secondary mx-auto">
-                        <i class="bi bi-people-fill"></i>
-                    </div>
-                    <h4 class="fw-bold">Colaboración</h4>
-                    <p>Creemos en el poder del trabajo en equipo tanto internamente como con nuestros usuarios.</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="text-center">
-                    <div class="feature-icon success mx-auto">
-                        <i class="bi bi-gem"></i>
-                    </div>
-                    <h4 class="fw-bold">Calidad</h4>
-                    <p>No comprometemos la calidad. Cada característica es cuidadosamente diseñada y probada.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Team Section -->
+<!-- Features Section -->
 <section class="py-5">
     <div class="container">
         <div class="row">
-            <div class="col-lg-8 mx-auto text-center mb-5">
-                <h2 class="section-title">Nuestro Equipo</h2>
+            <div class="col-lg-8 mx-auto text-center">
+                <h2 class="section-title display-5">¿Por qué elegir TaskFlow?</h2>
                 <p class="section-subtitle">
-                    Conoce a las personas que hacen posible TaskFlow
+                    Descubre las funcionalidades que hacen de TaskFlow la mejor opción para gestionar tus proyectos
                 </p>
             </div>
         </div>
@@ -99,15 +85,12 @@
             <div class="col-lg-4 col-md-6">
                 <div class="card feature-card">
                     <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <div class="bg-primary rounded-circle mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                                <i class="bi bi-person-fill text-white fs-1"></i>
-                            </div>
+                        <div class="feature-icon primary mx-auto">
+                            <i class="bi bi-people-fill"></i>
                         </div>
-                        <h5 class="card-title fw-bold">Ana García</h5>
-                        <p class="text-muted mb-2">CEO & Fundadora</p>
+                        <h5 class="card-title fw-bold">Colaboración en Tiempo Real</h5>
                         <p class="card-text">
-                            Visionaria con más de 10 años de experiencia en gestión de proyectos y liderazgo de equipos tecnológicos.
+                            Trabaja con tu equipo de forma sincronizada. Asigna tareas, comenta avances y mantén a todos informados.
                         </p>
                     </div>
                 </div>
@@ -116,15 +99,12 @@
             <div class="col-lg-4 col-md-6">
                 <div class="card feature-card">
                     <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <div class="bg-secondary rounded-circle mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                                <i class="bi bi-person-fill text-white fs-1"></i>
-                            </div>
+                        <div class="feature-icon secondary mx-auto">
+                            <i class="bi bi-graph-up"></i>
                         </div>
-                        <h5 class="card-title fw-bold">Carlos Ruiz</h5>
-                        <p class="text-muted mb-2">CTO</p>
+                        <h5 class="card-title fw-bold">Seguimiento del Progreso</h5>
                         <p class="card-text">
-                            Arquitecto de software especializado en soluciones escalables y experiencia del usuario excepcional.
+                            Visualiza el avance de tus proyectos con dashboards intuitivos y métricas en tiempo real.
                         </p>
                     </div>
                 </div>
@@ -133,15 +113,54 @@
             <div class="col-lg-4 col-md-6">
                 <div class="card feature-card">
                     <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <div class="bg-success rounded-circle mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                                <i class="bi bi-person-fill text-white fs-1"></i>
-                            </div>
+                        <div class="feature-icon success mx-auto">
+                            <i class="bi bi-gear-fill"></i>
                         </div>
-                        <h5 class="card-title fw-bold">María López</h5>
-                        <p class="text-muted mb-2">Directora de Producto</p>
+                        <h5 class="card-title fw-bold">Automatización Inteligente</h5>
                         <p class="card-text">
-                            Experta en UX/UI con pasión por crear productos que realmente resuelvan problemas del mundo real.
+                            Automatiza tareas repetitivas y optimiza tu flujo de trabajo con reglas personalizables.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="card feature-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon primary mx-auto">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Seguridad Avanzada</h5>
+                        <p class="card-text">
+                            Tus datos están protegidos con encriptación de nivel empresarial y backups automáticos.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="card feature-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon secondary mx-auto">
+                            <i class="bi bi-phone"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Acceso Móvil</h5>
+                        <p class="card-text">
+                            Gestiona tus proyectos desde cualquier dispositivo con nuestra interfaz totalmente responsive.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="card feature-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon success mx-auto">
+                            <i class="bi bi-puzzle"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Integraciones</h5>
+                        <p class="card-text">
+                            Conecta TaskFlow con tus herramientas favoritas: Slack, GitHub, Google Drive y más.
                         </p>
                     </div>
                 </div>
@@ -150,57 +169,22 @@
     </div>
 </section>
 
-<!-- Timeline Section -->
+<!-- CTA Section -->
 <section class="py-5 bg-light">
     <div class="container">
         <div class="row">
-            <div class="col-lg-8 mx-auto text-center mb-5">
-                <h2 class="section-title">Nuestra Historia</h2>
+            <div class="col-lg-8 mx-auto text-center">
+                <h2 class="section-title">¿Listo para transformar tu gestión de proyectos?</h2>
                 <p class="section-subtitle">
-                    El viaje que nos ha llevado hasta aquí
+                    Únete a miles de equipos que ya confían en TaskFlow para alcanzar sus objetivos
                 </p>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-lg-8 mx-auto">
-                <div class="timeline">
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="badge bg-primary fs-6 p-2">2022</div>
-                        </div>
-                        <div class="col-md-9">
-                            <h5 class="fw-bold">Nace la Idea</h5>
-                            <p>Identificamos la necesidad de una herramienta de gestión de proyectos más intuitiva y potente.</p>
-                        </div>
-                    </div>
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="badge bg-secondary fs-6 p-2">2023</div>
-                        </div>
-                        <div class="col-md-9">
-                            <h5 class="fw-bold">Primer Prototipo</h5>
-                            <p>Desarrollamos el primer prototipo funcional y comenzamos las pruebas con equipos beta.</p>
-                        </div>
-                    </div>
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="badge bg-success fs-6 p-2">2024</div>
-                        </div>
-                        <div class="col-md-9">
-                            <h5 class="fw-bold">Lanzamiento Oficial</h5>
-                            <p>TaskFlow sale al mercado con funcionalidades completas y un equipo de soporte dedicado.</p>
-                        </div>
-                    </div>
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="badge bg-warning fs-6 p-2">2025</div>
-                        </div>
-                        <div class="col-md-9">
-                            <h5 class="fw-bold">Expansión y Crecimiento</h5>
-                            <p>Nuevas funcionalidades, integraciones avanzadas y crecimiento del equipo para servir mejor a nuestros usuarios.</p>
-                        </div>
-                    </div>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="#" class="btn btn-primary btn-lg">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Comenzar Gratis
+                    </a>
+                    <a href="{{ url('/contact') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-calendar-check me-2"></i>Solicitar Demo
+                    </a>
                 </div>
             </div>
         </div>
