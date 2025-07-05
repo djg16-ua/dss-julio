@@ -1,39 +1,88 @@
-<x-guest-layout>
-    <form method="POST" action="{{ route('password.store') }}">
-        @csrf
+@extends('layouts.app')
 
-        <!-- Password Reset Token -->
-        <input type="hidden" name="token" value="{{ $request->route('token') }}">
+@section('title', 'Restablecer Contraseña - TaskFlow')
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $request->email)" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+@section('content')
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-shield-lock text-primary" style="font-size: 3rem;"></i>
+                        <h2 class="mt-3 mb-1 fw-bold">Nueva Contraseña</h2>
+                        <p class="text-muted">Establece tu nueva contraseña segura</p>
+                    </div>
+
+                    <form method="POST" action="{{ route('password.store') }}">
+                        @csrf
+
+                        <!-- Password Reset Token -->
+                        <input type="hidden" name="token" value="{{ $request->route('token') }}">
+
+                        <!-- Email Address -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-medium">Email</label>
+                            <input type="email"
+                                class="form-control form-control-lg @error('email') is-invalid @enderror"
+                                id="email"
+                                name="email"
+                                value="{{ old('email', $request->email) }}"
+                                required
+                                autofocus
+                                autocomplete="username">
+                            @error('email')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                            @enderror
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label fw-medium">Nueva Contraseña</label>
+                            <input type="password"
+                                class="form-control form-control-lg @error('password') is-invalid @enderror"
+                                id="password"
+                                name="password"
+                                required
+                                autocomplete="new-password">
+                            @error('password')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                            @enderror
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="mb-3">
+                            <label for="password_confirmation" class="form-label fw-medium">Confirmar Nueva Contraseña</label>
+                            <input type="password"
+                                class="form-control form-control-lg @error('password_confirmation') is-invalid @enderror"
+                                id="password_confirmation"
+                                name="password_confirmation"
+                                required
+                                autocomplete="new-password">
+                            @error('password_confirmation')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                            @enderror
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                            <i class="bi bi-shield-check me-2"></i>Restablecer Contraseña
+                        </button>
+                    </form>
+
+                    <div class="text-center">
+                        <a href="{{ route('login') }}" class="text-primary text-decoration-none fw-medium">
+                            <i class="bi bi-arrow-left me-1"></i>Volver a Iniciar Sesión
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-        <!-- Confirm Password -->
-        <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-
-            <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                                type="password"
-                                name="password_confirmation" required autocomplete="new-password" />
-
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-        </div>
-
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
-                {{ __('Reset Password') }}
-            </x-primary-button>
-        </div>
-    </form>
-</x-guest-layout>
+    </div>
+</div>
+@endsection
