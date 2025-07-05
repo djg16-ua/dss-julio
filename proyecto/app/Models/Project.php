@@ -34,13 +34,6 @@ class Project extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function users(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'user_project')
-            ->withPivot('joined_at')
-            ->withTimestamps();
-    }
-
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class, 'project_team')
@@ -69,7 +62,6 @@ class Project extends Model
         return $query->where('status', $status);
     }
 
-    // Métodos auxiliares
     public function isActive(): bool
     {
         return $this->status === 'ACTIVE';
@@ -86,5 +78,10 @@ class Project extends Model
         $completedTasks = $this->modules->sum(fn($module) => $module->tasks->where('status', 'DONE')->count());
         
         return $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
+    }
+
+    public function users()
+    {
+        return $this->teams->flatMap(fn($team) => $team->users)->unique('id');
     }
 }

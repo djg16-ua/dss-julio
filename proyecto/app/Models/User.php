@@ -50,12 +50,6 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    public function projects(): BelongsToMany
-    {
-        return $this->belongsToMany(Project::class, 'user_project')
-            ->withPivot('joined_at')
-            ->withTimestamps();
-    }
 
     public function createdProjects(): HasMany
     {

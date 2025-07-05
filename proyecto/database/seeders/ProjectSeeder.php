@@ -42,56 +42,6 @@ class ProjectSeeder extends Seeder
             ],
         ]);
 
-        // Obtener usuarios para asignar a proyectos
-        $jane = DB::table('users')->where('email', 'jane@taskflow.com')->first();
-        $bob = DB::table('users')->where('email', 'bob@taskflow.com')->first();
-
-        // Asignar usuarios a proyectos
-        DB::table('user_project')->insert([
-            [
-                'user_id' => $admin->id,
-                'project_id' => 1, // E-commerce
-                'joined_at' => now()->subMonth(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'user_id' => $john->id,
-                'project_id' => 1, // E-commerce
-                'joined_at' => now()->subMonth(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'user_id' => $jane->id,
-                'project_id' => 1, // E-commerce
-                'joined_at' => now()->subMonth(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'user_id' => $bob->id,
-                'project_id' => 1, // E-commerce
-                'joined_at' => now()->subWeeks(3),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'user_id' => $john->id,
-                'project_id' => 2, // CRM
-                'joined_at' => now()->subWeek(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'user_id' => $bob->id,
-                'project_id' => 2, // CRM
-                'joined_at' => now()->subWeek(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
-
         // Asignar teams a proyectos
         DB::table('project_team')->insert([
             [
