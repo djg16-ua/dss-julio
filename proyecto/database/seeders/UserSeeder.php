@@ -22,6 +22,15 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'name' => 'Normal User',
+                'email' => 'user@taskflow.com',
+                'password' => Hash::make('password'),
+                'role' => 'USER',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'name' => 'John Developer',
                 'email' => 'john@taskflow.com',
                 'password' => Hash::make('password'),
