@@ -8,6 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Hash;
 
 class User extends Authenticatable
 {
@@ -27,8 +28,19 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
     ];
+
+    // MUTADOR INTELIGENTE: Solo hashea si la contraseña no está ya hasheada
+    public function setPasswordAttribute($value)
+    {
+        // Si el valor ya está hasheado (empieza con $2y$), no lo vuelvas a hashear
+        if (preg_match('/^\$2[ayb]\$.{56}$/', $value)) {
+            $this->attributes['password'] = $value;
+        } else {
+            // Si es texto plano, hashearlo
+            $this->attributes['password'] = Hash::make($value);
+        }
+    }
 
     // Relaciones
     public function teams(): BelongsToMany
