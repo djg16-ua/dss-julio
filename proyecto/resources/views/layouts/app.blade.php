@@ -204,6 +204,8 @@
                 </ul>
 
                 <ul class="navbar-nav">
+                    @guest
+                    <!-- Mostrar solo si NO está autenticado -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('login') }}">
                             <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar Sesión
@@ -214,6 +216,40 @@
                             <i class="bi bi-person-plus me-1"></i>Registro
                         </a>
                     </li>
+                    @else
+                    <!-- Mostrar solo si SÍ está autenticado -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle me-2"></i>{{ Auth::user()->name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li>
+                                <a class="dropdown-item" href="#" {{-- {{ route('profile') }} --}}>
+                                    <i class="bi bi-person me-2"></i>Mi Perfil
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="bi bi-gear me-2"></i>Configuración
+                                </a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('logout') }}"
+                                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Formulario oculto para logout -->
+                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                        @csrf
+                    </form>
+                    @endguest
                 </ul>
             </div>
         </div>
