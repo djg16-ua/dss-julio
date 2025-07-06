@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\CustomPasswordResetController;
 use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 
 // Rutas existentes...
 Route::get('/', function () {
@@ -101,3 +103,20 @@ Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create']
 Route::post('/reset-password', [ResetPasswordController::class, 'store'])
     ->middleware('guest')
     ->name('password.store');
+
+// ============================================
+// RUTAS DEL PERFIL
+// ============================================
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    Route::put('/password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])
+        ->name('password.update');
+        
+    Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+});

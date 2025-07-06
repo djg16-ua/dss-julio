@@ -224,8 +224,8 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li>
-                                <a class="dropdown-item" href="#" {{-- {{ route('profile') }} --}}>
-                                    <i class="bi bi-person me-2"></i>Mi Perfil
+                                <a class="dropdown-item" href="{{ route('profile.show') }}">
+                                <i class="bi bi-person me-2"></i>Mi Perfil
                                 </a>
                             </li>
                             <li>
