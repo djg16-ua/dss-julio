@@ -50,15 +50,17 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-
     public function createdProjects(): HasMany
     {
         return $this->hasMany(Project::class, 'created_by');
     }
 
-    public function assignedTasks(): HasMany
+    // NUEVA RELACIÓN: Many-to-Many con tareas asignadas
+    public function assignedTasks(): BelongsToMany
     {
-        return $this->hasMany(Task::class, 'assigned_to');
+        return $this->belongsToMany(Task::class, 'task_user')
+                    ->withPivot('assigned_at')
+                    ->withTimestamps();
     }
 
     public function createdTasks(): HasMany
@@ -82,6 +84,12 @@ class User extends Authenticatable
         return $query->where('role', 'USER');
     }
 
+    // NUEVO SCOPE: Usuarios con tareas asignadas
+    public function scopeWithAssignedTasks($query)
+    {
+        return $query->whereHas('assignedTasks');
+    }
+
     // Métodos auxiliares
     public function isAdmin(): bool
     {
@@ -91,5 +99,44 @@ class User extends Authenticatable
     public function isUser(): bool
     {
         return $this->role === 'USER';
+    }
+
+    // NUEVOS MÉTODOS para manejar tareas asignadas
+    public function hasTasksAssigned(): bool
+    {
+        return $this->assignedTasks()->exists();
+    }
+
+    public function getActiveTasksCount(): int
+    {
+        return $this->assignedTasks()->where('status', 'ACTIVE')->count();
+    }
+
+    public function getPendingTasksCount(): int
+    {
+        return $this->assignedTasks()->where('status', 'PENDING')->count();
+    }
+
+    public function getCompletedTasksCount(): int
+    {
+        return $this->assignedTasks()->where('status', 'DONE')->count();
+    }
+
+    public function getOverdueTasksCount(): int
+    {
+        return $this->assignedTasks()
+            ->where('end_date', '<', now())
+            ->whereNotIn('status', ['DONE', 'CANCELLED'])
+            ->count();
+    }
+
+    public function getTasksByPriority(string $priority): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->assignedTasks()->where('priority', $priority)->get();
+    }
+
+    public function getTasksByStatus(string $status): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->assignedTasks()->where('status', $status)->get();
     }
 }
