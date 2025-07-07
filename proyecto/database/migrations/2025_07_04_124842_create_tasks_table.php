@@ -20,8 +20,6 @@ return new class extends Migration
 
             // CLAVE: Task depende de Module (y por tanto de Project)
             $table->foreignId('module_id')->constrained()->onDelete('cascade');
-
-            $table->foreignId('assigned_to')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
 
             // Dependencias - Task que bloquea esta task

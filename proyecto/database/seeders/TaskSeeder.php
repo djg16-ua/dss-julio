@@ -184,7 +184,6 @@ class TaskSeeder extends Seeder
                         'end_date' => $endDate,
                         'completed_at' => $completedAt,
                         'module_id' => $module->id,
-                        'assigned_to' => $assignedUser->id,
                         'created_by' => $createdBy->id,
                         'depends_on' => $dependsOn,
                         'created_at' => $createdAt,
@@ -199,6 +198,8 @@ class TaskSeeder extends Seeder
         foreach ($chunks as $chunk) {
             DB::table('tasks')->insert($chunk);
         }
+        
+        $this->assignUsersToTasks($taskInserts, $allUsers);
     }
 
     private function determineTaskStatus($moduleStatus, $taskIndex, $totalTasks)
@@ -278,5 +279,36 @@ class TaskSeeder extends Seeder
         $endDate = clone $createdAt;
         $endDate->add(new \DateInterval("P{$baseDays}D"));
         return $endDate;
+    }
+
+    private function assignUsersToTasks($tasks, $allUsers)
+    {
+        $taskUserInserts = [];
+        
+        foreach ($tasks as $task) {
+            // Número de usuarios asignados por tarea (1-3, con bias hacia 1)
+            $assignedCount = rand(1, 100) <= 70 ? 1 : (rand(1, 100) <= 85 ? 2 : 3);
+            
+            // Seleccionar usuarios únicos para esta tarea
+            $selectedUsers = collect($allUsers)->random($assignedCount);
+            
+            foreach ($selectedUsers as $user) {
+                $taskUserInserts[] = [
+                    'task_id' => $task['id'],
+                    'user_id' => $user->id,
+                    'assigned_at' => $task['created_at'],
+                    'created_at' => $task['created_at'],
+                    'updated_at' => $task['updated_at'],
+                ];
+            }
+        }
+        
+        // Insertar asignaciones
+        if (!empty($taskUserInserts)) {
+            $chunks = array_chunk($taskUserInserts, 50);
+            foreach ($chunks as $chunk) {
+                DB::table('task_user')->insert($chunk);
+            }
+        }
     }
 }

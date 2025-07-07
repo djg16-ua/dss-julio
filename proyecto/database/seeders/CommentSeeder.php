@@ -16,7 +16,7 @@ class CommentSeeder extends Seeder
         $john = $users->get('john@taskflow.com');
         $jane = $users->get('jane@taskflow.com');
         $bob = $users->get('bob@taskflow.com');
-
+        
         // Obtener tareas con información del módulo y proyecto
         $tasks = DB::table('tasks')
             ->join('modules', 'tasks.module_id', '=', 'modules.id')
@@ -98,25 +98,25 @@ class CommentSeeder extends Seeder
         ];
 
         $commentInserts = [];
-
+        
         // Crear comentarios para las tareas más importantes (alrededor del 40% de las tareas)
         $selectedTasks = $tasks->shuffle()->take(ceil($tasks->count() * 0.4));
-
+        
         foreach ($selectedTasks as $task) {
             // Número de comentarios por tarea (1-8, con bias hacia menos comentarios)
             $commentCount = $this->getWeightedCommentCount();
-
+            
             // Determinar qué usuarios van a comentar en esta tarea
             $commentingUsers = $this->selectCommentingUsers($users, $task, $commentCount);
-
+            
             for ($i = 0; $i < $commentCount; $i++) {
                 $user = $commentingUsers[$i % count($commentingUsers)];
                 $commentType = $this->selectCommentType($task, $i, $commentCount);
                 $content = $this->getCommentContent($commentTemplates, $commentType, $task, $user);
-
+                
                 // Calcular fecha del comentario
                 $commentDate = $this->calculateCommentDate($task, $i, $commentCount);
-
+                
                 $commentInserts[] = [
                     'content' => $content,
                     'user_id' => $user->id,
@@ -149,17 +149,17 @@ class CommentSeeder extends Seeder
             7 => 1,  // 1% tareas con 7 comentarios
             8 => 1,  // 1% tareas con 8 comentarios
         ];
-
+        
         $rand = rand(1, 100);
         $cumulative = 0;
-
+        
         foreach ($weights as $count => $weight) {
             $cumulative += $weight;
             if ($rand <= $cumulative) {
                 return $count;
             }
         }
-
+        
         return 1;
     }
 
@@ -167,21 +167,29 @@ class CommentSeeder extends Seeder
     {
         $commentingUsers = [];
         $allUsers = $users->values()->toArray();
-
-        // El usuario asignado siempre comenta
-        $assignedUser = collect($allUsers)->firstWhere('id', $task->assigned_to);
-        if ($assignedUser) {
-            $commentingUsers[] = $assignedUser;
+        
+        // Obtener usuarios asignados a esta tarea desde la tabla pivot
+        $assignedUserIds = DB::table('task_user')
+            ->where('task_id', $task->id)
+            ->pluck('user_id')
+            ->toArray();
+        
+        // Los usuarios asignados siempre pueden comentar
+        foreach ($assignedUserIds as $userId) {
+            $assignedUser = collect($allUsers)->firstWhere('id', $userId);
+            if ($assignedUser) {
+                $commentingUsers[] = $assignedUser;
+            }
         }
-
+        
         // El creador de la tarea también puede comentar (50% probabilidad)
-        if ($task->created_by !== $task->assigned_to && rand(0, 100) < 50) {
+        if (!in_array($task->created_by, $assignedUserIds) && rand(0, 100) < 50) {
             $creator = collect($allUsers)->firstWhere('id', $task->created_by);
-            if ($creator) {
+            if ($creator && !in_array($creator, $commentingUsers)) {
                 $commentingUsers[] = $creator;
             }
         }
-
+        
         // Agregar usuarios adicionales según el número de comentarios
         while (count($commentingUsers) < min($commentCount, 4)) {
             $randomUser = $allUsers[array_rand($allUsers)];
@@ -189,7 +197,7 @@ class CommentSeeder extends Seeder
                 $commentingUsers[] = $randomUser;
             }
         }
-
+        
         return $commentingUsers;
     }
 
@@ -225,17 +233,17 @@ class CommentSeeder extends Seeder
                 'testing_qa' => 5,
             ];
         }
-
+        
         $rand = rand(1, array_sum($weights));
         $cumulative = 0;
-
+        
         foreach ($weights as $type => $weight) {
             $cumulative += $weight;
             if ($rand <= $cumulative) {
                 return $type;
             }
         }
-
+        
         return 'progress_update';
     }
 
@@ -243,7 +251,7 @@ class CommentSeeder extends Seeder
     {
         $baseComments = $templates[$type] ?? $templates['progress_update'];
         $baseComment = $baseComments[array_rand($baseComments)];
-
+        
         // Personalizar algunos comentarios según contexto
         $personalizations = [
             'authentication' => [
@@ -271,7 +279,7 @@ class CommentSeeder extends Seeder
                 'Make sure we have proper request validation.',
             ],
         ];
-
+        
         // Agregar personalización basada en el módulo
         $moduleName = strtolower($task->module_name);
         if (str_contains($moduleName, 'auth')) {
@@ -283,12 +291,12 @@ class CommentSeeder extends Seeder
         } else {
             $specific = $personalizations['api'];
         }
-
+        
         // 30% de probabilidad de usar comentario específico
         if (rand(0, 100) < 30) {
             return $specific[array_rand($specific)];
         }
-
+        
         return $baseComment;
     }
 
@@ -296,25 +304,29 @@ class CommentSeeder extends Seeder
     {
         $taskCreated = new \DateTime($task->created_at);
         $taskEnd = new \DateTime($task->end_date);
-
+        
         // Distribución de comentarios a lo largo del tiempo de vida de la tarea
         if ($totalComments === 1) {
             // Solo un comentario: en algún punto random
             $daysDiff = $taskCreated->diff($taskEnd)->days;
             $randomDays = rand(0, max(1, $daysDiff));
-            return $taskCreated->add(new \DateInterval("P{$randomDays}D"));
+            $result = clone $taskCreated;
+            $result->add(new \DateInterval("P{$randomDays}D"));
+            return $result;
         }
-
+        
         // Múltiples comentarios: distribuir a lo largo del tiempo
         $daysDiff = $taskCreated->diff($taskEnd)->days;
         $intervalDays = max(1, intval($daysDiff / $totalComments));
         $baseDay = $intervalDays * $commentIndex;
-
+        
         // Agregar algo de randomness
         $variance = rand(-$intervalDays + 1, $intervalDays - 1);
         $finalDay = max(0, $baseDay + $variance);
-
-        return $taskCreated->add(new \DateInterval("P{$finalDay}D"));
+        
+        $result = clone $taskCreated;
+        $result->add(new \DateInterval("P{$finalDay}D"));
+        return $result;
     }
 
     private function addSpecificComments(&$commentInserts, $tasks, $users)
@@ -323,12 +335,12 @@ class CommentSeeder extends Seeder
         $john = $users->get('john@taskflow.com');
         $jane = $users->get('jane@taskflow.com');
         $bob = $users->get('bob@taskflow.com');
-
+        
         // Encontrar tareas específicas para comentarios especiales
         $loginTask = $tasks->where('title', 'Create login form')->first();
         $paymentTask = $tasks->where('title', 'Stripe integration')->first();
         $homepageTask = $tasks->where('title', 'Homepage design')->first();
-
+        
         if ($loginTask) {
             $commentInserts[] = [
                 'content' => 'Remember to include password strength validation with clear feedback to users.',
@@ -337,7 +349,7 @@ class CommentSeeder extends Seeder
                 'created_at' => now()->subHours(rand(2, 48)),
                 'updated_at' => now()->subHours(rand(2, 48)),
             ];
-
+            
             $commentInserts[] = [
                 'content' => 'I will add the password visibility toggle and ensure mobile compatibility.',
                 'user_id' => $jane->id,
@@ -346,7 +358,7 @@ class CommentSeeder extends Seeder
                 'updated_at' => now()->subHours(rand(1, 24)),
             ];
         }
-
+        
         if ($paymentTask) {
             $commentInserts[] = [
                 'content' => 'Make sure to implement proper error handling for declined cards and network failures.',
@@ -355,7 +367,7 @@ class CommentSeeder extends Seeder
                 'created_at' => now()->subHours(rand(6, 72)),
                 'updated_at' => now()->subHours(rand(6, 72)),
             ];
-
+            
             $commentInserts[] = [
                 'content' => 'Testing with Stripe\'s test cards is going well. All major scenarios covered.',
                 'user_id' => $bob->id,
@@ -364,7 +376,7 @@ class CommentSeeder extends Seeder
                 'updated_at' => now()->subHours(rand(2, 24)),
             ];
         }
-
+        
         if ($homepageTask) {
             $commentInserts[] = [
                 'content' => 'The mockups look great! Should we add a hero video or stick with static images?',
@@ -373,7 +385,7 @@ class CommentSeeder extends Seeder
                 'created_at' => now()->subHours(rand(12, 96)),
                 'updated_at' => now()->subHours(rand(12, 96)),
             ];
-
+            
             $commentInserts[] = [
                 'content' => 'Let\'s go with static images for now to keep loading times fast. We can add video later.',
                 'user_id' => $admin->id,
@@ -381,7 +393,7 @@ class CommentSeeder extends Seeder
                 'created_at' => now()->subHours(rand(6, 48)),
                 'updated_at' => now()->subHours(rand(6, 48)),
             ];
-
+            
             $commentInserts[] = [
                 'content' => 'Implemented the responsive design. Looks good on all device sizes!',
                 'user_id' => $jane->id,
@@ -395,13 +407,21 @@ class CommentSeeder extends Seeder
         $completedTasks = $tasks->where('status', 'DONE')->take(10);
         foreach ($completedTasks as $task) {
             if (rand(0, 100) < 60) { // 60% de probabilidad
-                $commentInserts[] = [
-                    'content' => 'Task completed successfully! All requirements met and tested.',
-                    'user_id' => $task->assigned_to,
-                    'task_id' => $task->id,
-                    'created_at' => $task->completed_at ?? now()->subDays(rand(1, 30)),
-                    'updated_at' => $task->completed_at ?? now()->subDays(rand(1, 30)),
-                ];
+                // Obtener un usuario asignado a la tarea
+                $assignedUserId = DB::table('task_user')
+                    ->where('task_id', $task->id)
+                    ->pluck('user_id')
+                    ->first();
+                
+                if ($assignedUserId) {
+                    $commentInserts[] = [
+                        'content' => 'Task completed successfully! All requirements met and tested.',
+                        'user_id' => $assignedUserId,
+                        'task_id' => $task->id,
+                        'created_at' => $task->completed_at ?? now()->subDays(rand(1, 30)),
+                        'updated_at' => $task->completed_at ?? now()->subDays(rand(1, 30)),
+                    ];
+                }
             }
         }
 
@@ -416,14 +436,22 @@ class CommentSeeder extends Seeder
                     'Waiting for access to production environment.',
                     'Dependencies need to be resolved first.',
                 ];
-
-                $commentInserts[] = [
-                    'content' => $blockers[array_rand($blockers)],
-                    'user_id' => $task->assigned_to,
-                    'task_id' => $task->id,
-                    'created_at' => now()->subDays(rand(1, 7)),
-                    'updated_at' => now()->subDays(rand(1, 7)),
-                ];
+                
+                // Obtener un usuario asignado a la tarea
+                $assignedUserId = DB::table('task_user')
+                    ->where('task_id', $task->id)
+                    ->pluck('user_id')
+                    ->first();
+                
+                if ($assignedUserId) {
+                    $commentInserts[] = [
+                        'content' => $blockers[array_rand($blockers)],
+                        'user_id' => $assignedUserId,
+                        'task_id' => $task->id,
+                        'created_at' => now()->subDays(rand(1, 7)),
+                        'updated_at' => now()->subDays(rand(1, 7)),
+                    ];
+                }
             }
         }
 
@@ -439,14 +467,22 @@ class CommentSeeder extends Seeder
                     'Almost done with the core functionality.',
                     'Testing phase has begun. Found a few minor issues to fix.',
                 ];
-
-                $commentInserts[] = [
-                    'content' => $progressComments[array_rand($progressComments)],
-                    'user_id' => $task->assigned_to,
-                    'task_id' => $task->id,
-                    'created_at' => now()->subDays(rand(0, 5)),
-                    'updated_at' => now()->subDays(rand(0, 5)),
-                ];
+                
+                // Obtener un usuario asignado a la tarea
+                $assignedUserId = DB::table('task_user')
+                    ->where('task_id', $task->id)
+                    ->pluck('user_id')
+                    ->first();
+                
+                if ($assignedUserId) {
+                    $commentInserts[] = [
+                        'content' => $progressComments[array_rand($progressComments)],
+                        'user_id' => $assignedUserId,
+                        'task_id' => $task->id,
+                        'created_at' => now()->subDays(rand(0, 5)),
+                        'updated_at' => now()->subDays(rand(0, 5)),
+                    ];
+                }
             }
         }
     }
