@@ -221,11 +221,14 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle me-2"></i>{{ Auth::user()->name }}
+                            @if(Auth::user()->isAdmin())
+                                <span class="badge bg-danger ms-2">ADMIN</span>
+                            @endif
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li>
                                 <a class="dropdown-item" href="{{ route('profile.show') }}">
-                                <i class="bi bi-person me-2"></i>Mi Perfil
+                                    <i class="bi bi-person me-2"></i>Mi Perfil
                                 </a>
                             </li>
                             <li>
@@ -233,9 +236,17 @@
                                     <i class="bi bi-gear me-2"></i>Configuración
                                 </a>
                             </li>
+                            
+                            @if(Auth::user()->isAdmin())
+                            <li><hr class="dropdown-divider"></li>
                             <li>
-                                <hr class="dropdown-divider">
+                                <a class="dropdown-item text-primary fw-bold" href="{{ route('admin.dashboard') }}">
+                                    <i class="bi bi-shield-gear me-2"></i>Panel de Administración
+                                </a>
                             </li>
+                            @endif
+                            
+                            <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item" href="{{ route('logout') }}"
                                     onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
