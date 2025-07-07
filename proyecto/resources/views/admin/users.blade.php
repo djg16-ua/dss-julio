@@ -224,7 +224,7 @@
                         <!-- Acciones -->
                         <div class="col-lg-2 col-md-2 text-end">
                             <div class="btn-group-vertical d-grid gap-2" role="group">
-                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-outline-primary btn-sm">
                                     <i class="bi bi-pencil me-1"></i>Editar
                                 </a>
                                 @if($user->id !== auth()->id())
