@@ -178,4 +178,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // Eliminar equipo
     Route::delete('/teams/{team}', [App\Http\Controllers\AdminController::class, 'deleteTeam'])->name('teams.delete');
+
+    // Estadísticas del sistema
+    Route::get('/statistics', [App\Http\Controllers\AdminController::class, 'statistics'])->name('statistics'); 
 });
+
