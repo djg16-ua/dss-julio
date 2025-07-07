@@ -245,32 +245,110 @@ class AdminController extends Controller
     }
 
     /**
-     * Estadísticas avanzadas
+     * Mostrar formulario de edición de usuario
      */
-    public function analytics()
+    public function editUser(User $user)
     {
-        // Datos para gráficos
-        $userGrowth = User::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-            ->where('created_at', '>=', now()->subDays(30))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+        $user->load(['teams', 'createdProjects', 'assignedTasks', 'comments']);
+        return view('admin.users.edit', compact('user'));
+    }
 
-        $projectGrowth = Project::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-            ->where('created_at', '>=', now()->subDays(30))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+    /**
+     * Actualizar información básica del usuario
+     */
+    public function updateUser(Request $request, User $user)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'role' => 'required|in:ADMIN,USER',
+            'email_verified' => 'required|in:0,1'
+        ]);
 
-        $taskCompletionRate = [
-            'completed' => Task::where('status', 'DONE')->count(),
-            'total' => Task::count()
-        ];
+        // No permitir cambiar el rol del último admin
+        if ($user->isAdmin() && $request->role === 'USER' && User::where('role', 'ADMIN')->count() <= 1) {
+            return back()->with('error', 'No puedes quitar privilegios de administrador al último admin del sistema.');
+        }
 
-        return view('admin.analytics', compact(
-            'userGrowth',
-            'projectGrowth',
-            'taskCompletionRate'
-        ));
+        // No permitir cambiar el propio rol
+        if ($user->id === auth()->id() && $user->role !== $request->role) {
+            return back()->with('error', 'No puedes cambiar tu propio rol.');
+        }
+
+        // Actualizar verificación de email
+        $emailVerifiedAt = $request->email_verified == '1' ? 
+            ($user->email_verified_at ?: now()) : null;
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'email_verified_at' => $emailVerifiedAt,
+        ]);
+
+        return back()->with('success', 'Información del usuario actualizada correctamente.');
+    }
+
+    /**
+     * Actualizar contraseña del usuario
+     */
+    public function updateUserPassword(Request $request, User $user)
+    {
+        $request->validate([
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user->update([
+            'password' => $request->new_password, // Se hashea automáticamente
+        ]);
+
+        return back()->with('success', 'Contraseña actualizada correctamente.');
+    }
+
+    /**
+     * Resetear contraseña del usuario (generar temporal)
+     */
+    public function resetUserPassword(User $user)
+    {
+        $temporaryPassword = 'TaskFlow' . rand(1000, 9999);
+        
+        $user->update([
+            'password' => $temporaryPassword,
+        ]);
+
+        return back()->with('success', "Contraseña temporal generada: {$temporaryPassword}");
+    }
+
+    /**
+     * Actualizar rol en equipo o estado
+     */
+    public function updateUserTeamRole(Request $request, User $user, Team $team)
+    {
+        $pivot = $user->teams()->where('team_id', $team->id)->first();
+        
+        if (!$pivot) {
+            return back()->with('error', 'El usuario no pertenece a este equipo.');
+        }
+
+        if ($request->action === 'toggle_status') {
+            $user->teams()->updateExistingPivot($team->id, [
+                'is_active' => !$pivot->pivot->is_active
+            ]);
+            
+            $status = $pivot->pivot->is_active ? 'desactivado' : 'activado';
+            return back()->with('success', "Usuario {$status} en el equipo {$team->name}.");
+        }
+
+        return back();
+    }
+
+    /**
+     * Remover usuario de equipo
+     */
+    public function removeUserFromTeam(User $user, Team $team)
+    {
+        $user->teams()->detach($team->id);
+        
+        return back()->with('success', "Usuario removido del equipo {$team->name}.");
     }
 }

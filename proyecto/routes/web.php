@@ -8,7 +8,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\DashboardController;
 
-// Rutas existentes...
+// ============================================
+// RUTAS PRINCIPALES
+// ============================================
+
 // Para usuarios autenticados - redirigir a dashboard (PRIMERO)
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -28,7 +31,7 @@ Route::get('/contact', function () {
 });
 
 // ============================================
-// DASHBOARD - ¡ESTA ERA LA QUE FALTABA!
+// DASHBOARD
 // ============================================
 Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
     ->middleware('auth')
@@ -102,7 +105,6 @@ Route::post('/forgot-password', [CustomPasswordResetController::class, 'store'])
     ->middleware('guest')
     ->name('password.email');
 
-// NUEVAS RUTAS PARA RESET PASSWORD
 Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create'])
     ->middleware('guest')
     ->name('password.reset');
@@ -128,18 +130,50 @@ Route::middleware('auth')->group(function () {
         ->name('verification.send');
 });
 
+// ============================================
 // RUTAS DE ADMINISTRACIÓN
+// ============================================
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    // Dashboard y páginas principales
     Route::get('/dashboard', [App\Http\Controllers\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/users', [App\Http\Controllers\AdminController::class, 'users'])->name('users');
     Route::get('/projects', [App\Http\Controllers\AdminController::class, 'projects'])->name('projects');
     Route::get('/teams', [App\Http\Controllers\AdminController::class, 'teams'])->name('teams');
     
-    // Acciones para usuarios
+    // ============================================
+    // GESTIÓN DE USUARIOS
+    // ============================================
+    
+    // Editar usuario (mostrar formulario)
+    Route::get('/users/{user}/edit', [App\Http\Controllers\AdminController::class, 'editUser'])->name('users.edit');
+    
+    // Actualizar información básica del usuario
+    Route::patch('/users/{user}', [App\Http\Controllers\AdminController::class, 'updateUser'])->name('users.update');
+    
+    // Cambiar rol del usuario
     Route::patch('/users/{user}/role', [App\Http\Controllers\AdminController::class, 'updateUserRole'])->name('users.update-role');
+    
+    // Actualizar contraseña del usuario
+    Route::patch('/users/{user}/password', [App\Http\Controllers\AdminController::class, 'updateUserPassword'])->name('users.update-password');
+    
+    // Resetear contraseña del usuario (generar temporal)
+    Route::patch('/users/{user}/reset-password', [App\Http\Controllers\AdminController::class, 'resetUserPassword'])->name('users.reset-password');
+    
+    // Eliminar usuario
     Route::delete('/users/{user}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('users.delete');
     
-    // Acciones para proyectos
+    // Gestión de equipos del usuario (si las tienes implementadas)
+    Route::patch('/users/{user}/teams/{team}/role', [App\Http\Controllers\AdminController::class, 'updateUserTeamRole'])->name('users.update-team-role');
+    Route::delete('/users/{user}/teams/{team}', [App\Http\Controllers\AdminController::class, 'removeUserFromTeam'])->name('users.remove-from-team');
+    
+    // ============================================
+    // GESTIÓN DE PROYECTOS
+    // ============================================
+    
+    // Actualizar estado del proyecto
     Route::patch('/projects/{project}/status', [App\Http\Controllers\AdminController::class, 'updateProjectStatus'])->name('projects.update-status');
+    
+    // Eliminar proyecto
     Route::delete('/projects/{project}', [App\Http\Controllers\AdminController::class, 'deleteProject'])->name('projects.delete');
+    
 });
