@@ -6,11 +6,18 @@ use App\Http\Controllers\CustomPasswordResetController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\DashboardController;
 
 // Rutas existentes...
+// Para usuarios autenticados - redirigir a dashboard (PRIMERO)
+Route::get('/', function () {
+    return redirect()->route('dashboard');
+})->middleware('auth');
+
+// Para usuarios NO autenticados - mostrar welcome (SEGUNDO)
 Route::get('/', function () {
     return view('welcome');
-});
+})->middleware('guest')->name('welcome');
 
 Route::get('/about', function () {
     return view('about');
@@ -23,9 +30,9 @@ Route::get('/contact', function () {
 // ============================================
 // DASHBOARD - ¡ESTA ERA LA QUE FALTABA!
 // ============================================
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware('auth')->name('dashboard');
+Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware('auth')
+    ->name('dashboard');
 
 // ============================================
 // RUTAS DE AUTENTICACIÓN COMPLETAS
@@ -115,8 +122,24 @@ Route::middleware('auth')->group(function () {
     
     Route::put('/password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])
         ->name('password.update');
-        
+
     Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
+});
+
+// RUTAS DE ADMINISTRACIÓN
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/users', [App\Http\Controllers\AdminController::class, 'users'])->name('users');
+    Route::get('/projects', [App\Http\Controllers\AdminController::class, 'projects'])->name('projects');
+    Route::get('/teams', [App\Http\Controllers\AdminController::class, 'teams'])->name('teams');
+    
+    // Acciones para usuarios
+    Route::patch('/users/{user}/role', [App\Http\Controllers\AdminController::class, 'updateUserRole'])->name('users.update-role');
+    Route::delete('/users/{user}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('users.delete');
+    
+    // Acciones para proyectos
+    Route::patch('/projects/{project}/status', [App\Http\Controllers\AdminController::class, 'updateProjectStatus'])->name('projects.update-status');
+    Route::delete('/projects/{project}', [App\Http\Controllers\AdminController::class, 'deleteProject'])->name('projects.delete');
 });
