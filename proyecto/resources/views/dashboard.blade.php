@@ -17,10 +17,10 @@
                     </p>
                 </div>
                 <div class="col-lg-4 text-lg-end">
-                    <span class="badge bg-{{ Auth::user()->isAdmin() ? 'primary' : 'secondary' }} fs-6 px-3 py-2">
+                    <a href="#" class="btn bg-{{ Auth::user()->isAdmin() ? 'primary' : 'secondary' }} text-white fs-6 px-3 py-2 text-decoration-none">
                         <i class="bi bi-person-badge me-1"></i>
                         {{ Auth::user()->role }}
-                    </span>
+                    </a>
                 </div>
             </div>
 
@@ -99,10 +99,15 @@
                 <div class="col-lg-8">
                     <div class="card">
                         <div class="card-header bg-white py-3">
-                            <h5 class="card-title mb-0">
-                                <i class="bi bi-list-task text-primary me-2"></i>
-                                Mis Tareas en Curso
-                            </h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-list-task text-primary me-2"></i>
+                                    Tareas en Curso
+                                </h5>
+                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i>Ver más
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             @php
@@ -254,10 +259,15 @@
                     <!-- Proyectos activos -->
                     <div class="card">
                         <div class="card-header bg-white py-3">
-                            <h5 class="card-title mb-0">
-                                <i class="bi bi-kanban text-primary me-2"></i>
-                                Proyectos Activos
-                            </h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-kanban text-primary me-2"></i>
+                                    Proyectos Activos
+                                </h5>
+                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i>Ver más
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             @php
@@ -298,10 +308,15 @@
                     <!-- Comentarios en Curso -->
                     <div class="card mt-4">
                         <div class="card-header bg-white py-3">
-                            <h5 class="card-title mb-0">
-                                <i class="bi bi-chat-dots text-primary me-2"></i>
-                                Comentarios en Curso
-                            </h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-chat-dots text-primary me-2"></i>
+                                    Comentarios en Curso
+                                </h5>
+                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i>Ver más
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             @php
@@ -397,9 +412,6 @@
                                 </div>
                             @endif
                         </div>
-                    </div>
-                </div>
-            </div>                        </div>
                     </div>
                 </div>
             </div>
