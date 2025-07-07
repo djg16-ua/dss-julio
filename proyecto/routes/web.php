@@ -200,5 +200,24 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // Gestión de proyectos del equipo
     Route::post('/teams/{team}/projects', [App\Http\Controllers\AdminController::class, 'assignTeamProject'])->name('teams.assign-project');
     Route::delete('/teams/{team}/projects/{project}', [App\Http\Controllers\AdminController::class, 'unassignTeamProject'])->name('teams.unassign-project');
+
+    // ============================================
+    // GESTIÓN DE PROYECTOS (agregar después de las rutas existentes)
+    // ============================================
+
+    // Mostrar formulario de edición del proyecto
+    Route::get('/projects/{project}/edit', [App\Http\Controllers\AdminController::class, 'editProject'])->name('projects.edit');
+
+    // Actualizar información básica del proyecto
+    Route::patch('/projects/{project}', [App\Http\Controllers\AdminController::class, 'updateProject'])->name('projects.update');
+
+    // Gestión de equipos del proyecto
+    Route::post('/projects/{project}/teams', [App\Http\Controllers\AdminController::class, 'assignProjectTeam'])->name('projects.assign-team');
+    Route::delete('/projects/{project}/teams/{team}', [App\Http\Controllers\AdminController::class, 'unassignProjectTeam'])->name('projects.unassign-team');
+
+    // Gestión de módulos del proyecto
+    Route::post('/projects/{project}/modules', [App\Http\Controllers\AdminController::class, 'createProjectModule'])->name('projects.create-module');
+    Route::patch('/projects/{project}/modules/{module}', [App\Http\Controllers\AdminController::class, 'updateProjectModule'])->name('projects.update-module');
+    Route::delete('/projects/{project}/modules/{module}', [App\Http\Controllers\AdminController::class, 'deleteProjectModule'])->name('projects.delete-module');
 });
 

@@ -671,5 +671,241 @@ class AdminController extends Controller
         return redirect()->route('admin.teams.edit', $team)
             ->with('success', "Proyecto '{$project->title}' desasignado del equipo correctamente.");
     }
+
+    /**
+     * Mostrar formulario de edición del proyecto
+     */
+    public function editProject(Project $project)
+    {
+        // Cargar relaciones necesarias
+        $project->load([
+            'creator',
+            'teams' => function($query) {
+                $query->withPivot(['assigned_at']);
+            },
+            'modules.tasks'
+        ]);
+
+        // Obtener equipos disponibles para asignar al proyecto
+        $availableTeams = Team::whereDoesntHave('projects', function($query) use ($project) {
+            $query->where('project_id', $project->id);
+        })->orderBy('name')->get();
+
+        // Estados disponibles para el proyecto
+        $projectStatuses = [
+            'PENDING' => 'Pendiente',
+            'ACTIVE' => 'Activo',
+            'DONE' => 'Completado',
+            'PAUSED' => 'Pausado',
+            'CANCELLED' => 'Cancelado'
+        ];
+
+        // Categorías de módulos
+        $moduleCategories = [
+            'DEVELOPMENT' => 'Desarrollo',
+            'DESIGN' => 'Diseño',
+            'TESTING' => 'Pruebas',
+            'DOCUMENTATION' => 'Documentación',
+            'RESEARCH' => 'Investigación',
+            'DEPLOYMENT' => 'Despliegue',
+            'MAINTENANCE' => 'Mantenimiento',
+            'INTEGRATION' => 'Integración'
+        ];
+
+        // Prioridades
+        $priorities = [
+            'LOW' => 'Baja',
+            'MEDIUM' => 'Media',
+            'HIGH' => 'Alta',
+            'URGENT' => 'Urgente'
+        ];
+
+        return view('admin.projects.edit', compact(
+            'project',
+            'availableTeams',
+            'projectStatuses',
+            'moduleCategories',
+            'priorities'
+        ));
+    }
+
+    /**
+     * Actualizar información básica del proyecto
+     */
+    public function updateProject(Request $request, Project $project)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:2000',
+            'status' => 'required|in:PENDING,ACTIVE,DONE,PAUSED,CANCELLED',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'public' => 'required|boolean',
+        ]);
+
+        $project->update([
+            'title' => $request->title,
+            'description' => $request->description,
+            'status' => $request->status,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'public' => $request->public,
+        ]);
+
+        return redirect()->route('admin.projects.edit', $project)
+            ->with('success', 'Información del proyecto actualizada correctamente.');
+    }
+
+    /**
+     * Asignar equipo al proyecto
+     */
+    public function assignProjectTeam(Request $request, Project $project)
+    {
+        $request->validate([
+            'team_id' => 'required|exists:teams,id',
+        ]);
+
+        // Verificar que el equipo no esté ya asignado al proyecto
+        if ($project->teams()->where('team_id', $request->team_id)->exists()) {
+            return redirect()->route('admin.projects.edit', $project)
+                ->with('error', 'El equipo ya está asignado al proyecto.');
+        }
+
+        $project->teams()->attach($request->team_id, [
+            'assigned_at' => now(),
+        ]);
+
+        $team = Team::find($request->team_id);
+        return redirect()->route('admin.projects.edit', $project)
+            ->with('success', "Equipo '{$team->name}' asignado al proyecto correctamente.");
+    }
+
+    /**
+     * Desasignar equipo del proyecto
+     */
+    public function unassignProjectTeam(Project $project, Team $team)
+    {
+        // Verificar que el equipo está asignado al proyecto
+        if (!$project->teams()->where('team_id', $team->id)->exists()) {
+            return redirect()->route('admin.projects.edit', $project)
+                ->with('error', 'El equipo no está asignado al proyecto.');
+        }
+
+        $project->teams()->detach($team->id);
+
+        return redirect()->route('admin.projects.edit', $project)
+            ->with('success', "Equipo '{$team->name}' desasignado del proyecto correctamente.");
+    }
+
+    /**
+     * Crear nuevo módulo para el proyecto
+     */
+    public function createProjectModule(Request $request, Project $project)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:modules,name,NULL,id,project_id,' . $project->id,
+            'description' => 'nullable|string|max:1000',
+            'priority' => 'required|in:LOW,MEDIUM,HIGH,URGENT',
+            'category' => 'required|in:DEVELOPMENT,DESIGN,TESTING,DOCUMENTATION,RESEARCH,DEPLOYMENT,MAINTENANCE,INTEGRATION',
+            'depends_on' => 'nullable|exists:modules,id',
+            'is_core' => 'required|boolean',
+        ]);
+
+        // Verificar que el módulo de dependencia pertenece al mismo proyecto
+        if ($request->depends_on) {
+            $dependencyModule = Module::find($request->depends_on);
+            if ($dependencyModule && $dependencyModule->project_id !== $project->id) {
+                return redirect()->route('admin.projects.edit', $project)
+                    ->with('error', 'El módulo de dependencia debe pertenecer al mismo proyecto.');
+            }
+        }
+
+        $module = $project->modules()->create([
+            'name' => $request->name,
+            'description' => $request->description,
+            'priority' => $request->priority,
+            'category' => $request->category,
+            'status' => 'PENDING',
+            'depends_on' => $request->depends_on,
+            'is_core' => $request->is_core,
+        ]);
+
+        return redirect()->route('admin.projects.edit', $project)
+            ->with('success', "Módulo '{$module->name}' creado correctamente.");
+    }
+
+    /**
+     * Actualizar módulo del proyecto
+     */
+    public function updateProjectModule(Request $request, Project $project, Module $module)
+    {
+        // Verificar que el módulo pertenece al proyecto
+        if ($module->project_id !== $project->id) {
+            return redirect()->route('admin.projects.edit', $project)
+                ->with('error', 'El módulo no pertenece a este proyecto.');
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255|unique:modules,name,' . $module->id . ',id,project_id,' . $project->id,
+            'description' => 'nullable|string|max:1000',
+            'priority' => 'required|in:LOW,MEDIUM,HIGH,URGENT',
+            'category' => 'required|in:DEVELOPMENT,DESIGN,TESTING,DOCUMENTATION,RESEARCH,DEPLOYMENT,MAINTENANCE,INTEGRATION',
+            'status' => 'required|in:PENDING,ACTIVE,DONE,PAUSED,CANCELLED',
+            'depends_on' => 'nullable|exists:modules,id',
+            'is_core' => 'required|boolean',
+        ]);
+
+        // Verificar que el módulo de dependencia pertenece al mismo proyecto y no es el mismo módulo
+        if ($request->depends_on) {
+            if ($request->depends_on == $module->id) {
+                return redirect()->route('admin.projects.edit', $project)
+                    ->with('error', 'Un módulo no puede depender de sí mismo.');
+            }
+            
+            $dependencyModule = Module::find($request->depends_on);
+            if ($dependencyModule && $dependencyModule->project_id !== $project->id) {
+                return redirect()->route('admin.projects.edit', $project)
+                    ->with('error', 'El módulo de dependencia debe pertenecer al mismo proyecto.');
+            }
+        }
+
+        $module->update([
+            'name' => $request->name,
+            'description' => $request->description,
+            'priority' => $request->priority,
+            'category' => $request->category,
+            'status' => $request->status,
+            'depends_on' => $request->depends_on,
+            'is_core' => $request->is_core,
+        ]);
+
+        return redirect()->route('admin.projects.edit', $project)
+            ->with('success', "Módulo '{$module->name}' actualizado correctamente.");
+    }
+
+    /**
+     * Eliminar módulo del proyecto
+     */
+    public function deleteProjectModule(Project $project, Module $module)
+    {
+        // Verificar que el módulo pertenece al proyecto
+        if ($module->project_id !== $project->id) {
+            return redirect()->route('admin.projects.edit', $project)
+                ->with('error', 'El módulo no pertenece a este proyecto.');
+        }
+
+        // Verificar si hay otros módulos que dependen de este
+        $dependentModules = Module::where('depends_on', $module->id)->count();
+        if ($dependentModules > 0) {
+            return redirect()->route('admin.projects.edit', $project)
+                ->with('error', "No se puede eliminar el módulo '{$module->name}' porque otros módulos dependen de él.");
+        }
+
+        $moduleName = $module->name;
+        $module->delete();
+
+        return redirect()->route('admin.projects.edit', $project)
+            ->with('success', "Módulo '{$moduleName}' eliminado correctamente.");
+    }
 }
 
