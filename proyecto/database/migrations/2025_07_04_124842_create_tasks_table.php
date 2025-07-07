@@ -31,8 +31,7 @@ return new class extends Migration
             $table->index('status');
             $table->index('priority');
             $table->index('end_date');
-            $table->index('module_id'); // IMPORTANTE
-            $table->index('assigned_to');
+            $table->index('module_id');
             $table->index('created_by');
             $table->index('depends_on');
             $table->index('completed_at');
