@@ -80,8 +80,8 @@
                                 <div class="row g-3">
                                     <div class="col-md-4">
                                         <label for="search" class="form-label">Buscar usuario</label>
-                                        <input type="text" class="form-control" id="search" name="search" 
-                                               value="{{ request('search') }}" placeholder="Nombre o email...">
+                                        <input type="text" class="form-control" id="search" name="search"
+                                            value="{{ request('search') }}" placeholder="Nombre o email...">
                                     </div>
                                     <div class="col-md-3">
                                         <label for="role" class="form-label">Rol</label>
@@ -111,258 +111,183 @@
                 </div>
             </div>
 
-            <!-- Tabla de usuarios -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header bg-white py-3">
-                            <h5 class="card-title mb-0">
-                                <i class="bi bi-table text-primary me-2"></i>
-                                Lista de Usuarios
-                            </h5>
+            <!-- Lista de usuarios expandidos -->
+            @if($users->count() > 0)
+            @foreach($users as $user)
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <!-- Información principal del usuario -->
+                        <div class="col-lg-3 col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="feature-icon primary me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1 fw-bold">{{ $user->name }}</h5>
+                                    <p class="mb-0 text-muted">{{ $user->email }}</p>
+                                    <small class="text-muted">ID: {{ $user->id }}</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body p-0">
-                            @if($users->count() > 0)
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Usuario</th>
-                                                <th>Email</th>
-                                                <th>Rol</th>
-                                                <th>Verificación</th>
-                                                <th>Registro</th>
-                                                <th>Estadísticas</th>
-                                                <th width="150">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($users as $user)
-                                            <tr>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="feature-icon primary me-3" style="width: 40px; height: 40px; font-size: 1rem;">
-                                                            <i class="bi bi-person-fill"></i>
-                                                        </div>
-                                                        <div>
-                                                            <h6 class="mb-0">{{ $user->name }}</h6>
-                                                            <small class="text-muted">ID: {{ $user->id }}</small>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span class="fw-medium">{{ $user->email }}</span>
-                                                </td>
-                                                <td>
-                                                    <form method="POST" action="{{ route('admin.users.update-role', $user) }}" class="d-inline">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <select name="role" class="form-select form-select-sm" 
-                                                                onchange="this.form.submit()"
-                                                                {{ $user->id === auth()->id() ? 'disabled' : '' }}>
-                                                            <option value="USER" {{ $user->role === 'USER' ? 'selected' : '' }}>Usuario</option>
-                                                            <option value="ADMIN" {{ $user->role === 'ADMIN' ? 'selected' : '' }}>Admin</option>
-                                                        </select>
-                                                    </form>
-                                                </td>
-                                                <td>
-                                                    @if($user->email_verified_at)
-                                                        <span class="badge bg-success">
-                                                            <i class="bi bi-check-circle me-1"></i>Verificado
-                                                        </span>
-                                                    @else
-                                                        <span class="badge bg-warning">
-                                                            <i class="bi bi-exclamation-circle me-1"></i>Pendiente
-                                                        </span>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        {{ $user->created_at->format('d/m/Y') }}<br>
-                                                        {{ $user->created_at->diffForHumans() }}
-                                                    </small>
-                                                </td>
-                                                <td>
-                                                    <div class="small">
-                                                        <div class="text-muted">
-                                                            <i class="bi bi-kanban me-1"></i>{{ $user->createdProjects->count() }} proyectos
-                                                        </div>
-                                                        <div class="text-muted">
-                                                            <i class="bi bi-check-square me-1"></i>{{ $user->assignedTasks->count() }} tareas
-                                                        </div>
-                                                        <div class="text-muted">
-                                                            <i class="bi bi-people me-1"></i>{{ $user->teams->count() }} equipos
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#userModal{{ $user->id }}">
-                                                            <i class="bi bi-eye"></i>
-                                                        </button>
-                                                        @if($user->id !== auth()->id())
-                                                        <button type="button" class="btn btn-outline-danger btn-sm" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#deleteModal{{ $user->id }}">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                        @endif
-                                                    </div>
-                                                </td>
-                                            </tr>
 
-                                            <!-- Modal de detalles del usuario -->
-                                            <div class="modal fade" id="userModal{{ $user->id }}" tabindex="-1">
-                                                <div class="modal-dialog modal-lg">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">
-                                                                <i class="bi bi-person-circle me-2"></i>
-                                                                Detalles de {{ $user->name }}
-                                                            </h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <div class="row">
-                                                                <div class="col-md-6">
-                                                                    <h6 class="fw-bold">Información Personal</h6>
-                                                                    <table class="table table-sm">
-                                                                        <tr>
-                                                                            <td><strong>Nombre:</strong></td>
-                                                                            <td>{{ $user->name }}</td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Email:</strong></td>
-                                                                            <td>{{ $user->email }}</td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Rol:</strong></td>
-                                                                            <td>
-                                                                                <span class="badge bg-{{ $user->role === 'ADMIN' ? 'danger' : 'secondary' }}">
-                                                                                    {{ $user->role }}
-                                                                                </span>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Registro:</strong></td>
-                                                                            <td>{{ $user->created_at->format('d/m/Y H:i') }}</td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Verificación:</strong></td>
-                                                                            <td>
-                                                                                @if($user->email_verified_at)
-                                                                                    <span class="text-success">
-                                                                                        <i class="bi bi-check-circle me-1"></i>
-                                                                                        {{ $user->email_verified_at->format('d/m/Y H:i') }}
-                                                                                    </span>
-                                                                                @else
-                                                                                    <span class="text-warning">
-                                                                                        <i class="bi bi-exclamation-circle me-1"></i>
-                                                                                        No verificado
-                                                                                    </span>
-                                                                                @endif
-                                                                            </td>
-                                                                        </tr>
-                                                                    </table>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <h6 class="fw-bold">Estadísticas</h6>
-                                                                    <div class="row g-2">
-                                                                        <div class="col-6">
-                                                                            <div class="card text-center">
-                                                                                <div class="card-body p-2">
-                                                                                    <h5 class="mb-0">{{ $user->createdProjects->count() }}</h5>
-                                                                                    <small>Proyectos</small>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="col-6">
-                                                                            <div class="card text-center">
-                                                                                <div class="card-body p-2">
-                                                                                    <h5 class="mb-0">{{ $user->assignedTasks->count() }}</h5>
-                                                                                    <small>Tareas</small>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="col-6">
-                                                                            <div class="card text-center">
-                                                                                <div class="card-body p-2">
-                                                                                    <h5 class="mb-0">{{ $user->teams->count() }}</h5>
-                                                                                    <small>Equipos</small>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="col-6">
-                                                                            <div class="card text-center">
-                                                                                <div class="card-body p-2">
-                                                                                    <h5 class="mb-0">{{ $user->comments->count() }}</h5>
-                                                                                    <small>Comentarios</small>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                        <!-- Rol y estado -->
+                        <div class="col-lg-2 col-md-3">
+                            <div class="mb-2">
+                                <form method="POST" action="{{ route('admin.users.update-role', $user) }}" class="d-inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <select name="role" class="form-select form-select-sm"
+                                        onchange="this.form.submit()"
+                                        {{ $user->id === auth()->id() ? 'disabled' : '' }}>
+                                        <option value="USER" {{ $user->role === 'USER' ? 'selected' : '' }}>Usuario</option>
+                                        <option value="ADMIN" {{ $user->role === 'ADMIN' ? 'selected' : '' }}>Admin</option>
+                                    </select>
+                                </form>
+                            </div>
+                            <div>
+                                @if($user->email_verified_at)
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i>Verificado
+                                </span>
+                                @else
+                                <span class="badge bg-warning">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Pendiente
+                                </span>
+                                @endif
+                            </div>
+                        </div>
 
-                                            <!-- Modal de confirmación de eliminación -->
-                                            @if($user->id !== auth()->id())
-                                            <div class="modal fade" id="deleteModal{{ $user->id }}" tabindex="-1">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header bg-danger text-white">
-                                                            <h5 class="modal-title">
-                                                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                                                Confirmar Eliminación
-                                                            </h5>
-                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <p>¿Estás seguro de que quieres eliminar al usuario <strong>{{ $user->name }}</strong>?</p>
-                                                            <div class="alert alert-warning">
-                                                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                                                <strong>Esta acción es irreversible.</strong> Se eliminarán todos sus proyectos, tareas y comentarios.
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                            <form method="POST" action="{{ route('admin.users.delete', $user) }}" class="d-inline">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button type="submit" class="btn btn-danger">
-                                                                    <i class="bi bi-trash me-1"></i>Eliminar Usuario
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @endif
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                        <!-- Fechas -->
+                        <div class="col-lg-2 col-md-3">
+                            <div class="small">
+                                <div class="mb-1">
+                                    <strong>Registro:</strong><br>
+                                    <span class="text-muted">{{ $user->created_at->format('d/m/Y') }}</span><br>
+                                    <span class="text-muted">{{ $user->created_at->diffForHumans() }}</span>
                                 </div>
+                                @if($user->email_verified_at)
+                                <div>
+                                    <strong>Verificado:</strong><br>
+                                    <span class="text-muted">{{ $user->email_verified_at->format('d/m/Y') }}</span>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
 
-                                <!-- Paginación -->
-                                <div class="card-footer bg-white">
-                                    {{ $users->appends(request()->query())->links() }}
+                        <!-- Estadísticas expandidas -->
+                        <div class="col-lg-3 col-md-6">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="card text-center bg-light">
+                                        <div class="card-body p-2">
+                                            <div class="fw-bold text-primary">{{ $user->createdProjects->count() }}</div>
+                                            <small class="text-muted">
+                                                <i class="bi bi-kanban me-1"></i>Proyectos
+                                            </small>
+                                        </div>
+                                    </div>
                                 </div>
-                            @else
-                                <div class="text-center py-5">
-                                    <i class="bi bi-people display-1 text-muted mb-3"></i>
-                                    <h5 class="text-muted">No se encontraron usuarios</h5>
-                                    <p class="text-muted">Ajusta los filtros de búsqueda</p>
+                                <div class="col-6">
+                                    <div class="card text-center bg-light">
+                                        <div class="card-body p-2">
+                                            <div class="fw-bold text-success">{{ $user->assignedTasks->count() }}</div>
+                                            <small class="text-muted">
+                                                <i class="bi bi-check-square me-1"></i>Tareas
+                                            </small>
+                                        </div>
+                                    </div>
                                 </div>
-                            @endif
+                                <div class="col-6">
+                                    <div class="card text-center bg-light">
+                                        <div class="card-body p-2">
+                                            <div class="fw-bold text-info">{{ $user->teams->count() }}</div>
+                                            <small class="text-muted">
+                                                <i class="bi bi-people me-1"></i>Equipos
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="card text-center bg-light">
+                                        <div class="card-body p-2">
+                                            <div class="fw-bold text-warning">{{ $user->comments->count() }}</div>
+                                            <small class="text-muted">
+                                                <i class="bi bi-chat me-1"></i>Comentarios
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="col-lg-2 col-md-2 text-end">
+                            <div class="btn-group-vertical d-grid gap-2" role="group">
+                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil me-1"></i>Editar
+                                </a>
+                                @if($user->id !== auth()->id())
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deleteModal{{ $user->id }}">
+                                    <i class="bi bi-trash me-1"></i>Eliminar
+                                </button>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Modal de confirmación de eliminación -->
+            @if($user->id !== auth()->id())
+            <div class="modal fade" id="deleteModal{{ $user->id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Confirmar Eliminación
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>¿Estás seguro de que quieres eliminar al usuario <strong>{{ $user->name }}</strong>?</p>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Esta acción es irreversible.</strong> Se eliminarán todos sus proyectos, tareas y comentarios.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <form method="POST" action="{{ route('admin.users.delete', $user) }}" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash me-1"></i>Eliminar Usuario
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+            @endforeach
+
+            <!-- Paginación -->
+            <div class="d-flex justify-content-center mt-4">
+                {{ $users->appends(request()->query())->links() }}
+            </div>
+            @else
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-people display-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">No se encontraron usuarios</h5>
+                    <p class="text-muted">Ajusta los filtros de búsqueda</p>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 </div>
