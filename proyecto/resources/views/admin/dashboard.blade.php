@@ -119,10 +119,10 @@
                                     </a>
                                 </div>
                                 <div class="col-lg-3 col-md-6">
-                                    <button class="btn btn-outline-info w-100 btn-lg">
+                                    <a href="{{ route('admin.statistics') }}" class="btn btn-outline-info w-100 btn-lg">
                                         <i class="bi bi-graph-up me-2"></i>
                                         Estadísticas
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -143,41 +143,41 @@
                         </div>
                         <div class="card-body">
                             @if(isset($recentUsers) && $recentUsers->count() > 0)
-                                <div class="list-group list-group-flush">
-                                    @foreach($recentUsers as $user)
-                                    <div class="list-group-item border-0 px-0">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="d-flex align-items-center">
-                                                <div class="feature-icon primary me-3" style="width: 40px; height: 40px; font-size: 1rem;">
-                                                    <i class="bi bi-person-fill"></i>
-                                                </div>
-                                                <div>
-                                                    <h6 class="mb-0">{{ $user->name }}</h6>
-                                                    <small class="text-muted">{{ $user->email }}</small>
-                                                </div>
+                            <div class="list-group list-group-flush">
+                                @foreach($recentUsers as $user)
+                                <div class="list-group-item border-0 px-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            <div class="feature-icon primary me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                                <i class="bi bi-person-fill"></i>
                                             </div>
-                                            <div class="text-end">
-                                                <span class="badge bg-{{ $user->role === 'ADMIN' ? 'danger' : 'secondary' }}">
-                                                    {{ $user->role }}
-                                                </span>
-                                                <small class="text-muted d-block">
-                                                    {{ $user->created_at->diffForHumans() }}
-                                                </small>
+                                            <div>
+                                                <h6 class="mb-0">{{ $user->name }}</h6>
+                                                <small class="text-muted">{{ $user->email }}</small>
                                             </div>
                                         </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-{{ $user->role === 'ADMIN' ? 'danger' : 'secondary' }}">
+                                                {{ $user->role }}
+                                            </span>
+                                            <small class="text-muted d-block">
+                                                {{ $user->created_at->diffForHumans() }}
+                                            </small>
+                                        </div>
                                     </div>
-                                    @endforeach
                                 </div>
-                                <div class="text-center mt-3">
-                                    <a href="{{ route('admin.users') }}" class="btn btn-outline-primary">
-                                        Ver todos los usuarios
-                                    </a>
-                                </div>
+                                @endforeach
+                            </div>
+                            <div class="text-center mt-3">
+                                <a href="{{ route('admin.users') }}" class="btn btn-outline-primary">
+                                    Ver todos los usuarios
+                                </a>
+                            </div>
                             @else
-                                <div class="text-center py-4">
-                                    <i class="bi bi-person-plus display-4 text-muted mb-3"></i>
-                                    <h6 class="text-muted">No hay usuarios recientes</h6>
-                                </div>
+                            <div class="text-center py-4">
+                                <i class="bi bi-person-plus display-4 text-muted mb-3"></i>
+                                <h6 class="text-muted">No hay usuarios recientes</h6>
+                            </div>
                             @endif
                         </div>
                     </div>
@@ -194,40 +194,40 @@
                         </div>
                         <div class="card-body">
                             @if(isset($recentProjects) && $recentProjects->count() > 0)
-                                <div class="list-group list-group-flush">
-                                    @foreach($recentProjects as $project)
-                                    <div class="list-group-item border-0 px-0">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <h6 class="mb-1">{{ $project->title }}</h6>
-                                                <p class="text-muted small mb-2">{{ Str::limit($project->description, 80) }}</p>
-                                                <div class="d-flex gap-2 align-items-center">
-                                                    <span class="badge bg-{{ $project->status === 'ACTIVE' ? 'success' : ($project->status === 'PENDING' ? 'warning' : 'secondary') }}">
-                                                        {{ $project->status }}
-                                                    </span>
-                                                    <small class="text-muted">
-                                                        <i class="bi bi-person me-1"></i>
-                                                        {{ $project->creator->name ?? 'Usuario eliminado' }}
-                                                    </small>
-                                                </div>
+                            <div class="list-group list-group-flush">
+                                @foreach($recentProjects as $project)
+                                <div class="list-group-item border-0 px-0">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ $project->title }}</h6>
+                                            <p class="text-muted small mb-2">{{ Str::limit($project->description, 80) }}</p>
+                                            <div class="d-flex gap-2 align-items-center">
+                                                <span class="badge bg-{{ $project->status === 'ACTIVE' ? 'success' : ($project->status === 'PENDING' ? 'warning' : 'secondary') }}">
+                                                    {{ $project->status }}
+                                                </span>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-person me-1"></i>
+                                                    {{ $project->creator->name ?? 'Usuario eliminado' }}
+                                                </small>
                                             </div>
-                                            <small class="text-muted">
-                                                {{ $project->created_at->diffForHumans() }}
-                                            </small>
                                         </div>
+                                        <small class="text-muted">
+                                            {{ $project->created_at->diffForHumans() }}
+                                        </small>
                                     </div>
-                                    @endforeach
                                 </div>
-                                <div class="text-center mt-3">
-                                    <a href="{{ route('admin.projects') }}" class="btn btn-outline-success">
-                                        Ver todos los proyectos
-                                    </a>
-                                </div>
+                                @endforeach
+                            </div>
+                            <div class="text-center mt-3">
+                                <a href="{{ route('admin.projects') }}" class="btn btn-outline-success">
+                                    Ver todos los proyectos
+                                </a>
+                            </div>
                             @else
-                                <div class="text-center py-4">
-                                    <i class="bi bi-folder-plus display-4 text-muted mb-3"></i>
-                                    <h6 class="text-muted">No hay proyectos recientes</h6>
-                                </div>
+                            <div class="text-center py-4">
+                                <i class="bi bi-folder-plus display-4 text-muted mb-3"></i>
+                                <h6 class="text-muted">No hay proyectos recientes</h6>
+                            </div>
                             @endif
                         </div>
                     </div>
@@ -246,21 +246,21 @@
                         </div>
                         <div class="card-body">
                             @if(isset($tasksByStatus) && $tasksByStatus->count() > 0)
-                                @foreach($tasksByStatus as $status => $count)
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge bg-{{ $status === 'DONE' ? 'success' : ($status === 'ACTIVE' ? 'primary' : 'secondary') }}">
-                                        {{ $status }}
-                                    </span>
-                                    <strong>{{ $count }}</strong>
-                                </div>
-                                @endforeach
+                            @foreach($tasksByStatus as $status => $count)
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-{{ $status === 'DONE' ? 'success' : ($status === 'ACTIVE' ? 'primary' : 'secondary') }}">
+                                    {{ $status }}
+                                </span>
+                                <strong>{{ $count }}</strong>
+                            </div>
+                            @endforeach
                             @else
-                                <p class="text-muted text-center">No hay datos disponibles</p>
+                            <p class="text-muted text-center">No hay datos disponibles</p>
                             @endif
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header bg-white py-3">
@@ -271,16 +271,16 @@
                         </div>
                         <div class="card-body">
                             @if(isset($projectsByStatus) && $projectsByStatus->count() > 0)
-                                @foreach($projectsByStatus as $status => $count)
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge bg-{{ $status === 'ACTIVE' ? 'success' : ($status === 'PENDING' ? 'warning' : 'secondary') }}">
-                                        {{ $status }}
-                                    </span>
-                                    <strong>{{ $count }}</strong>
-                                </div>
-                                @endforeach
+                            @foreach($projectsByStatus as $status => $count)
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-{{ $status === 'ACTIVE' ? 'success' : ($status === 'PENDING' ? 'warning' : 'secondary') }}">
+                                    {{ $status }}
+                                </span>
+                                <strong>{{ $count }}</strong>
+                            </div>
+                            @endforeach
                             @else
-                                <p class="text-muted text-center">No hay datos disponibles</p>
+                            <p class="text-muted text-center">No hay datos disponibles</p>
                             @endif
                         </div>
                     </div>

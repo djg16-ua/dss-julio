@@ -362,107 +362,108 @@ class AdminController extends Controller
         
         return back()->with('success', "Usuario removido del equipo {$team->name}.");
     }
-}
 
-/**
- * Vista de estadísticas avanzadas
- */
-public function statistics()
-{
-    // Estadísticas básicas
-    $stats = [
-        'total_users' => User::count(),
-        'total_projects' => Project::count(),
-        'total_teams' => Team::count(),
-        'total_tasks' => Task::count(),
-        'total_modules' => Module::count(),
-        'total_comments' => Comment::count(),
-        'active_projects' => Project::where('status', 'ACTIVE')->count(),
-        'completed_tasks' => Task::where('status', 'DONE')->count(),
-        'admin_users' => User::where('role', 'ADMIN')->count(),
-        'verified_users' => User::whereNotNull('email_verified_at')->count(),
-        
-        // Estadísticas temporales
-        'users_this_month' => User::where('created_at', '>=', now()->startOfMonth())->count(),
-        'comments_this_week' => Comment::where('created_at', '>=', now()->startOfWeek())->count(),
-        'today_activity' => Task::whereDate('created_at', today())->count() + Task::whereDate('updated_at', today())->where('status', 'DONE')->count(),
-        'week_activity' => Project::where('created_at', '>=', now()->startOfWeek())->count() + Team::where('created_at', '>=', now()->startOfWeek())->count(),
-        'month_activity' => User::where('created_at', '>=', now()->startOfMonth())->count(),
-        'year_activity' => Project::where('created_at', '>=', now()->startOfYear())->count(),
-    ];
+    /**
+     * Vista de estadísticas avanzadas
+     */
+    public function statistics()
+    {
+        // Estadísticas básicas
+        $stats = [
+            'total_users' => User::count(),
+            'total_projects' => Project::count(),
+            'total_teams' => Team::count(),
+            'total_tasks' => Task::count(),
+            'total_modules' => Module::count(),
+            'total_comments' => Comment::count(),
+            'active_projects' => Project::where('status', 'ACTIVE')->count(),
+            'completed_tasks' => Task::where('status', 'DONE')->count(),
+            'admin_users' => User::where('role', 'ADMIN')->count(),
+            'verified_users' => User::whereNotNull('email_verified_at')->count(),
 
-    // Métricas calculadas
-    $stats['avg_team_size'] = $stats['total_teams'] > 0 ? 
-        round(DB::table('team_user')->count() / $stats['total_teams'], 1) : 0;
-    
-    $stats['avg_modules_per_project'] = $stats['total_projects'] > 0 ? 
-        round($stats['total_modules'] / $stats['total_projects'], 1) : 0;
-    
-    $stats['completion_rate'] = $stats['total_tasks'] > 0 ? 
-        round(($stats['completed_tasks'] / $stats['total_tasks']) * 100, 1) : 0;
-    
-    $stats['avg_tasks_per_user'] = $stats['total_users'] > 0 ? 
-        round($stats['total_tasks'] / $stats['total_users'], 1) : 0;
-    
-    $stats['projects_per_team'] = $stats['total_teams'] > 0 ? 
-        round(DB::table('project_team')->count() / $stats['total_teams'], 1) : 0;
+            // Estadísticas temporales
+            'users_this_month' => User::where('created_at', '>=', now()->startOfMonth())->count(),
+            'comments_this_week' => Comment::where('created_at', '>=', now()->startOfWeek())->count(),
+            'today_activity' => Task::whereDate('created_at', today())->count() + Task::whereDate('updated_at', today())->where('status', 'DONE')->count(),
+            'week_activity' => Project::where('created_at', '>=', now()->startOfWeek())->count() + Team::where('created_at', '>=', now()->startOfWeek())->count(),
+            'month_activity' => User::where('created_at', '>=', now()->startOfMonth())->count(),
+            'year_activity' => Project::where('created_at', '>=', now()->startOfYear())->count(),
+        ];
 
-    // Duración promedio de proyectos (solo completados)
-    $completedProjects = Project::where('status', 'DONE')
-        ->whereNotNull('start_date')
-        ->whereNotNull('end_date')
-        ->get();
-    
-    $stats['avg_project_duration'] = $completedProjects->count() > 0 ? 
-        round($completedProjects->avg(function ($project) {
-            return $project->start_date->diffInDays($project->end_date);
-        }), 0) : 0;
+        // Métricas calculadas
+        $stats['avg_team_size'] = $stats['total_teams'] > 0 ?
+            round(DB::table('team_user')->count() / $stats['total_teams'], 1) : 0;
 
-    // Top usuarios más activos
-    $topUsers = User::withCount(['createdProjects as projects_count', 'assignedTasks as tasks_count'])
-        ->orderByDesc('projects_count')
-        ->orderByDesc('tasks_count')
-        ->limit(5)
-        ->get();
+        $stats['avg_modules_per_project'] = $stats['total_projects'] > 0 ?
+            round($stats['total_modules'] / $stats['total_projects'], 1) : 0;
 
-    // Proyectos más grandes (por número de tareas)
-    $biggestProjects = Project::withCount(['teams', 'modules'])
-        ->with(['creator'])
-        ->withCount(['modules as tasks_count' => function ($query) {
-            $query->join('tasks', 'modules.id', '=', 'tasks.module_id');
-        }])
-        ->orderByDesc('tasks_count')
-        ->orderByDesc('modules_count')
-        ->limit(10)
-        ->get();
+        $stats['completion_rate'] = $stats['total_tasks'] > 0 ?
+            round(($stats['completed_tasks'] / $stats['total_tasks']) * 100, 1) : 0;
 
-    // Datos para gráfico de crecimiento de usuarios (últimos 12 meses)
-    $userGrowthData = [];
-    $userGrowthLabels = [];
-    
-    for ($i = 11; $i >= 0; $i--) {
-        $month = now()->subMonths($i);
-        $userGrowthLabels[] = $month->format('M Y');
-        $userGrowthData[] = User::whereYear('created_at', $month->year)
-            ->whereMonth('created_at', $month->month)
-            ->count();
+        $stats['avg_tasks_per_user'] = $stats['total_users'] > 0 ?
+            round($stats['total_tasks'] / $stats['total_users'], 1) : 0;
+
+        $stats['projects_per_team'] = $stats['total_teams'] > 0 ?
+            round(DB::table('project_team')->count() / $stats['total_teams'], 1) : 0;
+
+        // Duración promedio de proyectos (solo completados)
+        $completedProjects = Project::where('status', 'DONE')
+            ->whereNotNull('start_date')
+            ->whereNotNull('end_date')
+            ->get();
+
+        $stats['avg_project_duration'] = $completedProjects->count() > 0 ?
+            round($completedProjects->avg(function ($project) {
+                return $project->start_date->diffInDays($project->end_date);
+            }), 0) : 0;
+
+        // Top usuarios más activos
+        $topUsers = User::withCount(['createdProjects as projects_count', 'assignedTasks as tasks_count'])
+            ->orderByDesc('projects_count')
+            ->orderByDesc('tasks_count')
+            ->limit(5)
+            ->get();
+
+        // Proyectos más grandes (por número de tareas)
+        $biggestProjects = Project::withCount(['teams', 'modules'])
+            ->with(['creator'])
+            ->withCount(['modules as tasks_count' => function ($query) {
+                $query->join('tasks', 'modules.id', '=', 'tasks.module_id');
+            }])
+            ->orderByDesc('tasks_count')
+            ->orderByDesc('modules_count')
+            ->limit(10)
+            ->get();
+
+        // Datos para gráfico de crecimiento de usuarios (últimos 12 meses)
+        $userGrowthData = [];
+        $userGrowthLabels = [];
+
+        for ($i = 11; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $userGrowthLabels[] = $month->format('M Y');
+            $userGrowthData[] = User::whereYear('created_at', $month->year)
+                ->whereMonth('created_at', $month->month)
+                ->count();
+        }
+
+        // Datos para gráfico de estados de proyectos
+        $projectStatusData = Project::select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->get();
+
+        $projectStatusLabels = $projectStatusData->pluck('status')->toArray();
+        $projectStatusData = $projectStatusData->pluck('count')->toArray();
+
+        return view('admin.statistics', compact(
+            'stats',
+            'topUsers',
+            'biggestProjects',
+            'userGrowthData',
+            'userGrowthLabels',
+            'projectStatusLabels',
+            'projectStatusData'
+        ));
     }
-
-    // Datos para gráfico de estados de proyectos
-    $projectStatusData = Project::select('status', DB::raw('count(*) as count'))
-        ->groupBy('status')
-        ->get();
-    
-    $projectStatusLabels = $projectStatusData->pluck('status')->toArray();
-    $projectStatusData = $projectStatusData->pluck('count')->toArray();
-
-    return view('admin.statistics', compact(
-        'stats',
-        'topUsers',
-        'biggestProjects',
-        'userGrowthData',
-        'userGrowthLabels',
-        'projectStatusLabels',
-        'projectStatusData'
-    ));
 }
+
