@@ -245,6 +245,17 @@ class AdminController extends Controller
     }
 
     /**
+     * Eliminar equipo
+     */
+    public function deleteTeam(Team $team)
+    {
+        $teamName = $team->name;
+        $team->delete();
+
+        return back()->with('success', "Equipo '{$teamName}' eliminado correctamente.");
+    }
+
+    /**
      * Mostrar formulario de edición de usuario
      */
     public function editUser(User $user)
