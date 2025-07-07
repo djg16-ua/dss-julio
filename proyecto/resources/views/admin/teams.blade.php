@@ -199,7 +199,7 @@
                         <!-- Acciones -->
                         <div class="col-lg-1 col-md-2 text-end">
                             <div class="btn-group-vertical d-grid gap-2" role="group">
-                                <a href="#" class="btn btn-outline-warning btn-sm">
+                                <a href="{{ route('admin.teams.edit', $team) }}" class="btn btn-outline-warning btn-sm">
                                     <i class="bi bi-pencil me-1"></i>Editar
                                 </a>
                                 <button type="button" class="btn btn-outline-danger btn-sm"

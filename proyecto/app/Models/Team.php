@@ -50,4 +50,14 @@ class Team extends Model
     {
         return $this->users()->where('is_active', true)->count();
     }
+
+    /**
+     * Obtener total de módulos a través de proyectos
+     */
+    public function getModulesCountAttribute(): int
+    {
+        return $this->projects->sum(function($project) {
+            return $project->modules->count();
+        });
+    }
 }

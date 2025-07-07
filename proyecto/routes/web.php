@@ -181,5 +181,24 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // Estadísticas del sistema
     Route::get('/statistics', [App\Http\Controllers\AdminController::class, 'statistics'])->name('statistics');
+
+    // ============================================
+    // GESTIÓN DE EQUIPOS (agregar después de la línea existente de teams)
+    // ============================================
+
+    // Mostrar formulario de edición del equipo
+    Route::get('/teams/{team}/edit', [App\Http\Controllers\AdminController::class, 'editTeam'])->name('teams.edit');
+
+    // Actualizar información básica del equipo
+    Route::patch('/teams/{team}', [App\Http\Controllers\AdminController::class, 'updateTeam'])->name('teams.update');
+
+    // Gestión de miembros del equipo
+    Route::post('/teams/{team}/members', [App\Http\Controllers\AdminController::class, 'addTeamMember'])->name('teams.add-member');
+    Route::patch('/teams/{team}/members/{user}/role', [App\Http\Controllers\AdminController::class, 'updateTeamMemberRole'])->name('teams.update-member-role');
+    Route::delete('/teams/{team}/members/{user}', [App\Http\Controllers\AdminController::class, 'removeTeamMember'])->name('teams.remove-member');
+
+    // Gestión de proyectos del equipo
+    Route::post('/teams/{team}/projects', [App\Http\Controllers\AdminController::class, 'assignTeamProject'])->name('teams.assign-project');
+    Route::delete('/teams/{team}/projects/{project}', [App\Http\Controllers\AdminController::class, 'unassignTeamProject'])->name('teams.unassign-project');
 });
 

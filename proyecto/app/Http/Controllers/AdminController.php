@@ -155,21 +155,53 @@ class AdminController extends Controller
     }
 
     /**
-     * Gestión de equipos
+     * Gestión de equipos con filtros mejorados
      */
-    public function teams()
+    public function teams(Request $request)
     {
-        $teams = Team::withCount(['users', 'projects', 'modules'])
-            ->with(['users' => function ($query) {
-                $query->where('is_active', true);
-            }])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $query = Team::query();
 
+        // Aplicar filtros
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('description', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        if ($request->filled('min_members')) {
+            $query->whereHas('users', function($q) {
+                $q->where('is_active', true);
+            }, '>=', $request->min_members);
+        }
+
+        if ($request->filled('has_projects')) {
+            if ($request->has_projects === '1') {
+                $query->whereHas('projects');
+            } elseif ($request->has_projects === '0') {
+                $query->whereDoesntHave('projects');
+            }
+        }
+
+        // Cargar relaciones necesarias con conteos
+        $teams = $query->with([
+            'users' => function($query) {
+                $query->withPivot(['role', 'is_active', 'joined_at', 'left_at']);
+            },
+            'projects.modules'
+        ])->withCount([
+            'users as users_count' => function($query) {
+                $query->where('is_active', true);
+            },
+            'projects as projects_count',
+            'modules as modules_count'
+        ])->orderBy('name')->paginate(10);
+
+        // Estadísticas generales
         $stats = [
             'total_teams' => Team::count(),
-            'active_members' => DB::table('team_user')->where('is_active', true)->count(),
-            'total_assignments' => DB::table('project_team')->count(),
+            'active_members' => DB::table('team_user')->where('is_active', true)->distinct('user_id')->count(),
+            'total_assignments' => DB::table('project_team')->count() + DB::table('module_team')->count()
         ];
 
         return view('admin.teams', compact('teams', 'stats'));
@@ -464,6 +496,180 @@ class AdminController extends Controller
             'projectStatusLabels',
             'projectStatusData'
         ));
+    }
+
+    /**
+     * Mostrar formulario de edición del equipo
+     */
+    public function editTeam(Team $team)
+    {
+        // Cargar relaciones necesarias
+        $team->load([
+            'users' => function($query) {
+                $query->withPivot(['role', 'is_active', 'joined_at', 'left_at']);
+            },
+            'projects.modules'
+        ]);
+
+        // Obtener usuarios disponibles para agregar al equipo (que no están ya en el equipo)
+        $availableUsers = User::whereNotIn('id', $team->users->pluck('id'))
+            ->orderBy('name')
+            ->get();
+
+        // Obtener proyectos disponibles para asignar al equipo
+        $availableProjects = Project::whereDoesntHave('teams', function($query) use ($team) {
+            $query->where('team_id', $team->id);
+        })->orderBy('title')->get();
+
+        // Roles disponibles para miembros del equipo
+        $teamRoles = [
+            'LEAD' => 'Líder de Equipo',
+            'SENIOR_DEV' => 'Desarrollador Senior',
+            'DEVELOPER' => 'Desarrollador',
+            'JUNIOR_DEV' => 'Desarrollador Junior',
+            'DESIGNER' => 'Diseñador',
+            'TESTER' => 'Tester',
+            'ANALYST' => 'Analista',
+            'OBSERVER' => 'Observador'
+        ];
+
+        return view('admin.teams.edit', compact(
+            'team',
+            'availableUsers', 
+            'availableProjects',
+            'teamRoles'
+        ));
+    }
+
+    /**
+     * Actualizar información básica del equipo
+     */
+    public function updateTeam(Request $request, Team $team)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:teams,name,' . $team->id,
+            'description' => 'nullable|string|max:1000',
+        ]);
+
+        $team->update([
+            'name' => $request->name,
+            'description' => $request->description,
+        ]);
+
+        return redirect()->route('admin.teams.edit', $team)
+            ->with('success', 'Información del equipo actualizada correctamente.');
+    }
+
+    /**
+     * Agregar miembro al equipo
+     */
+    public function addTeamMember(Request $request, Team $team)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'role' => 'required|in:LEAD,SENIOR_DEV,DEVELOPER,JUNIOR_DEV,DESIGNER,TESTER,ANALYST,OBSERVER',
+        ]);
+
+        // Verificar que el usuario no esté ya en el equipo
+        if ($team->users()->where('user_id', $request->user_id)->exists()) {
+            return redirect()->route('admin.teams.edit', $team)
+                ->with('error', 'El usuario ya es miembro del equipo.');
+        }
+
+        $team->users()->attach($request->user_id, [
+            'role' => $request->role,
+            'is_active' => true,
+            'joined_at' => now(),
+        ]);
+
+        $user = User::find($request->user_id);
+        return redirect()->route('admin.teams.edit', $team)
+            ->with('success', "Usuario {$user->name} agregado al equipo correctamente.");
+    }
+
+    /**
+     * Actualizar rol de miembro del equipo
+     */
+    public function updateTeamMemberRole(Request $request, Team $team, User $user)
+    {
+        $request->validate([
+            'role' => 'required|in:LEAD,SENIOR_DEV,DEVELOPER,JUNIOR_DEV,DESIGNER,TESTER,ANALYST,OBSERVER',
+        ]);
+
+        // Verificar que el usuario es miembro del equipo
+        if (!$team->users()->where('user_id', $user->id)->exists()) {
+            return redirect()->route('admin.teams.edit', $team)
+                ->with('error', 'El usuario no es miembro del equipo.');
+        }
+
+        $team->users()->updateExistingPivot($user->id, [
+            'role' => $request->role,
+        ]);
+
+        return redirect()->route('admin.teams.edit', $team)
+            ->with('success', "Rol de {$user->name} actualizado correctamente.");
+    }
+
+    /**
+     * Remover miembro del equipo
+     */
+    public function removeTeamMember(Team $team, User $user)
+    {
+        // Verificar que el usuario es miembro del equipo
+        if (!$team->users()->where('user_id', $user->id)->exists()) {
+            return redirect()->route('admin.teams.edit', $team)
+                ->with('error', 'El usuario no es miembro del equipo.');
+        }
+
+        // Marcar como inactivo en lugar de eliminar completamente
+        $team->users()->updateExistingPivot($user->id, [
+            'is_active' => false,
+            'left_at' => now(),
+        ]);
+
+        return redirect()->route('admin.teams.edit', $team)
+            ->with('success', "Usuario {$user->name} removido del equipo correctamente.");
+    }
+
+    /**
+     * Asignar proyecto al equipo
+     */
+    public function assignTeamProject(Request $request, Team $team)
+    {
+        $request->validate([
+            'project_id' => 'required|exists:projects,id',
+        ]);
+
+        // Verificar que el proyecto no esté ya asignado al equipo
+        if ($team->projects()->where('project_id', $request->project_id)->exists()) {
+            return redirect()->route('admin.teams.edit', $team)
+                ->with('error', 'El proyecto ya está asignado al equipo.');
+        }
+
+        $team->projects()->attach($request->project_id, [
+            'assigned_at' => now(),
+        ]);
+
+        $project = Project::find($request->project_id);
+        return redirect()->route('admin.teams.edit', $team)
+            ->with('success', "Proyecto '{$project->title}' asignado al equipo correctamente.");
+    }
+
+    /**
+     * Desasignar proyecto del equipo
+     */
+    public function unassignTeamProject(Team $team, Project $project)
+    {
+        // Verificar que el proyecto está asignado al equipo
+        if (!$team->projects()->where('project_id', $project->id)->exists()) {
+            return redirect()->route('admin.teams.edit', $team)
+                ->with('error', 'El proyecto no está asignado al equipo.');
+        }
+
+        $team->projects()->detach($project->id);
+
+        return redirect()->route('admin.teams.edit', $team)
+            ->with('success', "Proyecto '{$project->title}' desasignado del equipo correctamente.");
     }
 }
 
