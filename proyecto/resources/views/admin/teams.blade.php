@@ -7,19 +7,24 @@
     <div class="row">
         <div class="col-12">
             <!-- Header -->
-            <div class="row mb-4">
-                <div class="col-lg-8">
-                    <h1 class="display-5 fw-bold text-warning">
+            <div class="row mb-4 align-items-center">
+                <div class="col-lg-6 col-md-8">
+                    <h1 class="display-5 fw-bold text-warning mb-2">
                         <i class="bi bi-diagram-3 me-3"></i>Gestión de Equipos
                     </h1>
-                    <p class="lead text-muted">
+                    <p class="lead text-muted mb-0">
                         Administra todos los equipos del sistema TaskFlow
                     </p>
                 </div>
-                <div class="col-lg-4 text-lg-end">
-                    <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-2"></i>Volver al Panel
-                    </a>
+                <div class="col-lg-6 col-md-4">
+                    <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-end">
+                        <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Volver al Panel
+                        </a>
+                        <a href="{{ route('admin.teams.create') }}" class="btn btn-warning">
+                            <i class="bi bi-plus-circle me-2"></i>Crear Equipo
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -253,25 +258,53 @@
                     </div>
                     @endif
 
-                    <!-- Sección de proyectos si existen -->
-                    @if(isset($team->projects) && $team->projects->count() > 0)
+                    <!-- Sección de módulos si existen -->
+                    @if(isset($team->modules) && $team->modules->count() > 0)
                     <div class="row mt-3 pt-3 border-top">
                         <div class="col-12">
                             <h6 class="fw-bold text-warning mb-2">
-                                <i class="bi bi-kanban me-2"></i>Proyectos Asignados ({{ $team->projects->count() }})
+                                <i class="bi bi-grid me-2"></i>Módulos Asignados ({{ $team->modules->count() }})
                             </h6>
                             <div class="d-flex flex-wrap gap-2">
-                                @foreach($team->projects->take(6) as $project)
+                                @foreach($team->modules->take(8) as $module)
                                 <span class="badge bg-light text-dark border">
-                                    <i class="bi bi-kanban me-1"></i>{{ $project->title }}
+                                    <i class="bi bi-{{ $module->category === 'DEVELOPMENT' ? 'code' : ($module->category === 'DESIGN' ? 'palette' : 'gear') }} me-1"></i>
+                                    {{ $module->name }}
+                                    @if($module->is_core)
+                                    <span class="badge bg-danger ms-1" style="font-size: 0.7em;">CORE</span>
+                                    @endif
                                 </span>
                                 @endforeach
-                                @if($team->projects->count() > 6)
+                                @if($team->modules->count() > 8)
                                 <span class="badge bg-secondary">
-                                    +{{ $team->projects->count() - 6 }} más
+                                    +{{ $team->modules->count() - 8 }} más
                                 </span>
                                 @endif
                             </div>
+
+                            <!-- Información adicional de módulos -->
+                            @if($team->modules->count() > 0)
+                            <div class="row g-2 mt-2">
+                                <div class="col-auto">
+                                    <small class="text-muted">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ $team->modules->where('priority', 'URGENT')->count() }} urgentes
+                                    </small>
+                                </div>
+                                <div class="col-auto">
+                                    <small class="text-muted">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        {{ $team->modules->where('status', 'DONE')->count() }} completados
+                                    </small>
+                                </div>
+                                <div class="col-auto">
+                                    <small class="text-muted">
+                                        <i class="bi bi-play-circle me-1"></i>
+                                        {{ $team->modules->where('status', 'ACTIVE')->count() }} activos
+                                    </small>
+                                </div>
+                            </div>
+                            @endif
                         </div>
                     </div>
                     @endif
@@ -333,51 +366,12 @@
                     <i class="bi bi-diagram-3 display-1 text-muted mb-3"></i>
                     <h5 class="text-muted">No se encontraron equipos</h5>
                     <p class="text-muted">Ajusta los filtros de búsqueda o crea nuevos equipos</p>
+                    <a href="{{ route('admin.teams.create') }}" class="btn btn-warning mt-3">
+                        <i class="bi bi-plus-circle me-2"></i>Crear tu Primer Equipo
+                    </a>
                 </div>
             </div>
             @endif
-
-            <!-- Acciones rápidas -->
-            <div class="row mt-5">
-                <div class="col-12">
-                    <div class="card border-warning">
-                        <div class="card-header bg-warning text-dark py-3">
-                            <h5 class="card-title mb-0">
-                                <i class="bi bi-lightning-fill me-2"></i>
-                                Acciones Rápidas
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <a href="#" class="btn btn-outline-warning w-100">
-                                        <i class="bi bi-plus-circle me-2"></i>
-                                        Crear Nuevo Equipo
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <button class="btn btn-outline-info w-100">
-                                        <i class="bi bi-person-plus me-2"></i>
-                                        Asignar Miembros
-                                    </button>
-                                </div>
-                                <div class="col-md-3">
-                                    <button class="btn btn-outline-success w-100">
-                                        <i class="bi bi-kanban me-2"></i>
-                                        Asignar Proyectos
-                                    </button>
-                                </div>
-                                <div class="col-md-3">
-                                    <button class="btn btn-outline-secondary w-100">
-                                        <i class="bi bi-graph-up me-2"></i>
-                                        Ver Estadísticas
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>

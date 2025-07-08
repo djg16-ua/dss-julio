@@ -219,5 +219,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::post('/projects/{project}/modules', [App\Http\Controllers\AdminController::class, 'createProjectModule'])->name('projects.create-module');
     Route::patch('/projects/{project}/modules/{module}', [App\Http\Controllers\AdminController::class, 'updateProjectModule'])->name('projects.update-module');
     Route::delete('/projects/{project}/modules/{module}', [App\Http\Controllers\AdminController::class, 'deleteProjectModule'])->name('projects.delete-module');
+
+    // Crear equipo (agregar después de las rutas de teams existentes)
+    Route::get('/teams/create', [App\Http\Controllers\AdminController::class, 'createTeam'])->name('teams.create');
+    Route::post('/teams', [App\Http\Controllers\AdminController::class, 'storeTeam'])->name('teams.store');
+
+    // Gestión de módulos del equipo (agregar después de las rutas de teams existentes)
+    Route::post('/teams/{team}/modules', [App\Http\Controllers\AdminController::class, 'assignTeamModule'])->name('teams.assign-module');
+    Route::delete('/teams/{team}/modules/{module}', [App\Http\Controllers\AdminController::class, 'unassignTeamModule'])->name('teams.unassign-module');
 });
 

@@ -297,6 +297,47 @@ class AdminController extends Controller
     }
 
     /**
+     * Asignar módulo al equipo
+     */
+    public function assignTeamModule(Request $request, Team $team)
+    {
+        $request->validate([
+            'module_id' => 'required|exists:modules,id',
+        ]);
+
+        // Verificar que el módulo no esté ya asignado al equipo
+        if ($team->modules()->where('module_id', $request->module_id)->exists()) {
+            return redirect()->route('admin.teams.edit', $team)
+                ->with('error', 'El módulo ya está asignado al equipo.');
+        }
+
+        $team->modules()->attach($request->module_id, [
+            'assigned_at' => now(),
+        ]);
+
+        $module = Module::find($request->module_id);
+        return redirect()->route('admin.teams.edit', $team)
+            ->with('success', "Módulo '{$module->name}' asignado al equipo correctamente.");
+    }
+
+    /**
+     * Desasignar módulo del equipo
+     */
+    public function unassignTeamModule(Team $team, Module $module)
+    {
+        // Verificar que el módulo está asignado al equipo
+        if (!$team->modules()->where('module_id', $module->id)->exists()) {
+            return redirect()->route('admin.teams.edit', $team)
+                ->with('error', 'El módulo no está asignado al equipo.');
+        }
+
+        $team->modules()->detach($module->id);
+
+        return redirect()->route('admin.teams.edit', $team)
+            ->with('success', "Módulo '{$module->name}' desasignado del equipo correctamente.");
+    }
+
+    /**
      * Actualizar información básica del usuario
      */
     public function updateUser(Request $request, User $user)
@@ -505,10 +546,12 @@ class AdminController extends Controller
     {
         // Cargar relaciones necesarias
         $team->load([
-            'users' => function($query) {
+            'users' => function ($query) {
                 $query->withPivot(['role', 'is_active', 'joined_at', 'left_at']);
             },
-            'projects.modules'
+            'modules' => function ($query) {
+                $query->with(['project', 'dependency', 'tasks']);
+            }
         ]);
 
         // Obtener usuarios disponibles para agregar al equipo (que no están ya en el equipo)
@@ -516,10 +559,13 @@ class AdminController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Obtener proyectos disponibles para asignar al equipo
-        $availableProjects = Project::whereDoesntHave('teams', function($query) use ($team) {
-            $query->where('team_id', $team->id);
-        })->orderBy('title')->get();
+        // Obtener módulos disponibles para asignar al equipo
+        $availableModules = Module::with('project')
+            ->whereDoesntHave('teams', function ($query) use ($team) {
+                $query->where('team_id', $team->id);
+            })
+            ->orderBy('name')
+            ->get();
 
         // Roles disponibles para miembros del equipo
         $teamRoles = [
@@ -535,10 +581,94 @@ class AdminController extends Controller
 
         return view('admin.teams.edit', compact(
             'team',
-            'availableUsers', 
-            'availableProjects',
+            'availableUsers',
+            'availableModules',
             'teamRoles'
         ));
+    }
+
+    /**
+     * Mostrar formulario para crear equipo
+     */
+    public function createTeam()
+    {
+        // Obtener usuarios disponibles
+        $availableUsers = User::orderBy('name')->get();
+
+        // Roles disponibles para miembros del equipo
+        $teamRoles = [
+            'LEAD' => 'Líder de Equipo',
+            'SENIOR_DEV' => 'Desarrollador Senior',
+            'DEVELOPER' => 'Desarrollador',
+            'JUNIOR_DEV' => 'Desarrollador Junior',
+            'DESIGNER' => 'Diseñador',
+            'TESTER' => 'Tester',
+            'ANALYST' => 'Analista',
+            'OBSERVER' => 'Observador'
+        ];
+
+        // Estadísticas del sistema
+        $stats = [
+            'total_teams' => Team::count(),
+            'total_users' => User::count(),
+            'active_members' => DB::table('team_user')->where('is_active', true)->count(),
+            'total_projects' => Project::count(),
+        ];
+
+        return view('admin.teams.create', compact(
+            'availableUsers',
+            'teamRoles',
+            'stats'
+        ));
+    }
+
+    /**
+     * Crear nuevo equipo
+     */
+    public function storeTeam(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:teams,name',
+            'description' => 'nullable|string|max:1000',
+            'lead_user' => 'nullable|exists:users,id',
+            'members' => 'nullable|array',
+            'members.*.user_id' => 'nullable|exists:users,id',
+            'members.*.role' => 'nullable|in:LEAD,SENIOR_DEV,DEVELOPER,JUNIOR_DEV,DESIGNER,TESTER,ANALYST,OBSERVER',
+        ]);
+
+        // Crear el equipo
+        $team = Team::create([
+            'name' => $request->name,
+            'description' => $request->description,
+        ]);
+
+        // Agregar el líder si fue especificado
+        if ($request->lead_user) {
+            $team->users()->attach($request->lead_user, [
+                'role' => 'LEAD',
+                'is_active' => true,
+                'joined_at' => now(),
+            ]);
+        }
+
+        // Agregar miembros iniciales
+        if ($request->members) {
+            foreach ($request->members as $member) {
+                if (!empty($member['user_id']) && !empty($member['role'])) {
+                    // Evitar duplicados (si el líder ya fue agregado)
+                    if ($member['user_id'] != $request->lead_user) {
+                        $team->users()->attach($member['user_id'], [
+                            'role' => $member['role'],
+                            'is_active' => true,
+                            'joined_at' => now(),
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return redirect()->route('admin.teams.edit', $team)
+            ->with('success', "Equipo '{$team->name}' creado correctamente. Ahora puedes asignar módulos y gestionar más miembros.");
     }
 
     /**
