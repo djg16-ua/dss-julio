@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\CustomPasswordResetController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\DashboardController;
 
@@ -126,6 +127,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
+});
+
+// ============================================
+// RUTAS DE PROYECTOS - CRUD COMPLETO
+// ============================================
+Route::middleware('auth')->group(function () {
+    Route::resource('project', ProjectController::class);
 });
 
 // RUTAS DE ADMINISTRACIÓN

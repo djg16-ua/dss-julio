@@ -7,49 +7,145 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Project;
-use App\Models\Team;
 use App\Models\Task;
+use App\Models\Comment;
 
 class DashboardController extends Controller
 {
+    /**
+     * Mostrar el dashboard principal del usuario
+     */
     public function index()
     {
         $user = Auth::user();
-        
-        if ($user->isAdmin()) {
-            // Estadísticas para administradores (todo el sistema)
-            $userStats = [
-                'projects' => Project::count(),
-                'tasks' => Task::count(),
-                'teams' => Team::count(),
-                'users' => User::count(),
-            ];
-            
-            // Proyectos recientes del sistema
-            $recentProjects = Project::with('creator')
-                ->orderBy('created_at', 'desc')
-                ->limit(5)
-                ->get();
-                
-        } else {
-            // Estadísticas para usuarios normales (solo sus datos)
-            $userStats = [
-                'projects' => Project::where('created_by', $user->id)->count(),
-                'tasks' => Task::where('assigned_to', $user->id)->count(),
-                'teams' => DB::table('team_user')
-                    ->where('user_id', $user->id)
-                    ->where('is_active', true)
-                    ->count(),
-                'users' => '156h', // Placeholder para horas trabajadas
-            ];
-            
-            // Proyectos del usuario
-            $recentProjects = Project::where('created_by', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->limit(5)
-                ->get();
-        }
-        
-        return view('dashboard', compact('userStats', 'recentProjects'));
+
+        // Estadísticas principales (3 cards) - USANDO NUEVA RELACIÓN N:N
+        // Tareas activas del usuario (usando nueva relación n:n)
+        $activeTasks = $user->assignedTasks()->where('status', 'ACTIVE')->count();
+
+        // Proyectos activos via teams
+        $activeProjects = $user->teams()
+            ->with(['projects' => function($query) {
+                $query->where('status', 'ACTIVE');
+            }])
+            ->get()
+            ->pluck('projects')
+            ->flatten()
+            ->unique('id')
+            ->count();
+
+        // Comentarios en tareas activas (usando nueva relación)
+        $activeComments = Comment::whereHas('task', function($query) use ($user) {
+            $query->where('status', 'ACTIVE')
+                  ->whereHas('assignedUsers', function($userQuery) use ($user) {
+                      $userQuery->where('user_id', $user->id);
+                  });
+        })->where('user_id', $user->id)->count();
+
+        // Tareas en curso (CON BOTÓN "VER MÁS")
+        // Todas las tareas ACTIVAS (sin límite)
+        $activeTasks_list = $user->assignedTasks()
+            ->with(['module.project', 'creator'])
+            ->where('status', 'ACTIVE')
+            ->orderByRaw("CASE 
+                WHEN priority = 'URGENT' THEN 1 
+                WHEN priority = 'HIGH' THEN 2 
+                WHEN priority = 'MEDIUM' THEN 3 
+                WHEN priority = 'LOW' THEN 4 
+                ELSE 5 
+            END")
+            ->get();
+
+        // Máximo 3 tareas PENDIENTES
+        $pendingTasks_list = $user->assignedTasks()
+            ->with(['module.project', 'creator'])
+            ->where('status', 'PENDING')
+            ->orderByRaw("CASE 
+                WHEN priority = 'URGENT' THEN 1 
+                WHEN priority = 'HIGH' THEN 2 
+                WHEN priority = 'MEDIUM' THEN 3 
+                WHEN priority = 'LOW' THEN 4 
+                ELSE 5 
+            END")
+            ->limit(3)
+            ->get();
+
+        // Combinar las tareas
+        $tasksInProgress = $activeTasks_list->concat($pendingTasks_list);
+
+        // Resumen Personal (debajo de tareas)
+        $taskSummary = [
+            'total' => $user->assignedTasks()->count(),
+            'completed' => $user->assignedTasks()->where('status', 'DONE')->count(),
+            'in_progress' => $user->assignedTasks()->where('status', 'ACTIVE')->count(),
+            'pending' => $user->assignedTasks()->where('status', 'PENDING')->count(),
+        ];
+
+        // Proyectos Activos (CON BOTÓN "VER MÁS") - Máximo 3 proyectos activos via teams
+        $activeProjectsList = $user->teams()
+            ->with(['projects' => function($query) {
+                $query->with('creator')
+                      ->where('status', 'ACTIVE')
+                      ->orderBy('created_at', 'desc');
+            }])
+            ->get()
+            ->pluck('projects')
+            ->flatten()
+            ->unique('id')
+            ->take(3)
+            ->values();
+
+        // Comentarios en Curso (CON BOTÓN "VER MÁS")
+        // Todos los comentarios en tareas ACTIVAS (sin límite)
+        $activeComments_list = Comment::with(['task.module.project', 'task'])
+            ->where('user_id', $user->id)
+            ->whereHas('task', function($query) use ($user) {
+                $query->where('status', 'ACTIVE')
+                      ->whereHas('assignedUsers', function($userQuery) use ($user) {
+                          $userQuery->where('user_id', $user->id);
+                      });
+            })
+            ->orderByRaw("(SELECT CASE 
+                WHEN tasks.priority = 'URGENT' THEN 1 
+                WHEN tasks.priority = 'HIGH' THEN 2 
+                WHEN tasks.priority = 'MEDIUM' THEN 3 
+                WHEN tasks.priority = 'LOW' THEN 4 
+                ELSE 5 
+            END FROM tasks WHERE tasks.id = comments.task_id)")
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Máximo 3 comentarios en tareas PENDIENTES
+        $pendingComments_list = Comment::with(['task.module.project', 'task'])
+            ->where('user_id', $user->id)
+            ->whereHas('task', function($query) use ($user) {
+                $query->where('status', 'PENDING')
+                      ->whereHas('assignedUsers', function($userQuery) use ($user) {
+                          $userQuery->where('user_id', $user->id);
+                      });
+            })
+            ->orderByRaw("(SELECT CASE 
+                WHEN tasks.priority = 'URGENT' THEN 1 
+                WHEN tasks.priority = 'HIGH' THEN 2 
+                WHEN tasks.priority = 'MEDIUM' THEN 3 
+                WHEN tasks.priority = 'LOW' THEN 4 
+                ELSE 5 
+            END FROM tasks WHERE tasks.id = comments.task_id)")
+            ->orderBy('created_at', 'desc')
+            ->limit(3)
+            ->get();
+
+        // Combinar comentarios
+        $commentsInProgress = $activeComments_list->concat($pendingComments_list);
+
+        return view('dashboard', compact(
+            'activeTasks',
+            'activeProjects', 
+            'activeComments',
+            'tasksInProgress',
+            'taskSummary',
+            'activeProjectsList',
+            'commentsInProgress'
+        ));
     }
 }
