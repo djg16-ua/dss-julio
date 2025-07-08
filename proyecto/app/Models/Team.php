@@ -91,6 +91,13 @@ class Team extends Model
             if ($team->is_general) {
                 throw new \Exception('No se puede eliminar el equipo general del proyecto.');
             }
+    /**
+     * Obtener total de módulos a través de proyectos
+     */
+    public function getModulesCountAttribute(): int
+    {
+        return $this->projects->sum(function($project) {
+            return $project->modules->count();
         });
     }
 }

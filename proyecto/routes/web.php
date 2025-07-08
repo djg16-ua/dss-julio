@@ -10,7 +10,10 @@ use App\Http\Controllers\TeamController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\DashboardController;
 
-// Rutas existentes...
+// ============================================
+// RUTAS PRINCIPALES
+// ============================================
+
 // Para usuarios autenticados - redirigir a dashboard (PRIMERO)
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -30,7 +33,7 @@ Route::get('/contact', function () {
 });
 
 // ============================================
-// DASHBOARD - ¡ESTA ERA LA QUE FALTABA!
+// DASHBOARD
 // ============================================
 Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
     ->middleware('auth')
@@ -104,7 +107,6 @@ Route::post('/forgot-password', [CustomPasswordResetController::class, 'store'])
     ->middleware('guest')
     ->name('password.email');
 
-// NUEVAS RUTAS PARA RESET PASSWORD
 Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create'])
     ->middleware('guest')
     ->name('password.reset');
@@ -165,17 +167,92 @@ Route::middleware('auth')->group(function () {
 });
 
 // RUTAS DE ADMINISTRACIÓN
+// ============================================
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    // Dashboard y páginas principales
     Route::get('/dashboard', [App\Http\Controllers\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/users', [App\Http\Controllers\AdminController::class, 'users'])->name('users');
     Route::get('/projects', [App\Http\Controllers\AdminController::class, 'projects'])->name('projects');
     Route::get('/teams', [App\Http\Controllers\AdminController::class, 'teams'])->name('teams');
     
-    // Acciones para usuarios
+    // ============================================
+    // GESTIÓN DE USUARIOS
+    // ============================================
+    
+    // Editar usuario (mostrar formulario)
+    Route::get('/users/{user}/edit', [App\Http\Controllers\AdminController::class, 'editUser'])->name('users.edit');
+    
+    // Actualizar información básica del usuario
+    Route::patch('/users/{user}', [App\Http\Controllers\AdminController::class, 'updateUser'])->name('users.update');
+    
+    // Cambiar rol del usuario
     Route::patch('/users/{user}/role', [App\Http\Controllers\AdminController::class, 'updateUserRole'])->name('users.update-role');
+    
+    // Actualizar contraseña del usuario
+    Route::patch('/users/{user}/password', [App\Http\Controllers\AdminController::class, 'updateUserPassword'])->name('users.update-password');
+    
+    // Resetear contraseña del usuario (generar temporal)
+    Route::patch('/users/{user}/reset-password', [App\Http\Controllers\AdminController::class, 'resetUserPassword'])->name('users.reset-password');
+    
+    // Eliminar usuario
     Route::delete('/users/{user}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('users.delete');
     
-    // Acciones para proyectos
+    // Gestión de equipos del usuario (si las tienes implementadas)
+    Route::patch('/users/{user}/teams/{team}/role', [App\Http\Controllers\AdminController::class, 'updateUserTeamRole'])->name('users.update-team-role');
+    Route::delete('/users/{user}/teams/{team}', [App\Http\Controllers\AdminController::class, 'removeUserFromTeam'])->name('users.remove-from-team');
+    
+    // ============================================
+    // GESTIÓN DE PROYECTOS
+    // ============================================
+    
+    // Actualizar estado del proyecto
     Route::patch('/projects/{project}/status', [App\Http\Controllers\AdminController::class, 'updateProjectStatus'])->name('projects.update-status');
+    
+    // Eliminar proyecto
     Route::delete('/projects/{project}', [App\Http\Controllers\AdminController::class, 'deleteProject'])->name('projects.delete');
+
+    // Eliminar equipo
+    Route::delete('/teams/{team}', [App\Http\Controllers\AdminController::class, 'deleteTeam'])->name('teams.delete');
+
+    // Estadísticas del sistema
+    Route::get('/statistics', [App\Http\Controllers\AdminController::class, 'statistics'])->name('statistics');
+
+    // ============================================
+    // GESTIÓN DE EQUIPOS (agregar después de la línea existente de teams)
+    // ============================================
+
+    // Mostrar formulario de edición del equipo
+    Route::get('/teams/{team}/edit', [App\Http\Controllers\AdminController::class, 'editTeam'])->name('teams.edit');
+
+    // Actualizar información básica del equipo
+    Route::patch('/teams/{team}', [App\Http\Controllers\AdminController::class, 'updateTeam'])->name('teams.update');
+
+    // Gestión de miembros del equipo
+    Route::post('/teams/{team}/members', [App\Http\Controllers\AdminController::class, 'addTeamMember'])->name('teams.add-member');
+    Route::patch('/teams/{team}/members/{user}/role', [App\Http\Controllers\AdminController::class, 'updateTeamMemberRole'])->name('teams.update-member-role');
+    Route::delete('/teams/{team}/members/{user}', [App\Http\Controllers\AdminController::class, 'removeTeamMember'])->name('teams.remove-member');
+
+    // Gestión de proyectos del equipo
+    Route::post('/teams/{team}/projects', [App\Http\Controllers\AdminController::class, 'assignTeamProject'])->name('teams.assign-project');
+    Route::delete('/teams/{team}/projects/{project}', [App\Http\Controllers\AdminController::class, 'unassignTeamProject'])->name('teams.unassign-project');
+
+    // ============================================
+    // GESTIÓN DE PROYECTOS (agregar después de las rutas existentes)
+    // ============================================
+
+    // Mostrar formulario de edición del proyecto
+    Route::get('/projects/{project}/edit', [App\Http\Controllers\AdminController::class, 'editProject'])->name('projects.edit');
+
+    // Actualizar información básica del proyecto
+    Route::patch('/projects/{project}', [App\Http\Controllers\AdminController::class, 'updateProject'])->name('projects.update');
+
+    // Gestión de equipos del proyecto
+    Route::post('/projects/{project}/teams', [App\Http\Controllers\AdminController::class, 'assignProjectTeam'])->name('projects.assign-team');
+    Route::delete('/projects/{project}/teams/{team}', [App\Http\Controllers\AdminController::class, 'unassignProjectTeam'])->name('projects.unassign-team');
+
+    // Gestión de módulos del proyecto
+    Route::post('/projects/{project}/modules', [App\Http\Controllers\AdminController::class, 'createProjectModule'])->name('projects.create-module');
+    Route::patch('/projects/{project}/modules/{module}', [App\Http\Controllers\AdminController::class, 'updateProjectModule'])->name('projects.update-module');
+    Route::delete('/projects/{project}/modules/{module}', [App\Http\Controllers\AdminController::class, 'deleteProjectModule'])->name('projects.delete-module');
 });
+
