@@ -100,25 +100,37 @@
                         </div>
                         <div class="card-body p-4">
                             <div class="row g-3">
-                                <div class="col-lg-3 col-md-6">
+                                <div class="col-lg-2 col-md-4 col-sm-6">
                                     <a href="{{ route('admin.users') }}" class="btn btn-outline-primary w-100 btn-lg">
                                         <i class="bi bi-people me-2"></i>
                                         Gestionar Usuarios
                                     </a>
                                 </div>
-                                <div class="col-lg-3 col-md-6">
+                                <div class="col-lg-2 col-md-4 col-sm-6">
                                     <a href="{{ route('admin.projects') }}" class="btn btn-outline-success w-100 btn-lg">
                                         <i class="bi bi-kanban me-2"></i>
                                         Gestionar Proyectos
                                     </a>
                                 </div>
-                                <div class="col-lg-3 col-md-6">
+                                <div class="col-lg-2 col-md-4 col-sm-6">
                                     <a href="{{ route('admin.teams') }}" class="btn btn-outline-warning w-100 btn-lg">
                                         <i class="bi bi-diagram-3 me-2"></i>
                                         Gestionar Equipos
                                     </a>
                                 </div>
-                                <div class="col-lg-3 col-md-6">
+                                <div class="col-lg-2 col-md-4 col-sm-6">
+                                    <a href="{{ route('admin.modules') }}" class="btn btn-outline-secondary w-100 btn-lg">
+                                        <i class="bi bi-grid-3x3-gap me-2"></i>
+                                        Gestionar Módulos
+                                    </a>
+                                </div>
+                                <div class="col-lg-2 col-md-4 col-sm-6">
+                                    <a href="#" class="btn btn-outline-dark w-100 btn-lg">
+                                        <i class="bi bi-check-square me-2"></i>
+                                        Gestionar Tareas
+                                    </a>
+                                </div>
+                                <div class="col-lg-2 col-md-4 col-sm-6">
                                     <a href="{{ route('admin.statistics') }}" class="btn btn-outline-info w-100 btn-lg">
                                         <i class="bi bi-graph-up me-2"></i>
                                         Estadísticas

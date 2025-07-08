@@ -7,19 +7,24 @@
     <div class="row">
         <div class="col-12">
             <!-- Header -->
-            <div class="row mb-4">
-                <div class="col-lg-8">
-                    <h1 class="display-5 fw-bold text-primary">
+            <div class="row mb-4 align-items-center">
+                <div class="col-lg-6 col-md-8">
+                    <h1 class="display-5 fw-bold text-primary mb-2">
                         <i class="bi bi-people me-3"></i>Gestión de Usuarios
                     </h1>
-                    <p class="lead text-muted">
+                    <p class="lead text-muted mb-0">
                         Administra todos los usuarios del sistema TaskFlow
                     </p>
                 </div>
-                <div class="col-lg-4 text-lg-end">
-                    <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-2"></i>Volver al Panel
-                    </a>
+                <div class="col-lg-6 col-md-4">
+                    <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-end">
+                        <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Volver al Panel
+                        </a>
+                        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+                            <i class="bi bi-person-plus me-2"></i>Crear Usuario
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -284,7 +289,10 @@
                 <div class="card-body text-center py-5">
                     <i class="bi bi-people display-1 text-muted mb-3"></i>
                     <h5 class="text-muted">No se encontraron usuarios</h5>
-                    <p class="text-muted">Ajusta los filtros de búsqueda</p>
+                    <p class="text-muted">Ajusta los filtros de búsqueda o crea nuevos usuarios</p>
+                    <a href="{{ route('admin.users.create') }}" class="btn btn-primary mt-3">
+                        <i class="bi bi-person-plus me-2"></i>Crear tu Primer Usuario
+                    </a>
                 </div>
             </div>
             @endif

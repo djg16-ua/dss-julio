@@ -228,6 +228,46 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/projects/create', [App\Http\Controllers\AdminController::class, 'createProject'])->name('projects.create');
     Route::post('/projects', [App\Http\Controllers\AdminController::class, 'storeProject'])->name('projects.store');
 
+    // Crear usuario (agregar después de las rutas existentes de users)
+    Route::get('/users/create', [App\Http\Controllers\AdminController::class, 'createUser'])->name('users.create');
+    Route::post('/users', [App\Http\Controllers\AdminController::class, 'storeUser'])->name('users.store');
+
+    // ============================================
+    // GESTIÓN DE MÓDULOS (agregar después de las rutas de teams existentes)
+    // ============================================
+
+    // Página principal de módulos
+    Route::get('/modules', [App\Http\Controllers\AdminController::class, 'modules'])->name('modules');
+
+    // Crear módulo
+    Route::get('/modules/create', [App\Http\Controllers\AdminController::class, 'createModule'])->name('modules.create');
+    Route::post('/modules', [App\Http\Controllers\AdminController::class, 'storeModule'])->name('modules.store');
+
+    // Editar módulo
+    Route::get('/modules/{module}/edit', [App\Http\Controllers\AdminController::class, 'editModule'])->name('modules.edit');
+    Route::patch('/modules/{module}', [App\Http\Controllers\AdminController::class, 'updateModule'])->name('modules.update');
+
+    // Actualizar estado del módulo
+    Route::patch('/modules/{module}/status', [App\Http\Controllers\AdminController::class, 'updateModuleStatus'])->name('modules.update-status');
+
+    // Eliminar módulo
+    Route::delete('/modules/{module}', [App\Http\Controllers\AdminController::class, 'deleteModule'])->name('modules.delete');
+
+    // Gestión de equipos del módulo
+    Route::post('/modules/{module}/teams', [App\Http\Controllers\AdminController::class, 'assignModuleTeam'])->name('modules.assign-team');
+    Route::delete('/modules/{module}/teams/{team}', [App\Http\Controllers\AdminController::class, 'unassignModuleTeam'])->name('modules.unassign-team');
+
+    // API endpoint para obtener módulos de un proyecto (para dependencias)
+    Route::get('/projects/{project}/modules', [App\Http\Controllers\AdminController::class, 'getProjectModules'])->name('projects.modules');
+
+    // Gestión de tareas del módulo (agregar después de las rutas de modules existentes)
+    Route::post('/modules/{module}/tasks', [App\Http\Controllers\AdminController::class, 'assignModuleTask'])->name('modules.assign-task');
+    Route::delete('/modules/{module}/tasks/{task}', [App\Http\Controllers\AdminController::class, 'unassignModuleTask'])->name('modules.unassign-task');
+
+    // Gestión de módulos del proyecto (agregar después de las rutas de projects existentes)
+    Route::post('/projects/{project}/modules', [App\Http\Controllers\AdminController::class, 'assignProjectModule'])->name('projects.assign-module');
+    Route::delete('/projects/{project}/modules/{module}', [App\Http\Controllers\AdminController::class, 'unassignProjectModule'])->name('projects.unassign-module');
+    
     // Gestión de módulos del equipo (agregar después de las rutas de teams existentes)
     Route::post('/teams/{team}/modules', [App\Http\Controllers\AdminController::class, 'assignTeamModule'])->name('teams.assign-module');
     Route::delete('/teams/{team}/modules/{module}', [App\Http\Controllers\AdminController::class, 'unassignTeamModule'])->name('teams.unassign-module');
