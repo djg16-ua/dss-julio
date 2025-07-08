@@ -125,7 +125,7 @@
                                     </a>
                                 </div>
                                 <div class="col-lg-2 col-md-4 col-sm-6">
-                                    <a href="#" class="btn btn-outline-dark w-100 btn-lg">
+                                    <a href="{{ route('admin.tasks') }}" class="btn btn-outline-dark w-100 btn-lg">
                                         <i class="bi bi-check-square me-2"></i>
                                         Gestionar Tareas
                                     </a>

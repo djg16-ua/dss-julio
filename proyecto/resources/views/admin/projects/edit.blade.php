@@ -40,17 +40,17 @@
                             <form method="POST" action="{{ route('admin.projects.update', $project) }}">
                                 @csrf
                                 @method('PATCH')
-                                
+
                                 <div class="row g-3">
                                     <div class="col-md-8">
                                         <label for="title" class="form-label fw-bold">Título del Proyecto</label>
-                                        <input type="text" class="form-control @error('title') is-invalid @enderror" 
-                                               id="title" name="title" value="{{ old('title', $project->title) }}" required>
+                                        <input type="text" class="form-control @error('title') is-invalid @enderror"
+                                            id="title" name="title" value="{{ old('title', $project->title) }}" required>
                                         @error('title')
-                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
-                                    
+
                                     <div class="col-md-4">
                                         <label for="status" class="form-label fw-bold">Estado</label>
                                         <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
@@ -61,40 +61,40 @@
                                             @endforeach
                                         </select>
                                         @error('status')
-                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
-                                    
+
                                     <div class="col-12">
                                         <label for="description" class="form-label fw-bold">Descripción</label>
-                                        <textarea class="form-control @error('description') is-invalid @enderror" 
-                                                  id="description" name="description" rows="3" 
-                                                  placeholder="Describe el objetivo y alcance del proyecto...">{{ old('description', $project->description) }}</textarea>
+                                        <textarea class="form-control @error('description') is-invalid @enderror"
+                                            id="description" name="description" rows="3"
+                                            placeholder="Describe el objetivo y alcance del proyecto...">{{ old('description', $project->description) }}</textarea>
                                         @error('description')
-                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
 
                                     <div class="col-md-4">
                                         <label for="start_date" class="form-label fw-bold">Fecha de Inicio</label>
-                                        <input type="date" class="form-control @error('start_date') is-invalid @enderror" 
-                                               id="start_date" name="start_date" 
-                                               value="{{ old('start_date', $project->start_date?->format('Y-m-d')) }}">
+                                        <input type="date" class="form-control @error('start_date') is-invalid @enderror"
+                                            id="start_date" name="start_date"
+                                            value="{{ old('start_date', $project->start_date?->format('Y-m-d')) }}">
                                         @error('start_date')
-                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
-                                    
+
                                     <div class="col-md-4">
                                         <label for="end_date" class="form-label fw-bold">Fecha de Fin</label>
-                                        <input type="date" class="form-control @error('end_date') is-invalid @enderror" 
-                                               id="end_date" name="end_date" 
-                                               value="{{ old('end_date', $project->end_date?->format('Y-m-d')) }}">
+                                        <input type="date" class="form-control @error('end_date') is-invalid @enderror"
+                                            id="end_date" name="end_date"
+                                            value="{{ old('end_date', $project->end_date?->format('Y-m-d')) }}">
                                         @error('end_date')
-                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
-                                    
+
                                     <div class="col-md-4">
                                         <label for="public" class="form-label fw-bold">Visibilidad</label>
                                         <select class="form-select @error('public') is-invalid @enderror" id="public" name="public" required>
@@ -102,11 +102,11 @@
                                             <option value="1" {{ old('public', $project->public) == '1' ? 'selected' : '' }}>Público</option>
                                         </select>
                                         @error('public')
-                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mt-4">
                                     <div class="col-12">
                                         <button type="submit" class="btn btn-success">
@@ -118,7 +118,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Estadísticas del proyecto -->
                 <div class="col-lg-4">
                     <div class="card shadow-sm">
@@ -155,9 +155,9 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <hr>
-                            
+
                             <div class="small text-muted">
                                 <div><strong>Creado por:</strong> {{ $project->creator->name }}</div>
                                 <div><strong>Fecha:</strong> {{ $project->created_at->format('d/m/Y H:i') }}</div>
@@ -212,9 +212,9 @@
                                                         Asignado: {{ \Carbon\Carbon::parse($team->pivot->assigned_at)->format('d/m/Y') }}
                                                     </small>
                                                 </div>
-                                                <button class="btn btn-sm btn-outline-danger" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#unassignTeamModal{{ $team->id }}">
+                                                <button class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#unassignTeamModal{{ $team->id }}">
                                                     <i class="bi bi-x-lg"></i>
                                                 </button>
                                             </div>
@@ -271,9 +271,9 @@
                                     </h5>
                                 </div>
                                 <div class="col-auto">
-                                    <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#createModuleModal">
+                                    <a href="{{ route('admin.modules.create') }}" class="btn btn-dark btn-sm">
                                         <i class="bi bi-plus-circle me-1"></i>Crear Módulo
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -294,33 +294,13 @@
                                                     <span class="badge bg-danger small">CORE</span>
                                                     @endif
                                                 </div>
-                                                <div class="dropdown">
-                                                    <button class="btn btn-sm btn-outline-warning dropdown-toggle" 
-                                                            data-bs-toggle="dropdown">
-                                                        <i class="bi bi-gear"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu">
-                                                        <li>
-                                                            <button class="dropdown-item" 
-                                                                    data-bs-toggle="modal" 
-                                                                    data-bs-target="#editModuleModal{{ $module->id }}">
-                                                                <i class="bi bi-pencil me-2"></i>Editar
-                                                            </button>
-                                                        </li>
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li>
-                                                            <button class="dropdown-item text-danger" 
-                                                                    data-bs-toggle="modal" 
-                                                                    data-bs-target="#deleteModuleModal{{ $module->id }}">
-                                                                <i class="bi bi-trash me-2"></i>Eliminar
-                                                            </button>
-                                                        </li>
-                                                    </ul>
-                                                </div>
+                                                <a href="{{ route('admin.modules.edit', $module) }}" class="btn btn-sm btn-outline-warning">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
                                             </div>
-                                            
+
                                             <p class="text-muted small mb-2">{{ Str::limit($module->description, 60) }}</p>
-                                            
+
                                             <div class="d-flex gap-1 mb-2 flex-wrap">
                                                 <span class="badge bg-{{ $module->status === 'ACTIVE' ? 'success' : ($module->status === 'DONE' ? 'primary' : 'secondary') }}">
                                                     {{ $module->status }}
@@ -332,7 +312,7 @@
                                                     {{ $module->category }}
                                                 </span>
                                             </div>
-                                            
+
                                             <div class="small text-muted">
                                                 <div>{{ $module->tasks->count() }} tareas</div>
                                                 @if($module->depends_on)
@@ -342,131 +322,13 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Modal para editar módulo -->
-                                <div class="modal fade" id="editModuleModal{{ $module->id }}" tabindex="-1">
-                                    <div class="modal-dialog modal-lg">
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-warning text-dark">
-                                                <h5 class="modal-title">Editar Módulo - {{ $module->name }}</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form method="POST" action="{{ route('admin.projects.update-module', [$project, $module]) }}">
-                                                @csrf
-                                                @method('PATCH')
-                                                <div class="modal-body">
-                                                    <div class="row g-3">
-                                                        <div class="col-md-6">
-                                                            <label for="name{{ $module->id }}" class="form-label">Nombre</label>
-                                                            <input type="text" class="form-control" name="name" 
-                                                                   value="{{ $module->name }}" required>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <label for="status{{ $module->id }}" class="form-label">Estado</label>
-                                                            <select class="form-select" name="status" required>
-                                                                <option value="PENDING" {{ $module->status === 'PENDING' ? 'selected' : '' }}>Pendiente</option>
-                                                                <option value="ACTIVE" {{ $module->status === 'ACTIVE' ? 'selected' : '' }}>Activo</option>
-                                                                <option value="DONE" {{ $module->status === 'DONE' ? 'selected' : '' }}>Completado</option>
-                                                                <option value="PAUSED" {{ $module->status === 'PAUSED' ? 'selected' : '' }}>Pausado</option>
-                                                                <option value="CANCELLED" {{ $module->status === 'CANCELLED' ? 'selected' : '' }}>Cancelado</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-12">
-                                                            <label for="description{{ $module->id }}" class="form-label">Descripción</label>
-                                                            <textarea class="form-control" name="description" rows="3">{{ $module->description }}</textarea>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label for="priority{{ $module->id }}" class="form-label">Prioridad</label>
-                                                            <select class="form-select" name="priority" required>
-                                                                @foreach($priorities as $value => $label)
-                                                                <option value="{{ $value }}" {{ $module->priority === $value ? 'selected' : '' }}>
-                                                                    {{ $label }}
-                                                                </option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label for="category{{ $module->id }}" class="form-label">Categoría</label>
-                                                            <select class="form-select" name="category" required>
-                                                                @foreach($moduleCategories as $value => $label)
-                                                                <option value="{{ $value }}" {{ $module->category === $value ? 'selected' : '' }}>
-                                                                    {{ $label }}
-                                                                </option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label for="depends_on{{ $module->id }}" class="form-label">Depende de</label>
-                                                            <select class="form-select" name="depends_on">
-                                                                <option value="">Sin dependencias</option>
-                                                                @foreach($project->modules->where('id', '!=', $module->id) as $otherModule)
-                                                                <option value="{{ $otherModule->id }}" 
-                                                                        {{ $module->depends_on == $otherModule->id ? 'selected' : '' }}>
-                                                                    {{ $otherModule->name }}
-                                                                </option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-12">
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" type="checkbox" 
-                                                                       name="is_core" value="1" 
-                                                                       {{ $module->is_core ? 'checked' : '' }}>
-                                                                <label class="form-check-label">
-                                                                    Módulo principal (CORE)
-                                                                </label>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                    <button type="submit" class="btn btn-warning">Actualizar Módulo</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Modal para eliminar módulo -->
-                                <div class="modal fade" id="deleteModuleModal{{ $module->id }}" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-danger text-white">
-                                                <h5 class="modal-title">Eliminar Módulo</h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <p>¿Estás seguro de que quieres eliminar el módulo <strong>{{ $module->name }}</strong>?</p>
-                                                <div class="alert alert-warning">
-                                                    <i class="bi bi-exclamation-triangle me-2"></i>
-                                                    Esta acción eliminará todas las tareas asociadas al módulo.
-                                                </div>
-                                                @if($module->tasks->count() > 0)
-                                                <div class="alert alert-info">
-                                                    <i class="bi bi-info-circle me-2"></i>
-                                                    Este módulo tiene <strong>{{ $module->tasks->count() }} tarea(s)</strong> asociada(s).
-                                                </div>
-                                                @endif
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                <form method="POST" action="{{ route('admin.projects.delete-module', [$project, $module]) }}" class="d-inline">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-danger">Eliminar</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                                 @endforeach
                             </div>
                             @else
                             <div class="text-center py-4">
                                 <i class="bi bi-grid display-1 text-muted"></i>
-                                <h5 class="text-muted">No hay módulos creados</h5>
-                                <p class="text-muted">Crea módulos para organizar el trabajo del proyecto</p>
+                                <h5 class="text-muted">No hay módulos asignados</h5>
+                                <p class="text-muted">Asigna módulos al proyecto para organizar el trabajo</p>
                             </div>
                             @endif
                         </div>
@@ -495,7 +357,7 @@
                             <option value="">Seleccionar equipo...</option>
                             @foreach($availableTeams as $team)
                             <option value="{{ $team->id }}">
-                                {{ $team->name }} 
+                                {{ $team->name }}
                                 <small>({{ $team->users->where('pivot.is_active', true)->count() }} miembros)</small>
                             </option>
                             @endforeach
@@ -513,79 +375,6 @@
                     @if($availableTeams->count() > 0)
                     <button type="submit" class="btn btn-primary">Asignar Equipo</button>
                     @endif
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para crear módulo -->
-<div class="modal fade" id="createModuleModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title">Crear Nuevo Módulo</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="{{ route('admin.projects.create-module', $project) }}">
-                @csrf
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="name" class="form-label">Nombre del Módulo</label>
-                            <input type="text" class="form-control" name="name" required 
-                                   placeholder="Ej: Sistema de Autenticación">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="category" class="form-label">Categoría</label>
-                            <select class="form-select" name="category" required>
-                                @foreach($moduleCategories as $value => $label)
-                                <option value="{{ $value }}" {{ $value === 'DEVELOPMENT' ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label for="description" class="form-label">Descripción</label>
-                            <textarea class="form-control" name="description" rows="3" 
-                                      placeholder="Describe la funcionalidad y objetivos del módulo..."></textarea>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="priority" class="form-label">Prioridad</label>
-                            <select class="form-select" name="priority" required>
-                                @foreach($priorities as $value => $label)
-                                <option value="{{ $value }}" {{ $value === 'MEDIUM' ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="depends_on" class="form-label">Depende de</label>
-                            <select class="form-select" name="depends_on">
-                                <option value="">Sin dependencias</option>
-                                @foreach($project->modules as $existingModule)
-                                <option value="{{ $existingModule->id }}">
-                                    {{ $existingModule->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">&nbsp;</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="is_core" value="1">
-                                <label class="form-check-label">
-                                    Módulo principal (CORE)
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning">Crear Módulo</button>
                 </div>
             </form>
         </div>
@@ -644,16 +433,16 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-hide toasts after 5 seconds
-    const toasts = document.querySelectorAll('.toast');
-    toasts.forEach(function(toast) {
-        setTimeout(function() {
-            const bsToast = new bootstrap.Toast(toast);
-            bsToast.hide();
-        }, 5000);
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-hide toasts after 5 seconds
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach(function(toast) {
+            setTimeout(function() {
+                const bsToast = new bootstrap.Toast(toast);
+                bsToast.hide();
+            }, 5000);
+        });
     });
-});
 </script>
 @endpush
 @endsection

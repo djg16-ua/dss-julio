@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Crear Proyecto - Admin')
+@section('title', 'Crear Módulo - Admin')
 
 @section('content')
 <div class="container py-5">
@@ -9,16 +9,16 @@
             <!-- Header -->
             <div class="row mb-4">
                 <div class="col-lg-8">
-                    <h1 class="display-5 fw-bold text-success">
-                        <i class="bi bi-plus-circle me-3"></i>Crear Nuevo Proyecto
+                    <h1 class="display-5 fw-bold text-warning">
+                        <i class="bi bi-plus-square me-3"></i>Crear Nuevo Módulo
                     </h1>
                     <p class="lead text-muted">
-                        Configura un nuevo proyecto para el sistema TaskFlow
+                        Agrega un nuevo módulo al sistema TaskFlow
                     </p>
                 </div>
                 <div class="col-lg-4 text-lg-end">
-                    <a href="{{ route('admin.projects') }}" class="btn btn-outline-secondary me-2">
-                        <i class="bi bi-arrow-left me-2"></i>Volver a Proyectos
+                    <a href="{{ route('admin.modules') }}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left me-2"></i>Volver a Módulos
                     </a>
                     <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-primary">
                         <i class="bi bi-house me-2"></i>Panel Admin
@@ -30,45 +30,47 @@
             <div class="row mb-5">
                 <div class="col-lg-8">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-success text-white py-3">
+                        <div class="card-header bg-warning text-dark py-3">
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-info-circle me-2"></i>
-                                Información del Proyecto
+                                Información del Módulo
                             </h5>
                         </div>
                         <div class="card-body">
-                            <form method="POST" action="{{ route('admin.projects.store') }}">
+                            <form method="POST" action="{{ route('admin.modules.store') }}">
                                 @csrf
 
                                 <div class="row g-4">
-                                    <div class="col-md-8">
-                                        <label for="title" class="form-label fw-bold">
-                                            <i class="bi bi-tag me-1"></i>Título del Proyecto
+                                    <div class="col-md-6">
+                                        <label for="name" class="form-label fw-bold">
+                                            <i class="bi bi-tag me-1"></i>Nombre del Módulo
                                         </label>
-                                        <input type="text" class="form-control @error('title') is-invalid @enderror"
-                                            id="title" name="title" value="{{ old('title') }}" required
-                                            placeholder="Ej: Sistema de Gestión de Inventarios">
-                                        @error('title')
+                                        <input type="text" class="form-control @error('name') is-invalid @enderror"
+                                            id="name" name="name" value="{{ old('name') }}" required
+                                            placeholder="Ej: Sistema de Autenticación">
+                                        @error('name')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                        <div class="form-text">El título debe ser único y descriptivo</div>
+                                        <div class="form-text">Nombre único y descriptivo del módulo</div>
                                     </div>
 
-                                    <div class="col-md-4">
-                                        <label for="status" class="form-label fw-bold">
-                                            <i class="bi bi-flag me-1"></i>Estado Inicial
+                                    <div class="col-md-6">
+                                        <label for="project_id" class="form-label fw-bold">
+                                            <i class="bi bi-kanban me-1"></i>Proyecto
                                         </label>
-                                        <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
-                                            @foreach($projectStatuses as $value => $label)
-                                            <option value="{{ $value }}" {{ old('status', 'PENDING') === $value ? 'selected' : '' }}>
-                                                {{ $label }}
+                                        <select class="form-select @error('project_id') is-invalid @enderror" id="project_id" name="project_id" required>
+                                            <option value="">Seleccionar proyecto...</option>
+                                            @foreach($projects as $project)
+                                            <option value="{{ $project->id }}" {{ old('project_id') == $project->id ? 'selected' : '' }}>
+                                                {{ $project->title }}
+                                                <small>({{ $project->status }})</small>
                                             </option>
                                             @endforeach
                                         </select>
-                                        @error('status')
+                                        @error('project_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                        <div class="form-text">Generalmente se inicia como "Pendiente"</div>
+                                        <div class="form-text">Proyecto al que pertenecerá este módulo</div>
                                     </div>
 
                                     <div class="col-12">
@@ -76,72 +78,109 @@
                                             <i class="bi bi-text-paragraph me-1"></i>Descripción
                                         </label>
                                         <textarea class="form-control @error('description') is-invalid @enderror"
-                                            id="description" name="description" rows="4"
-                                            placeholder="Describe el objetivo, alcance y características principales del proyecto...">{{ old('description') }}</textarea>
+                                            id="description" name="description" rows="3"
+                                            placeholder="Describe la funcionalidad y objetivos del módulo...">{{ old('description') }}</textarea>
                                         @error('description')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                        <div class="form-text">Una buena descripción ayuda a todos a entender el proyecto</div>
+                                        <div class="form-text">Explica qué hace este módulo y su importancia</div>
                                     </div>
 
                                     <div class="col-md-4">
-                                        <label for="start_date" class="form-label fw-bold">
-                                            <i class="bi bi-calendar-event me-1"></i>Fecha de Inicio
+                                        <label for="category" class="form-label fw-bold">
+                                            <i class="bi bi-collection me-1"></i>Categoría
                                         </label>
-                                        <input type="date" class="form-control @error('start_date') is-invalid @enderror"
-                                            id="start_date" name="start_date" value="{{ old('start_date') }}">
-                                        @error('start_date')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                        <div class="form-text">Opcional - fecha planificada de inicio</div>
-                                    </div>
-
-                                    <div class="col-md-4">
-                                        <label for="end_date" class="form-label fw-bold">
-                                            <i class="bi bi-calendar-check me-1"></i>Fecha de Finalización
-                                        </label>
-                                        <input type="date" class="form-control @error('end_date') is-invalid @enderror"
-                                            id="end_date" name="end_date" value="{{ old('end_date') }}">
-                                        @error('end_date')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                        <div class="form-text">Opcional - fecha planificada de finalización</div>
-                                    </div>
-
-                                    <div class="col-md-4">
-                                        <label for="public" class="form-label fw-bold">
-                                            <i class="bi bi-eye me-1"></i>Visibilidad
-                                        </label>
-                                        <select class="form-select @error('public') is-invalid @enderror" id="public" name="public" required>
-                                            <option value="0" {{ old('public', '0') == '0' ? 'selected' : '' }}>
-                                                <i class="bi bi-lock me-1"></i>Privado
+                                        <select class="form-select @error('category') is-invalid @enderror" id="category" name="category" required>
+                                            @foreach($moduleCategories as $value => $label)
+                                            <option value="{{ $value }}" {{ old('category', 'DEVELOPMENT') === $value ? 'selected' : '' }}>
+                                                {{ $label }}
                                             </option>
-                                            <option value="1" {{ old('public') == '1' ? 'selected' : '' }}>
-                                                <i class="bi bi-globe me-1"></i>Público
-                                            </option>
+                                            @endforeach
                                         </select>
-                                        @error('public')
+                                        @error('category')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                        <div class="form-text">Los proyectos públicos son visibles para todos los usuarios</div>
+                                        <div class="form-text">Tipo de trabajo que representa</div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label for="priority" class="form-label fw-bold">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Prioridad
+                                        </label>
+                                        <select class="form-select @error('priority') is-invalid @enderror" id="priority" name="priority" required>
+                                            @foreach($priorities as $value => $label)
+                                            <option value="{{ $value }}" {{ old('priority', 'MEDIUM') === $value ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        @error('priority')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <div class="form-text">Nivel de importancia del módulo</div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label for="status" class="form-label fw-bold">
+                                            <i class="bi bi-flag me-1"></i>Estado Inicial
+                                        </label>
+                                        <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
+                                            <option value="PENDING" {{ old('status', 'PENDING') === 'PENDING' ? 'selected' : '' }}>Pendiente</option>
+                                            <option value="ACTIVE" {{ old('status') === 'ACTIVE' ? 'selected' : '' }}>Activo</option>
+                                            <option value="DONE" {{ old('status') === 'DONE' ? 'selected' : '' }}>Completado</option>
+                                            <option value="PAUSED" {{ old('status') === 'PAUSED' ? 'selected' : '' }}>Pausado</option>
+                                            <option value="CANCELLED" {{ old('status') === 'CANCELLED' ? 'selected' : '' }}>Cancelado</option>
+                                        </select>
+                                        @error('status')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <div class="form-text">Estado inicial del módulo</div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="depends_on" class="form-label fw-bold">
+                                            <i class="bi bi-arrow-right-circle me-1"></i>Depende de (Opcional)
+                                        </label>
+                                        <select class="form-select @error('depends_on') is-invalid @enderror" id="depends_on" name="depends_on">
+                                            <option value="">Sin dependencias</option>
+                                            <!-- Se llenará dinámicamente con JavaScript según el proyecto seleccionado -->
+                                        </select>
+                                        @error('depends_on')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <div class="form-text">Módulo del que depende este para poder iniciarse</div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">
+                                            <i class="bi bi-star me-1"></i>Tipo de Módulo
+                                        </label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="is_core" value="1"
+                                                id="is_core" {{ old('is_core') ? 'checked' : '' }}>
+                                            <label class="form-check-label fw-bold text-danger" for="is_core">
+                                                Módulo Principal (CORE)
+                                            </label>
+                                        </div>
+                                        <div class="form-text">Los módulos CORE son fundamentales para el proyecto</div>
                                     </div>
                                 </div>
 
                                 <hr class="my-4">
 
-                                <!-- Equipos iniciales -->
+                                <!-- Asignación a equipos inicial (opcional) -->
                                 <div class="row">
                                     <div class="col-12">
-                                        <h6 class="fw-bold text-success mb-3">
-                                            <i class="bi bi-people me-2"></i>Equipos Iniciales (Opcional)
+                                        <h6 class="fw-bold text-warning mb-3">
+                                            <i class="bi bi-people me-2"></i>Asignación a Equipos (Opcional)
                                         </h6>
                                         <div class="alert alert-info">
                                             <i class="bi bi-info-circle me-2"></i>
-                                            Puedes asignar equipos ahora o hacerlo después desde la página de edición del proyecto.
+                                            Puedes asignar equipos al módulo ahora o hacerlo después desde la edición.
                                         </div>
 
                                         @if($availableTeams->count() > 0)
-                                        <div id="project-teams">
+                                        <div id="module-teams">
                                             <!-- Equipo 1 -->
                                             <div class="row g-3 mb-3 team-assignment-row">
                                                 <div class="col-md-10">
@@ -164,7 +203,7 @@
                                             </div>
                                         </div>
 
-                                        <button type="button" class="btn btn-outline-success" onclick="addTeam()">
+                                        <button type="button" class="btn btn-outline-warning" onclick="addTeam()">
                                             <i class="bi bi-people-plus me-2"></i>Agregar Otro Equipo
                                         </button>
                                         @else
@@ -179,10 +218,10 @@
                                 <div class="row mt-4">
                                     <div class="col-12">
                                         <div class="d-flex gap-2">
-                                            <button type="submit" class="btn btn-success">
-                                                <i class="bi bi-check-lg me-2"></i>Crear Proyecto
+                                            <button type="submit" class="btn btn-warning">
+                                                <i class="bi bi-check-lg me-2"></i>Crear Módulo
                                             </button>
-                                            <a href="{{ route('admin.projects') }}" class="btn btn-secondary">
+                                            <a href="{{ route('admin.modules') }}" class="btn btn-secondary">
                                                 <i class="bi bi-x-lg me-2"></i>Cancelar
                                             </a>
                                         </div>
@@ -205,56 +244,75 @@
                         <div class="card-body">
                             <div class="mb-4">
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-1-circle me-2"></i>Título del Proyecto
+                                    <i class="bi bi-1-circle me-2"></i>Información Básica
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Elige un nombre claro y descriptivo que refleje el objetivo principal del proyecto.
+                                    Proporciona un nombre claro y una descripción detallada de lo que hará el módulo.
                                 </p>
                             </div>
 
                             <div class="mb-4">
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-2-circle me-2"></i>Descripción Detallada
+                                    <i class="bi bi-2-circle me-2"></i>Clasificación
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Explica el alcance, objetivos y características principales del proyecto para que todos entiendan su propósito.
+                                    Selecciona la categoría y prioridad adecuadas para organizar mejor el trabajo.
                                 </p>
                             </div>
 
                             <div class="mb-4">
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-3-circle me-2"></i>Fechas del Proyecto
+                                    <i class="bi bi-3-circle me-2"></i>Dependencias
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Define las fechas de inicio y fin para establecer un marco temporal claro.
+                                    Si este módulo requiere que otro esté completo primero, establece la dependencia.
                                 </p>
                             </div>
 
                             <div>
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-4-circle me-2"></i>Equipos y Módulos
+                                    <i class="bi bi-4-circle me-2"></i>Módulos CORE
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Después de crear el proyecto, podrás asignar equipos específicos y crear módulos para organizar el trabajo.
+                                    Marca como CORE solo los módulos fundamentales sin los cuales el proyecto no puede funcionar.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Estados disponibles -->
+                    <!-- Categorías disponibles -->
                     <div class="card shadow-sm mt-4">
                         <div class="card-header bg-secondary text-white py-3">
                             <h6 class="card-title mb-0">
-                                <i class="bi bi-flag me-2"></i>
-                                Estados de Proyecto
+                                <i class="bi bi-collection me-2"></i>
+                                Categorías de Módulos
                             </h6>
                         </div>
                         <div class="card-body">
-                            @foreach($projectStatuses as $value => $label)
+                            @foreach($moduleCategories as $value => $label)
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge bg-{{ $value === 'ACTIVE' ? 'success' : ($value === 'DONE' ? 'primary' : ($value === 'PAUSED' ? 'warning' : ($value === 'CANCELLED' ? 'danger' : 'secondary'))) }}">
-                                    {{ $value }}
-                                </span>
+                                <span class="badge bg-light text-dark">{{ $value }}</span>
+                                <small class="text-muted">{{ $label }}</small>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Prioridades -->
+                    <div class="card shadow-sm mt-4">
+                        <div class="card-header bg-warning text-dark py-3">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Niveles de Prioridad
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            @foreach($priorities as $value => $label)
+                            @php
+                            $color = $value === 'URGENT' ? 'danger' : ($value === 'HIGH' ? 'warning' : ($value === 'MEDIUM' ? 'info' : 'secondary'));
+                            @endphp
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-{{ $color }}">{{ $value }}</span>
                                 <small class="text-muted">{{ $label }}</small>
                             </div>
                             @endforeach
@@ -273,26 +331,26 @@
                             <div class="row g-2">
                                 <div class="col-6">
                                     <div class="text-center">
-                                        <div class="fw-bold h6 text-primary">{{ $stats['total_projects'] ?? 0 }}</div>
-                                        <small class="text-muted">Proyectos Totales</small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="text-center">
-                                        <div class="fw-bold h6 text-success">{{ $stats['active_projects'] ?? 0 }}</div>
-                                        <small class="text-muted">Proyectos Activos</small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="text-center">
-                                        <div class="fw-bold h6 text-warning">{{ $stats['total_teams'] ?? 0 }}</div>
-                                        <small class="text-muted">Equipos Totales</small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="text-center">
-                                        <div class="fw-bold h6 text-info">{{ $stats['total_modules'] ?? 0 }}</div>
+                                        <div class="fw-bold h6 text-warning">{{ $stats['total_modules'] ?? 0 }}</div>
                                         <small class="text-muted">Módulos Totales</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div class="fw-bold h6 text-success">{{ $stats['active_modules'] ?? 0 }}</div>
+                                        <small class="text-muted">Módulos Activos</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div class="fw-bold h6 text-danger">{{ $stats['core_modules'] ?? 0 }}</div>
+                                        <small class="text-muted">Módulos CORE</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div class="fw-bold h6 text-primary">{{ $stats['total_projects'] ?? 0 }}</div>
+                                        <small class="text-muted">Proyectos</small>
                                     </div>
                                 </div>
                             </div>
@@ -358,11 +416,35 @@
 <script>
     let teamIndex = 1;
 
-    // Preparar los datos de equipos para JavaScript
+    // Preparar los datos para JavaScript
     const availableTeams = @json($availableTeams);
+    const allProjects = @json($projects);
+
+    // Cargar módulos del proyecto seleccionado para dependencias
+    function loadProjectModules(projectId) {
+        const dependsOnSelect = document.getElementById('depends_on');
+        dependsOnSelect.innerHTML = '<option value="">Sin dependencias</option>';
+
+        if (projectId) {
+            // Hacer llamada AJAX para obtener los módulos del proyecto
+            fetch(`/admin/projects/${projectId}/modules`)
+                .then(response => response.json())
+                .then(modules => {
+                    modules.forEach(module => {
+                        const option = document.createElement('option');
+                        option.value = module.id;
+                        option.textContent = module.name;
+                        dependsOnSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.log('Error loading modules:', error);
+                });
+        }
+    }
 
     function addTeam() {
-        const container = document.getElementById('project-teams');
+        const container = document.getElementById('module-teams');
 
         // Generar opciones de equipos
         let teamOptions = '<option value="">Seleccionar equipo...</option>';
@@ -406,24 +488,10 @@
             }, 5000);
         });
 
-        // Validación de fechas
-        const startDateInput = document.getElementById('start_date');
-        const endDateInput = document.getElementById('end_date');
-
-        function validateDates() {
-            if (startDateInput.value && endDateInput.value) {
-                if (new Date(startDateInput.value) >= new Date(endDateInput.value)) {
-                    endDateInput.setCustomValidity('La fecha de fin debe ser posterior a la fecha de inicio');
-                } else {
-                    endDateInput.setCustomValidity('');
-                }
-            } else {
-                endDateInput.setCustomValidity('');
-            }
-        }
-
-        startDateInput.addEventListener('change', validateDates);
-        endDateInput.addEventListener('change', validateDates);
+        // Listener para cambios en el proyecto
+        document.getElementById('project_id').addEventListener('change', function() {
+            loadProjectModules(this.value);
+        });
     });
 </script>
 @endpush

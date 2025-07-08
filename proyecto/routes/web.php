@@ -267,7 +267,32 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // Gestión de módulos del proyecto (agregar después de las rutas de projects existentes)
     Route::post('/projects/{project}/modules', [App\Http\Controllers\AdminController::class, 'assignProjectModule'])->name('projects.assign-module');
     Route::delete('/projects/{project}/modules/{module}', [App\Http\Controllers\AdminController::class, 'unassignProjectModule'])->name('projects.unassign-module');
-    
+
+    // ============================================
+    // GESTIÓN DE TAREAS (agregar después de las rutas de modules existentes)
+    // ============================================
+
+    // Página principal de tareas
+    Route::get('/tasks', [App\Http\Controllers\AdminController::class, 'tasks'])->name('tasks');
+
+    // Crear tarea
+    Route::get('/tasks/create', [App\Http\Controllers\AdminController::class, 'createTask'])->name('tasks.create');
+    Route::post('/tasks', [App\Http\Controllers\AdminController::class, 'storeTask'])->name('tasks.store');
+
+    // Editar tarea
+    Route::get('/tasks/{task}/edit', [App\Http\Controllers\AdminController::class, 'editTask'])->name('tasks.edit');
+    Route::patch('/tasks/{task}', [App\Http\Controllers\AdminController::class, 'updateTask'])->name('tasks.update');
+
+    // Actualizar estado de la tarea
+    Route::patch('/tasks/{task}/status', [App\Http\Controllers\AdminController::class, 'updateTaskStatus'])->name('tasks.update-status');
+
+    // Eliminar tarea
+    Route::delete('/tasks/{task}', [App\Http\Controllers\AdminController::class, 'deleteTask'])->name('tasks.delete');
+
+    // Gestión de comentarios de la tarea
+    Route::post('/tasks/{task}/comments', [App\Http\Controllers\AdminController::class, 'addTaskComment'])->name('tasks.add-comment');
+    Route::delete('/tasks/{task}/comments/{comment}', [App\Http\Controllers\AdminController::class, 'deleteTaskComment'])->name('tasks.delete-comment');
+
     // Gestión de módulos del equipo (agregar después de las rutas de teams existentes)
     Route::post('/teams/{team}/modules', [App\Http\Controllers\AdminController::class, 'assignTeamModule'])->name('teams.assign-module');
     Route::delete('/teams/{team}/modules/{module}', [App\Http\Controllers\AdminController::class, 'unassignTeamModule'])->name('teams.unassign-module');

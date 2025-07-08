@@ -1447,6 +1447,319 @@ class AdminController extends Controller
         return redirect()->route('admin.teams.edit', $team)
             ->with('success', "Proyecto '{$project->title}' desasignado del equipo correctamente.");
     }
+/**
+     * Gestión de tareas con filtros
+     */
+    public function tasks(Request $request)
+    {
+        $query = Task::with(['assignedUser', 'creator', 'module.project', 'dependency', 'dependents', 'comments']);
+
+        // Filtros
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->priority);
+        }
+
+        if ($request->filled('assigned')) {
+            if ($request->assigned === 'assigned') {
+                $query->whereNotNull('assigned_to');
+            } elseif ($request->assigned === 'unassigned') {
+                $query->whereNull('assigned_to');
+            }
+        }
+
+        if ($request->filled('overdue')) {
+            if ($request->overdue === '1') {
+                $query->where('end_date', '<', now())
+                      ->whereNotIn('status', ['DONE', 'CANCELLED']);
+            } elseif ($request->overdue === '0') {
+                $query->where(function($q) {
+                    $q->where('end_date', '>=', now())
+                      ->orWhereNull('end_date')
+                      ->orWhereIn('status', ['DONE', 'CANCELLED']);
+                });
+            }
+        }
+
+        $tasks = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        $stats = [
+            'total_tasks' => Task::count(),
+            'pending_tasks' => Task::where('status', 'PENDING')->count(),
+            'completed_tasks' => Task::where('status', 'DONE')->count(),
+            'overdue_tasks' => Task::where('end_date', '<', now())
+                ->whereNotIn('status', ['DONE', 'CANCELLED'])
+                ->count(),
+        ];
+
+        return view('admin.tasks', compact('tasks', 'stats'));
+    }
+
+    /**
+     * Mostrar formulario para crear tarea
+     */
+    public function createTask()
+    {
+        $modules = Module::with('project')->orderBy('name')->get();
+        $users = User::orderBy('name')->get();
+        $tasks = Task::where('status', '!=', 'CANCELLED')->orderBy('title')->get();
+
+        $priorities = [
+            'LOW' => 'Baja',
+            'MEDIUM' => 'Media',
+            'HIGH' => 'Alta',
+            'URGENT' => 'Urgente'
+        ];
+
+        $stats = [
+            'total_tasks' => Task::count(),
+            'pending_tasks' => Task::where('status', 'PENDING')->count(),
+            'completed_tasks' => Task::where('status', 'DONE')->count(),
+            'overdue_tasks' => Task::where('end_date', '<', now())
+                ->whereNotIn('status', ['DONE', 'CANCELLED'])
+                ->count(),
+        ];
+
+        return view('admin.tasks.create', compact(
+            'modules',
+            'users',
+            'tasks',
+            'priorities',
+            'stats'
+        ));
+    }
+
+    /**
+     * Crear nueva tarea
+     */
+    public function storeTask(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:2000',
+            'priority' => 'required|in:LOW,MEDIUM,HIGH,URGENT',
+            'status' => 'required|in:PENDING,IN_PROGRESS,DONE,PAUSED,CANCELLED',
+            'module_id' => 'nullable|exists:modules,id',
+            'assigned_to' => 'nullable|exists:users,id',
+            'end_date' => 'nullable|date|after_or_equal:today',
+            'depends_on' => 'nullable|exists:tasks,id',
+        ]);
+
+        // Verificar dependencia circular
+        if ($request->depends_on) {
+            $dependency = Task::find($request->depends_on);
+            if ($dependency && $this->hasCircularDependency($dependency, $request->depends_on)) {
+                return back()->with('error', 'No se puede crear una dependencia circular.');
+            }
+        }
+
+        // Crear la tarea
+        $task = Task::create([
+            'title' => $request->title,
+            'description' => $request->description,
+            'priority' => $request->priority,
+            'status' => $request->status,
+            'module_id' => $request->module_id,
+            'assigned_to' => $request->assigned_to,
+            'end_date' => $request->end_date,
+            'depends_on' => $request->depends_on,
+            'created_by' => auth()->id(),
+            'completed_at' => $request->status === 'DONE' ? now() : null,
+        ]);
+
+        return redirect()->route('admin.tasks.edit', $task)
+            ->with('success', "Tarea '{$task->title}' creada correctamente.");
+    }
+
+    /**
+     * Mostrar formulario de edición de la tarea
+     */
+    public function editTask(Task $task)
+    {
+        $task->load(['assignedUser', 'creator', 'module.project', 'dependency', 'dependents', 'comments.user']);
+
+        $modules = Module::with('project')->orderBy('name')->get();
+        $users = User::orderBy('name')->get();
+        $availableTasks = Task::where('id', '!=', $task->id)
+            ->where('status', '!=', 'CANCELLED')
+            ->orderBy('title')
+            ->get();
+
+        $priorities = [
+            'LOW' => 'Baja',
+            'MEDIUM' => 'Media',
+            'HIGH' => 'Alta',
+            'URGENT' => 'Urgente'
+        ];
+
+        return view('admin.tasks.edit', compact(
+            'task',
+            'modules',
+            'users',
+            'availableTasks',
+            'priorities'
+        ));
+    }
+
+    /**
+     * Actualizar tarea
+     */
+    public function updateTask(Request $request, Task $task)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:2000',
+            'priority' => 'required|in:LOW,MEDIUM,HIGH,URGENT',
+            'status' => 'required|in:PENDING,IN_PROGRESS,DONE,PAUSED,CANCELLED',
+            'module_id' => 'nullable|exists:modules,id',
+            'assigned_to' => 'nullable|exists:users,id',
+            'end_date' => 'nullable|date',
+            'depends_on' => 'nullable|exists:tasks,id',
+        ]);
+
+        // Verificar dependencia circular
+        if ($request->depends_on && $request->depends_on != $task->depends_on) {
+            if ($request->depends_on == $task->id) {
+                return back()->with('error', 'Una tarea no puede depender de sí misma.');
+            }
+            
+            if ($this->hasCircularDependency($task, $request->depends_on)) {
+                return back()->with('error', 'No se puede crear una dependencia circular.');
+            }
+        }
+
+        // Manejar cambio de estado a completado
+        $completedAt = $task->completed_at;
+        if ($request->status === 'DONE' && $task->status !== 'DONE') {
+            $completedAt = now();
+        } elseif ($request->status !== 'DONE') {
+            $completedAt = null;
+        }
+
+        $task->update([
+            'title' => $request->title,
+            'description' => $request->description,
+            'priority' => $request->priority,
+            'status' => $request->status,
+            'module_id' => $request->module_id,
+            'assigned_to' => $request->assigned_to,
+            'end_date' => $request->end_date,
+            'depends_on' => $request->depends_on,
+            'completed_at' => $completedAt,
+        ]);
+
+        return redirect()->route('admin.tasks.edit', $task)
+            ->with('success', 'Tarea actualizada correctamente.');
+    }
+
+    /**
+     * Actualizar estado de la tarea
+     */
+    public function updateTaskStatus(Request $request, Task $task)
+    {
+        $request->validate([
+            'status' => 'required|in:PENDING,IN_PROGRESS,DONE,PAUSED,CANCELLED'
+        ]);
+
+        // Manejar cambio de estado a completado
+        $completedAt = $task->completed_at;
+        if ($request->status === 'DONE' && $task->status !== 'DONE') {
+            $completedAt = now();
+        } elseif ($request->status !== 'DONE') {
+            $completedAt = null;
+        }
+
+        $task->update([
+            'status' => $request->status,
+            'completed_at' => $completedAt,
+        ]);
+
+        return back()->with('success', "Estado de la tarea '{$task->title}' actualizado a {$request->status}");
+    }
+
+    /**
+     * Eliminar tarea
+     */
+    public function deleteTask(Task $task)
+    {
+        // Verificar si hay tareas que dependen de esta
+        $dependentTasks = Task::where('depends_on', $task->id)->count();
+        if ($dependentTasks > 0) {
+            return back()->with('error', "No se puede eliminar la tarea '{$task->title}' porque otras tareas dependen de ella.");
+        }
+
+        $taskTitle = $task->title;
+        $task->delete();
+
+        return redirect()->route('admin.tasks')
+            ->with('success', "Tarea '{$taskTitle}' eliminada correctamente.");
+    }
+
+    /**
+     * Agregar comentario a la tarea
+     */
+    public function addTaskComment(Request $request, Task $task)
+    {
+        $request->validate([
+            'content' => 'required|string|max:1000',
+        ]);
+
+        Comment::create([
+            'content' => $request->content,
+            'user_id' => auth()->id(),
+            'task_id' => $task->id,
+        ]);
+
+        return redirect()->route('admin.tasks.edit', $task)
+            ->with('success', 'Comentario agregado correctamente.');
+    }
+
+    /**
+     * Eliminar comentario de la tarea
+     */
+    public function deleteTaskComment(Task $task, Comment $comment)
+    {
+        // Verificar que el comentario pertenece a la tarea
+        if ($comment->task_id !== $task->id) {
+            return redirect()->route('admin.tasks.edit', $task)
+                ->with('error', 'El comentario no pertenece a esta tarea.');
+        }
+
+        $comment->delete();
+
+        return redirect()->route('admin.tasks.edit', $task)
+            ->with('success', 'Comentario eliminado correctamente.');
+    }
+
+    /**
+     * Verificar dependencias circulares
+     */
+    private function hasCircularDependency($task, $dependencyId, $visited = [])
+    {
+        if (in_array($dependencyId, $visited)) {
+            return true;
+        }
+
+        $visited[] = $dependencyId;
+        
+        $dependency = Task::find($dependencyId);
+        if (!$dependency || !$dependency->depends_on) {
+            return false;
+        }
+
+        return $this->hasCircularDependency($task, $dependency->depends_on, $visited);
+    }
 
     /**
      * Actualizar información básica del proyecto
