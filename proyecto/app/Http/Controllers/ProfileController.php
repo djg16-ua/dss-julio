@@ -17,11 +17,15 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
         
-        // Obtener estadísticas reales del usuario basadas en las migraciones
+        // Obtener estadísticas reales del usuario basadas en las nuevas relaciones
         $userStats = [
-            'projects' => DB::table('projects')->where('created_by', $user->id)->count(),
-            'tasks' => DB::table('tasks')->where('assigned_to', $user->id)->count(),
-            'teams' => DB::table('team_user')->where('user_id', $user->id)->where('is_active', true)->count(),
+            'projects_created' => DB::table('projects')->where('created_by', $user->id)->count(),
+            'projects_completed' => DB::table('projects')->where('created_by', $user->id)->where('status', 'COMPLETED')->count(),
+            'tasks_done' => DB::table('task_user')
+                ->join('tasks', 'task_user.task_id', '=', 'tasks.id')
+                ->where('task_user.user_id', $user->id)
+                ->where('tasks.status', 'DONE')
+                ->count(),
             'comments' => DB::table('comments')->where('user_id', $user->id)->count(),
         ];
         
@@ -50,9 +54,14 @@ class ProfileController extends Controller
                 ];
             });
         
-        // Obtener proyectos creados por el usuario
+        // Obtener proyectos creados por el usuario con ordenación por estado
         $userProjects = DB::table('projects')
             ->where('created_by', $user->id)
+            ->orderByRaw("CASE 
+                WHEN status = 'ACTIVE' THEN 1 
+                WHEN status = 'PENDING' THEN 2 
+                ELSE 3 
+            END")
             ->orderBy('created_at', 'desc')
             ->limit(6)
             ->get()
@@ -67,15 +76,34 @@ class ProfileController extends Controller
                 ];
             });
         
-        // Obtener tareas asignadas al usuario
-        $userTasks = DB::table('tasks')
+        // CORREGIDO: Obtener tareas asignadas al usuario con ordenación por estado y prioridad
+        $userTasks = DB::table('task_user')
+            ->join('tasks', 'task_user.task_id', '=', 'tasks.id')
             ->join('modules', 'tasks.module_id', '=', 'modules.id')
-            ->where('tasks.assigned_to', $user->id)
+            ->where('task_user.user_id', $user->id)
             ->select(
-                'tasks.*', 
-                'modules.name as module_name'
+                'tasks.id',
+                'tasks.title',
+                'tasks.description',
+                'tasks.status',
+                'tasks.priority',
+                'tasks.end_date',
+                'tasks.created_at',
+                'modules.name as module_name',
+                'task_user.assigned_at'
             )
-            ->orderBy('tasks.created_at', 'desc')
+            ->orderByRaw("CASE 
+                WHEN tasks.status = 'ACTIVE' THEN 1 
+                WHEN tasks.status = 'PENDING' THEN 2 
+                ELSE 3 
+            END")
+            ->orderByRaw("CASE 
+                WHEN tasks.priority = 'URGENT' THEN 1 
+                WHEN tasks.priority = 'HIGH' THEN 2 
+                WHEN tasks.priority = 'MEDIUM' THEN 3 
+                WHEN tasks.priority = 'LOW' THEN 4 
+                ELSE 5 
+            END")
             ->limit(10)
             ->get()
             ->map(function ($task) {
@@ -86,6 +114,7 @@ class ProfileController extends Controller
                     'status' => $task->status,
                     'priority' => $task->priority,
                     'end_date' => $task->end_date ? \Carbon\Carbon::parse($task->end_date) : null,
+                    'assigned_at' => \Carbon\Carbon::parse($task->assigned_at),
                     'module' => (object) ['name' => $task->module_name]
                 ];
             });

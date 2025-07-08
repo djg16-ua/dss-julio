@@ -65,15 +65,15 @@
 
                 <div class="col-lg-8">
                     <div class="row g-3">
-                        <!-- Estadísticas del usuario -->
+                        <!-- Estadísticas del usuario - 2x2 Grid -->
                         <div class="col-md-6">
                             <div class="card feature-card">
                                 <div class="card-body text-center p-3">
-                                    <div class="feature-icon primary mx-auto mb-2" style="width: 50px; height: 50px;">
-                                        <i class="bi bi-kanban"></i>
+                                    <div class="feature-icon success mx-auto mb-2" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-check-circle-fill"></i>
                                     </div>
-                                    <h5 class="fw-bold text-primary mb-1">{{ $userStats['projects'] ?? 0 }}</h5>
-                                    <p class="text-muted mb-0 small">Proyectos Creados</p>
+                                    <h5 class="fw-bold text-primary mb-1">{{ $userStats['projects_completed'] ?? 0 }}</h5>
+                                    <p class="text-muted mb-0 small">Proyectos Completados</p>
                                 </div>
                             </div>
                         </div>
@@ -83,19 +83,19 @@
                                     <div class="feature-icon secondary mx-auto mb-2" style="width: 50px; height: 50px;">
                                         <i class="bi bi-check-square"></i>
                                     </div>
-                                    <h5 class="fw-bold text-primary mb-1">{{ $userStats['tasks'] ?? 0 }}</h5>
-                                    <p class="text-muted mb-0 small">Tareas Asignadas</p>
+                                    <h5 class="fw-bold text-primary mb-1">{{ $userStats['tasks_done'] ?? 0 }}</h5>
+                                    <p class="text-muted mb-0 small">Tareas Realizadas</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="card feature-card">
                                 <div class="card-body text-center p-3">
-                                    <div class="feature-icon success mx-auto mb-2" style="width: 50px; height: 50px;">
-                                        <i class="bi bi-people"></i>
+                                    <div class="feature-icon primary mx-auto mb-2" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-kanban"></i>
                                     </div>
-                                    <h5 class="fw-bold text-primary mb-1">{{ $userStats['teams'] ?? 0 }}</h5>
-                                    <p class="text-muted mb-0 small">Equipos</p>
+                                    <h5 class="fw-bold text-primary mb-1">{{ $userStats['projects_created'] ?? 0 }}</h5>
+                                    <p class="text-muted mb-0 small">Proyectos Creados</p>
                                 </div>
                             </div>
                         </div>
@@ -106,7 +106,7 @@
                                         <i class="bi bi-chat-dots"></i>
                                     </div>
                                     <h5 class="fw-bold text-primary mb-1">{{ $userStats['comments'] ?? 0 }}</h5>
-                                    <p class="text-muted mb-0 small">Comentarios</p>
+                                    <p class="text-muted mb-0 small">Comentarios Realizados</p>
                                 </div>
                             </div>
                         </div>
@@ -119,18 +119,18 @@
                 <div class="col-12">
                     <ul class="nav nav-pills mb-4" id="profileTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="teams-tab" data-bs-toggle="pill" data-bs-target="#teams" type="button" role="tab">
-                                <i class="bi bi-people me-2"></i>Mis Equipos
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="projects-tab" data-bs-toggle="pill" data-bs-target="#projects" type="button" role="tab">
-                                <i class="bi bi-kanban me-2"></i>Mis Proyectos
+                            <button class="nav-link active" id="projects-tab" data-bs-toggle="pill" data-bs-target="#projects" type="button" role="tab">
+                                <i class="bi bi-kanban me-2"></i>Proyectos
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="tasks-tab" data-bs-toggle="pill" data-bs-target="#tasks" type="button" role="tab">
-                                <i class="bi bi-check-square me-2"></i>Mis Tareas
+                                <i class="bi bi-check-square me-2"></i>Tareas
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="teams-tab" data-bs-toggle="pill" data-bs-target="#teams" type="button" role="tab">
+                                <i class="bi bi-people me-2"></i>Equipos
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -141,59 +141,19 @@
                     </ul>
 
                     <div class="tab-content" id="profileTabContent">
-                        <!-- Mis Equipos -->
-                        <div class="tab-pane fade show active" id="teams" role="tabpanel">
-                            <div class="card">
-                                <div class="card-header bg-white py-3">
-                                    <h5 class="card-title mb-0">
-                                        <i class="bi bi-people text-primary me-2"></i>
-                                        Equipos en los que participo
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    @if(isset($userTeams) && $userTeams->count() > 0)
-                                        <div class="row g-3">
-                                            @foreach($userTeams as $teamData)
-                                            <div class="col-lg-6">
-                                                <div class="card border">
-                                                    <div class="card-body p-3">
-                                                        <div class="d-flex align-items-start">
-                                                            <div class="feature-icon secondary me-3" style="width: 40px; height: 40px; font-size: 1rem;">
-                                                                <i class="bi bi-people-fill"></i>
-                                                            </div>
-                                                            <div class="flex-grow-1">
-                                                                <h6 class="fw-bold mb-1">{{ $teamData->team->name }}</h6>
-                                                                <p class="text-muted small mb-2">{{ $teamData->team->description }}</p>
-                                                                <div class="d-flex justify-content-between align-items-center">
-                                                                    <span class="badge bg-primary">{{ $teamData->role }}</span>
-                                                                    <small class="text-muted">Desde {{ $teamData->joined_at->format('M Y') }}</small>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <div class="text-center py-4">
-                                            <i class="bi bi-people display-4 text-muted mb-3"></i>
-                                            <h6 class="text-muted">No perteneces a ningún equipo aún</h6>
-                                            <p class="text-muted mb-3">Únete a un equipo para colaborar en proyectos</p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Mis Proyectos -->
-                        <div class="tab-pane fade" id="projects" role="tabpanel">
+                        <div class="tab-pane fade show active" id="projects" role="tabpanel">
                             <div class="card">
                                 <div class="card-header bg-white py-3">
-                                    <h5 class="card-title mb-0">
-                                        <i class="bi bi-kanban text-primary me-2"></i>
-                                        Proyectos creados por mí
-                                    </h5>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-kanban text-primary me-2"></i>
+                                            Mis Proyectos
+                                        </h5>
+                                        <a href="{{ route('project.index') }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-eye me-1"></i>Ver más
+                                        </a>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     @if(isset($userProjects) && $userProjects->count() > 0)
@@ -204,7 +164,7 @@
                                                     <div class="card-body p-3">
                                                         <div class="d-flex justify-content-between align-items-start mb-2">
                                                             <h6 class="fw-bold mb-0">{{ $project->title }}</h6>
-                                                            <span class="badge bg-{{ $project->status === 'ACTIVE' ? 'success' : ($project->status === 'PENDING' ? 'warning' : 'secondary') }}">
+                                                            <span class="badge bg-{{ $project->status === 'ACTIVE' ? 'success' : ($project->status === 'PENDING' ? 'warning' : ($project->status === 'COMPLETED' ? 'primary' : 'secondary')) }}">
                                                                 {{ $project->status }}
                                                             </span>
                                                         </div>
@@ -242,10 +202,15 @@
                         <div class="tab-pane fade" id="tasks" role="tabpanel">
                             <div class="card">
                                 <div class="card-header bg-white py-3">
-                                    <h5 class="card-title mb-0">
-                                        <i class="bi bi-check-square text-primary me-2"></i>
-                                        Tareas asignadas a mí
-                                    </h5>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-check-square text-primary me-2"></i>
+                                            Mis Tareas
+                                        </h5>
+                                        <a href="#" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-eye me-1"></i>Ver más
+                                        </a>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     @if(isset($userTasks) && $userTasks->count() > 0)
@@ -262,7 +227,7 @@
                                                                 <h6 class="fw-bold mb-1">{{ $task->title }}</h6>
                                                                 <p class="text-muted small mb-2">{{ Str::limit($task->description, 100) }}</p>
                                                                 <div class="d-flex gap-2 align-items-center">
-                                                                    <span class="badge bg-{{ $task->priority === 'HIGH' ? 'danger' : ($task->priority === 'MEDIUM' ? 'warning' : 'secondary') }}">
+                                                                    <span class="badge bg-{{ $task->priority === 'URGENT' ? 'danger' : ($task->priority === 'HIGH' ? 'warning' : ($task->priority === 'MEDIUM' ? 'info' : 'secondary')) }}">
                                                                         {{ $task->priority }}
                                                                     </span>
                                                                     <small class="text-muted">
@@ -299,14 +264,69 @@
                             </div>
                         </div>
 
+                        <!-- Mis Equipos -->
+                        <div class="tab-pane fade" id="teams" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header bg-white py-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-people text-primary me-2"></i>
+                                            Mis Equipos
+                                        </h5>
+                                        <a href="#" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-eye me-1"></i>Ver más
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    @if(isset($userTeams) && $userTeams->count() > 0)
+                                        <div class="row g-3">
+                                            @foreach($userTeams as $teamData)
+                                            <div class="col-lg-6">
+                                                <div class="card border">
+                                                    <div class="card-body p-3">
+                                                        <div class="d-flex align-items-start">
+                                                            <div class="feature-icon secondary me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                                                <i class="bi bi-people-fill"></i>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="fw-bold mb-1">{{ $teamData->team->name }}</h6>
+                                                                <p class="text-muted small mb-2">{{ $teamData->team->description }}</p>
+                                                                <div class="d-flex justify-content-between align-items-center">
+                                                                    <span class="badge bg-primary">{{ $teamData->role }}</span>
+                                                                    <small class="text-muted">Desde {{ $teamData->joined_at->format('M Y') }}</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="text-center py-4">
+                                            <i class="bi bi-people display-4 text-muted mb-3"></i>
+                                            <h6 class="text-muted">No perteneces a ningún equipo aún</h6>
+                                            <p class="text-muted mb-3">Únete a un equipo para colaborar en proyectos</p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Actividad Reciente -->
                         <div class="tab-pane fade" id="activity" role="tabpanel">
                             <div class="card">
                                 <div class="card-header bg-white py-3">
-                                    <h5 class="card-title mb-0">
-                                        <i class="bi bi-clock-history text-primary me-2"></i>
-                                        Actividad Reciente
-                                    </h5>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-clock-history text-primary me-2"></i>
+                                            Actividad Reciente
+                                        </h5>
+                                        <a href="#" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-eye me-1"></i>Ver más
+                                        </a>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     @if(isset($recentActivity) && $recentActivity->count() > 0)
@@ -334,44 +354,6 @@
                                             <p class="text-muted mb-0">Tu actividad aparecerá aquí</p>
                                         </div>
                                     @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Acciones rápidas -->
-            <div class="row mt-5">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header bg-white py-3">
-                            <h5 class="card-title mb-0">
-                                <i class="bi bi-lightning text-primary me-2"></i>
-                                Acciones Rápidas
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <a href="{{ route('profile.edit') }}" class="btn btn-outline-primary w-100">
-                                        <i class="bi bi-gear me-2"></i>Editar Perfil
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <button class="btn btn-outline-secondary w-100">
-                                        <i class="bi bi-plus-circle me-2"></i>Nuevo Proyecto
-                                    </button>
-                                </div>
-                                <div class="col-md-3">
-                                    <button class="btn btn-outline-success w-100">
-                                        <i class="bi bi-person-plus me-2"></i>Invitar Usuario
-                                    </button>
-                                </div>
-                                <div class="col-md-3">
-                                    <a href="{{ route('dashboard') }}" class="btn btn-outline-info w-100">
-                                        <i class="bi bi-speedometer2 me-2"></i>Dashboard
-                                    </a>
                                 </div>
                             </div>
                         </div>

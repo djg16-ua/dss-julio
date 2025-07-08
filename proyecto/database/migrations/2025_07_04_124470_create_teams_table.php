@@ -12,10 +12,15 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
+            $table->foreignId('project_id')->constrained()->onDelete('cascade');
+            $table->boolean('is_general')->default(false); // Marca el equipo general del proyecto
             $table->timestamps();
             
             // Índices
             $table->index('name');
+            $table->index('project_id');
+            $table->index('is_general');
+              
         });
     }
 
