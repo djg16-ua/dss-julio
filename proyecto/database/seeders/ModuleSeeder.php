@@ -194,52 +194,62 @@ class ModuleSeeder extends Seeder
             DB::table('modules')->insert($chunk);
         }
 
-        // Asignar teams a módulos de manera realista
+        // Ahora asignar teams específicos del proyecto a módulos
+        $this->assignTeamsToModules();
+    }
+
+    private function assignTeamsToModules()
+    {
+        // Asignaciones específicas por proyecto usando teams del proyecto
         $moduleTeamAssignments = [
-            // E-commerce Platform modules
-            ['module_name' => 'Authentication', 'project_id' => 1, 'teams' => [2, 8]], // Backend, Security
-            ['module_name' => 'Payment System', 'project_id' => 1, 'teams' => [2, 8, 11]], // Backend, Security, Integration
-            ['module_name' => 'User Interface', 'project_id' => 1, 'teams' => [1, 9]], // Frontend, Design
-            ['module_name' => 'Product Catalog', 'project_id' => 1, 'teams' => [1, 2]], // Frontend, Backend
-            ['module_name' => 'Shopping Cart', 'project_id' => 1, 'teams' => [1, 2]], // Frontend, Backend
-            ['module_name' => 'Order Management', 'project_id' => 1, 'teams' => [2, 3]], // Backend, QA
-            ['module_name' => 'Inventory System', 'project_id' => 1, 'teams' => [2]], // Backend
-            ['module_name' => 'Search Engine', 'project_id' => 1, 'teams' => [2, 7]], // Backend, Data
-            ['module_name' => 'Reviews System', 'project_id' => 1, 'teams' => [1, 2]], // Frontend, Backend
-            ['module_name' => 'Recommendation Engine', 'project_id' => 1, 'teams' => [7, 10]], // Data, Research
-            ['module_name' => 'Analytics Module', 'project_id' => 1, 'teams' => [7, 1]], // Data, Frontend
-            ['module_name' => 'Admin Dashboard', 'project_id' => 1, 'teams' => [1, 9]], // Frontend, Design
+            // E-commerce Platform modules (Proyecto 1)
+            ['module_name' => 'Authentication', 'project_id' => 1, 'team_names' => ['Backend']],
+            ['module_name' => 'Payment System', 'project_id' => 1, 'team_names' => ['Backend', 'QA']],
+            ['module_name' => 'User Interface', 'project_id' => 1, 'team_names' => ['Frontend']],
+            ['module_name' => 'Product Catalog', 'project_id' => 1, 'team_names' => ['Frontend', 'Backend']],
+            ['module_name' => 'Shopping Cart', 'project_id' => 1, 'team_names' => ['Frontend', 'Backend']],
+            ['module_name' => 'Order Management', 'project_id' => 1, 'team_names' => ['Backend', 'QA']],
+            ['module_name' => 'Inventory System', 'project_id' => 1, 'team_names' => ['Backend']],
+            ['module_name' => 'Search Engine', 'project_id' => 1, 'team_names' => ['Backend']],
+            ['module_name' => 'Reviews System', 'project_id' => 1, 'team_names' => ['Frontend', 'Backend']],
+            ['module_name' => 'Recommendation Engine', 'project_id' => 1, 'team_names' => ['Backend']],
+            ['module_name' => 'Analytics Module', 'project_id' => 1, 'team_names' => ['Frontend', 'Backend']],
+            ['module_name' => 'Admin Dashboard', 'project_id' => 1, 'team_names' => ['Frontend']],
 
-            // CRM System modules
-            ['module_name' => 'Authentication', 'project_id' => 2, 'teams' => [2]], // Backend
-            ['module_name' => 'Contact Management', 'project_id' => 2, 'teams' => [1, 2]], // Frontend, Backend
-            ['module_name' => 'Sales Pipeline', 'project_id' => 2, 'teams' => [1, 2, 5]], // Frontend, Backend, Product
-            ['module_name' => 'Task Management', 'project_id' => 2, 'teams' => [1, 2]], // Frontend, Backend
-            ['module_name' => 'Reporting Module', 'project_id' => 2, 'teams' => [7, 1]], // Data, Frontend
-            ['module_name' => 'Email Integration', 'project_id' => 2, 'teams' => [11, 2]], // Integration, Backend
-            ['module_name' => 'Calendar Integration', 'project_id' => 2, 'teams' => [11]], // Integration
+            // CRM System modules (Proyecto 2)
+            ['module_name' => 'Authentication', 'project_id' => 2, 'team_names' => ['Development']],
+            ['module_name' => 'Contact Management', 'project_id' => 2, 'team_names' => ['Development']],
+            ['module_name' => 'Sales Pipeline', 'project_id' => 2, 'team_names' => ['Development', 'Testing']],
+            ['module_name' => 'Task Management', 'project_id' => 2, 'team_names' => ['Development']],
+            ['module_name' => 'Reporting Module', 'project_id' => 2, 'team_names' => ['Development']],
+            ['module_name' => 'Email Integration', 'project_id' => 2, 'team_names' => ['Development']],
+            ['module_name' => 'Calendar Integration', 'project_id' => 2, 'team_names' => ['Development']],
 
-            // Mobile Banking App modules
-            ['module_name' => 'Biometric Authentication', 'project_id' => 3, 'teams' => [6, 8]], // Mobile, Security
-            ['module_name' => 'Account Dashboard', 'project_id' => 3, 'teams' => [6, 9]], // Mobile, Design
-            ['module_name' => 'Transaction Engine', 'project_id' => 3, 'teams' => [6, 2, 8]], // Mobile, Backend, Security
-            ['module_name' => 'Security Module', 'project_id' => 3, 'teams' => [8, 2]], // Security, Backend
-            ['module_name' => 'Bill Payment', 'project_id' => 3, 'teams' => [6, 11]], // Mobile, Integration
-            ['module_name' => 'ATM Locator', 'project_id' => 3, 'teams' => [6, 11]], // Mobile, Integration
-            ['module_name' => 'Investment Portal', 'project_id' => 3, 'teams' => [6, 2]], // Mobile, Backend
-            ['module_name' => 'Customer Support', 'project_id' => 3, 'teams' => [6, 11]], // Mobile, Integration
+            // Mobile Banking App modules (Proyecto 3)
+            ['module_name' => 'Biometric Authentication', 'project_id' => 3, 'team_names' => ['Development']],
+            ['module_name' => 'Account Dashboard', 'project_id' => 3, 'team_names' => ['Development']],
+            ['module_name' => 'Transaction Engine', 'project_id' => 3, 'team_names' => ['Development', 'Testing']],
+            ['module_name' => 'Security Module', 'project_id' => 3, 'team_names' => ['Development']],
+            ['module_name' => 'Bill Payment', 'project_id' => 3, 'team_names' => ['Development']],
+            ['module_name' => 'ATM Locator', 'project_id' => 3, 'team_names' => ['Development']],
+            ['module_name' => 'Investment Portal', 'project_id' => 3, 'team_names' => ['Development']],
+            ['module_name' => 'Customer Support', 'project_id' => 3, 'team_names' => ['Development']],
 
-            // Payment Gateway Integration modules
-            ['module_name' => 'Gateway Abstraction Layer', 'project_id' => 13, 'teams' => [11, 2]], // Integration, Backend
-            ['module_name' => 'Multi-Gateway Support', 'project_id' => 13, 'teams' => [11, 2, 8]], // Integration, Backend, Security
-            ['module_name' => 'Fraud Detection Engine', 'project_id' => 13, 'teams' => [7, 8, 2]], // Data, Security, Backend
-            ['module_name' => 'Transaction Logging', 'project_id' => 13, 'teams' => [2, 8]], // Backend, Security
-            ['module_name' => 'Webhook Management', 'project_id' => 13, 'teams' => [11, 2]], // Integration, Backend
-            ['module_name' => 'PCI Compliance Tools', 'project_id' => 13, 'teams' => [8, 2]], // Security, Backend
-            ['module_name' => 'Payment Analytics', 'project_id' => 13, 'teams' => [7, 1]], // Data, Frontend
+            // Healthcare Portal modules (Proyecto 4)
+            ['module_name' => 'Patient Registration', 'project_id' => 4, 'team_names' => ['Development']],
+            ['module_name' => 'Appointment Scheduler', 'project_id' => 4, 'team_names' => ['Development']],
+            ['module_name' => 'Medical Records', 'project_id' => 4, 'team_names' => ['Development']],
+            ['module_name' => 'Doctor Portal', 'project_id' => 4, 'team_names' => ['Development']],
+            ['module_name' => 'Prescription System', 'project_id' => 4, 'team_names' => ['Development']],
+
+            // Analytics Dashboard modules (Proyecto 5)
+            ['module_name' => 'Data Ingestion', 'project_id' => 5, 'team_names' => ['Data Team']],
+            ['module_name' => 'Visualization Engine', 'project_id' => 5, 'team_names' => ['Frontend', 'Data Team']],
+            ['module_name' => 'Report Builder', 'project_id' => 5, 'team_names' => ['Frontend']],
+            ['module_name' => 'Real-time Monitoring', 'project_id' => 5, 'team_names' => ['Data Team']],
+            ['module_name' => 'Data Export', 'project_id' => 5, 'team_names' => ['Data Team']],
         ];
 
-        // Insertar asignaciones de teams a módulos
         $moduleTeamInserts = [];
         foreach ($moduleTeamAssignments as $assignment) {
             $module = DB::table('modules')
@@ -248,14 +258,21 @@ class ModuleSeeder extends Seeder
                 ->first();
 
             if ($module) {
-                foreach ($assignment['teams'] as $teamId) {
-                    $moduleTeamInserts[] = [
-                        'module_id' => $module->id,
-                        'team_id' => $teamId,
-                        'assigned_at' => now()->subDays(rand(7, 60)),
-                        'created_at' => now()->subDays(rand(7, 60)),
-                        'updated_at' => now()->subDays(rand(0, 30)),
-                    ];
+                foreach ($assignment['team_names'] as $teamName) {
+                    $team = DB::table('teams')
+                        ->where('name', $teamName)
+                        ->where('project_id', $assignment['project_id'])
+                        ->first();
+
+                    if ($team) {
+                        $moduleTeamInserts[] = [
+                            'module_id' => $module->id,
+                            'team_id' => $team->id,
+                            'assigned_at' => now()->subDays(rand(7, 60)),
+                            'created_at' => now()->subDays(rand(7, 60)),
+                            'updated_at' => now()->subDays(rand(0, 30)),
+                        ];
+                    }
                 }
             }
         }

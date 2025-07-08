@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomPasswordResetController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\TeamController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\DashboardController;
 
@@ -134,6 +135,33 @@ Route::middleware('auth')->group(function () {
 // ============================================
 Route::middleware('auth')->group(function () {
     Route::resource('project', ProjectController::class);
+    Route::get('/project-search-users', [ProjectController::class, 'searchUsers'])->name('project.search-users');
+    
+    // Rutas adicionales para gestión de miembros del proyecto
+    Route::post('/project/{project}/members', [ProjectController::class, 'addMember'])->name('project.add-member');
+    Route::delete('/project/{project}/members/{user}', [ProjectController::class, 'removeMember'])->name('project.remove-member');
+});
+
+// ============================================
+// RUTAS DE EQUIPOS - DENTRO DE PROYECTOS
+// ============================================
+Route::middleware('auth')->group(function () {
+    // Rutas anidadas para equipos dentro de proyectos
+    Route::get('/project/{project}/teams', [TeamController::class, 'index'])->name('team.index');
+    Route::get('/project/{project}/teams/create', [TeamController::class, 'create'])->name('team.create');
+    Route::post('/project/{project}/teams', [TeamController::class, 'store'])->name('team.store');
+    Route::get('/project/{project}/teams/{team}', [TeamController::class, 'show'])->name('team.show');
+    Route::get('/project/{project}/teams/{team}/edit', [TeamController::class, 'edit'])->name('team.edit');
+    Route::put('/project/{project}/teams/{team}', [TeamController::class, 'update'])->name('team.update');
+    Route::delete('/project/{project}/teams/{team}', [TeamController::class, 'destroy'])->name('team.destroy');
+    
+    // Rutas para gestión de miembros de equipos específicos
+    Route::post('/project/{project}/teams/{team}/members', [TeamController::class, 'addMember'])->name('team.add-member');
+    Route::delete('/project/{project}/teams/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('team.remove-member');
+    Route::patch('/project/{project}/teams/{team}/members/{user}/role', [TeamController::class, 'updateMemberRole'])->name('team.update-member-role');
+    
+    // Rutas API para AJAX
+    Route::get('/project/{project}/teams/{team}/available-members', [TeamController::class, 'getAvailableMembers'])->name('team.available-members');
 });
 
 // RUTAS DE ADMINISTRACIÓN

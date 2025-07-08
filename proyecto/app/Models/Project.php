@@ -34,11 +34,19 @@ class Project extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function teams(): BelongsToMany
+    public function teams(): HasMany
     {
-        return $this->belongsToMany(Team::class, 'project_team')
-            ->withPivot('assigned_at')
-            ->withTimestamps();
+        return $this->hasMany(Team::class);
+    }
+
+    public function generalTeam(): HasMany
+    {
+        return $this->hasMany(Team::class)->where('is_general', true);
+    }
+
+    public function customTeams(): HasMany
+    {
+        return $this->hasMany(Team::class)->where('is_general', false);
     }
 
     public function modules(): HasMany
@@ -80,8 +88,31 @@ class Project extends Model
         return $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
     }
 
+    // Obtener todos los usuarios del proyecto (del equipo general)
     public function users()
     {
-        return $this->teams->flatMap(fn($team) => $team->users)->unique('id');
+        $generalTeam = $this->teams()->where('is_general', true)->first();
+        return $generalTeam ? $generalTeam->users()->where('is_active', true) : collect();
+    }
+
+    // Obtener el equipo general del proyecto
+    public function getGeneralTeam(): ?Team
+    {
+        return $this->teams()->where('is_general', true)->first();
+    }
+
+    // Boot method para crear automáticamente el equipo general
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($project) {
+            // Crear automáticamente el equipo general al crear un proyecto
+            $project->teams()->create([
+                'name' => 'General',
+                'description' => 'Equipo general del proyecto - incluye todos los miembros',
+                'is_general' => true,
+            ]);
+        });
     }
 }

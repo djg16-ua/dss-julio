@@ -50,6 +50,27 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    // Método para obtener proyectos del usuario a través de equipos
+    public function projects()
+    {
+        return $this->teams()
+            ->with('project')
+            ->get()
+            ->pluck('project')
+            ->unique('id');
+    }
+
+    // Verificar si el usuario trabaja en un proyecto específico
+    public function belongsToProject($projectId): bool
+    {
+        return $this->teams()
+            ->whereHas('project', function ($query) use ($projectId) {
+                $query->where('id', $projectId);
+            })
+            ->where('is_active', true)
+            ->exists();
+    }
+
     public function createdProjects(): HasMany
     {
         return $this->hasMany(Project::class, 'created_by');

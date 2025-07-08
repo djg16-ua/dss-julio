@@ -1,321 +1,277 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard')
+@section('title', 'Dashboard - TaskFlow')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Header personalizado -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="h3 mb-0 text-gray-800">
-                ¡Bienvenido, {{ Auth::user()->name }}!
-            </h1>
-            <p class="text-muted">
-                Conectado como 
-                <span class="badge {{ Auth::user()->isAdmin() ? 'bg-danger' : 'bg-primary' }}">
-                    {{ Auth::user()->role }}
-                </span>
-            </p>
-        </div>
-        @if(Auth::user()->isAdmin())
-            <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-danger">
-                <i class="fas fa-cog fa-sm text-white-50"></i> Panel de Administración
-            </a>
-        @endif
-    </div>
-
-    <!-- Cards de estadísticas (3 cards) -->
-    <div class="row mb-4">
-        <!-- Tareas Activas -->
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Tareas Activas
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ $activeTasks }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Proyectos Activos -->
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Proyectos Activos
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ $activeProjects }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-project-diagram fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Comentarios Activos -->
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Comentarios Activos
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ $activeComments }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-comments fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Contenido principal -->
+<div class="container py-5">
     <div class="row">
-        <!-- Sección principal (col-lg-8) -->
-        <div class="col-lg-8">
-            <!-- Tareas en Curso -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Tareas en Curso</h6>
-                    <a href="#" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-list me-1"></i>Ver más
-                    </a>
+        <div class="col-12">
+            <!-- Header de bienvenida -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <h1 class="display-5 fw-bold text-primary">
+                        <i class="bi bi-speedometer2 me-3"></i>Dashboard
+                    </h1>
+                    <p class="lead text-muted">
+                        Bienvenido de vuelta, <strong>{{ Auth::user()->name }}</strong>
+                    </p>
                 </div>
-                <div class="card-body">
-                    @if($tasksInProgress->count() > 0)
-                        @foreach($tasksInProgress as $task)
-                            <div class="d-flex align-items-center mb-3 p-3 border rounded">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">
-                                        <strong>{{ $task->title }}</strong>
-                                        @switch($task->priority)
-                                            @case('URGENT')
-                                                <span class="badge bg-danger ms-2">Urgente</span>
-                                                @break
-                                            @case('HIGH')
-                                                <span class="badge bg-warning ms-2">Alta</span>
-                                                @break
-                                            @case('MEDIUM')
-                                                <span class="badge bg-info ms-2">Media</span>
-                                                @break
-                                            @case('LOW')
-                                                <span class="badge bg-secondary ms-2">Baja</span>
-                                                @break
-                                        @endswitch
-                                    </h6>
-                                    <p class="text-muted mb-1">
-                                        <strong>Proyecto:</strong> {{ $task->module->project->title ?? 'Sin proyecto' }}
-                                        | <strong>Módulo:</strong> {{ $task->module->name ?? 'Sin módulo' }}
-                                    </p>
-                                    @if($task->description)
-                                        <p class="mb-1 text-sm">{{ Str::limit($task->description, 100) }}</p>
-                                    @endif
-                                    @if($task->end_date)
-                                        <small class="text-muted">
-                                            <i class="fas fa-calendar me-1"></i>
-                                            Fecha límite: {{ \Carbon\Carbon::parse($task->end_date)->format('d/m/Y') }}
-                                        </small>
-                                    @endif
-                                </div>
-                                <div class="ms-3">
-                                    @if($task->status === 'ACTIVE')
-                                        <span class="badge bg-success">Activa</span>
-                                    @else
-                                        <span class="badge bg-warning">Pendiente</span>
-                                    @endif
-                                </div>
-                            </div>
-                        @endforeach
-                    @else
-                        <div class="text-center py-4">
-                            <i class="fas fa-tasks fa-2x text-muted mb-2"></i>
-                            <p class="text-muted">No tienes tareas en curso</p>
-                        </div>
-                    @endif
+                <div class="col-lg-4 text-lg-end">
+                    <a href="#" class="btn bg-{{ Auth::user()->isAdmin() ? 'primary' : 'secondary' }} text-white fs-6 px-3 py-2 text-decoration-none">
+                        <i class="bi bi-person-badge me-1"></i>
+                        {{ Auth::user()->role }}
+                    </a>
                 </div>
             </div>
 
-            <!-- Resumen Personal -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Resumen Personal</h6>
+            <!-- Cards de estadísticas -->
+            <div class="row g-4 mb-5">
+                <!-- Tareas Activas -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon primary mx-auto mb-3">
+                                <i class="bi bi-kanban"></i>
+                            </div>
+                            <h3 class="fw-bold text-primary">{{ $activeTasks }}</h3>
+                            <p class="text-muted mb-0">Tareas Activas</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-3">
-                            <div class="border-right">
-                                <h4 class="font-weight-bold text-primary">{{ $taskSummary['total'] }}</h4>
-                                <small class="text-muted">Total Tareas</small>
+
+                <!-- Proyectos Activos -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon secondary mx-auto mb-3">
+                                <i class="bi bi-folder"></i>
                             </div>
+                            <h3 class="fw-bold text-primary">{{ $activeProjects }}</h3>
+                            <p class="text-muted mb-0">Proyectos Activos</p>
                         </div>
-                        <div class="col-3">
-                            <div class="border-right">
-                                <h4 class="font-weight-bold text-success">{{ $taskSummary['completed'] }}</h4>
-                                <small class="text-muted">Completadas</small>
+                    </div>
+                </div>
+
+                <!-- Comentarios Activos -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon success mx-auto mb-3">
+                                <i class="bi bi-chat-dots"></i>
                             </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="border-right">
-                                <h4 class="font-weight-bold text-info">{{ $taskSummary['in_progress'] }}</h4>
-                                <small class="text-muted">En Progreso</small>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <h4 class="font-weight-bold text-warning">{{ $taskSummary['pending'] }}</h4>
-                            <small class="text-muted">Pendientes</small>
+                            <h3 class="fw-bold text-primary">{{ $activeComments }}</h3>
+                            <p class="text-muted mb-0">Comentarios Activos</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Panel lateral (col-lg-4) -->
-        <div class="col-lg-4">
-            <!-- Proyectos Activos -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Proyectos Activos</h6>
-                    <a href="{{ route('project.index') }}" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-list me-1"></i>Ver más
-                    </a>
-                </div>
-                <div class="card-body">
-                    @if($activeProjectsList->count() > 0)
-                        @foreach($activeProjectsList as $project)
-                            <div class="d-flex align-items-center mb-3 p-2 border rounded">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">
-                                        <a href="{{ route('project.show', $project) }}" class="text-decoration-none">
-                                            {{ $project->title }}
-                                        </a>
-                                    </h6>
-                                    <small class="text-muted">
-                                        <i class="fas fa-user me-1"></i>
-                                        {{ $project->creator->name }}
-                                        @if($project->creator->id === auth()->id())
-                                            (Tú)
+            <!-- Sección principal -->
+            <div class="row g-4">
+                <!-- Tareas en curso -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header bg-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-list-task text-primary me-2"></i>
+                                    Tareas en Curso
+                                </h5>
+                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i>Ver más
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if($tasksInProgress->count() > 0)
+                                <div class="list-group list-group-flush">
+                                    @php $activeTasksShown = false; $pendingTasksShown = false; @endphp
+                                    
+                                    @foreach($tasksInProgress as $task)
+                                        @if($task->status === 'ACTIVE' && !$activeTasksShown)
+                                            @php $activeTasksShown = true; @endphp
+                                        @elseif($task->status === 'PENDING' && !$pendingTasksShown)
+                                            @if($activeTasksShown)
+                                                <div class="list-group-item bg-light">
+                                                    <small class="text-muted fw-bold">TAREAS PENDIENTES</small>
+                                                </div>
+                                            @endif
+                                            @php $pendingTasksShown = true; @endphp
                                         @endif
-                                    </small>
-                                    @if($project->public)
-                                        <span class="badge bg-primary ms-1">Público</span>
-                                    @else
-                                        <span class="badge bg-dark ms-1">Privado</span>
-                                    @endif
+                                        
+                                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                                            <div class="ms-2 me-auto">
+                                                <div class="fw-bold d-flex align-items-center">
+                                                    {{ $task->title }}
+                                                    <span class="badge bg-{{ $task->status === 'ACTIVE' ? 'success' : 'secondary' }} ms-2 small">
+                                                        {{ $task->status === 'ACTIVE' ? 'ACTIVA' : 'PENDIENTE' }}
+                                                    </span>
+                                                </div>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-folder me-1"></i>{{ $task->module->project->title }}
+                                                    <span class="mx-2">•</span>
+                                                    <i class="bi bi-person me-1"></i>{{ $task->creator->name }}
+                                                </small>
+                                                @if($task->end_date)
+                                                    <div class="small text-muted mt-1">
+                                                        <i class="bi bi-calendar me-1"></i>
+                                                        Vence: {{ $task->end_date->format('d/m/Y') }}
+                                                    </div>
+                                                @endif
+                                                @if($task->description)
+                                                    <div class="small text-muted mt-1">
+                                                        {{ Str::limit($task->description, 80) }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge bg-{{ $task->priority === 'URGENT' ? 'danger' : ($task->priority === 'HIGH' ? 'warning' : ($task->priority === 'MEDIUM' ? 'info' : 'secondary')) }} rounded-pill mb-1">
+                                                    {{ $task->priority }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
-                            </div>
-                        @endforeach
-                    @else
-                        <div class="text-center py-3">
-                            <i class="fas fa-project-diagram fa-2x text-muted mb-2"></i>
-                            <p class="text-muted mb-0">No hay proyectos activos</p>
+                            @else
+                                <div class="text-center py-4">
+                                    <i class="bi bi-check-circle display-1 text-success mb-3"></i>
+                                    <h6 class="text-muted">¡No tienes tareas en curso!</h6>
+                                    <p class="text-muted mb-3">Todas tus tareas están completas</p>
+                                </div>
+                            @endif
                         </div>
-                    @endif
-                </div>
-            </div>
+                    </div>
 
-            <!-- Comentarios en Curso -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Comentarios en Curso</h6>
-                    <a href="#" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-list me-1"></i>Ver más
-                    </a>
-                </div>
-                <div class="card-body">
-                    @if($commentsInProgress->count() > 0)
-                        @foreach($commentsInProgress as $comment)
-                            <div class="d-flex align-items-start mb-3 p-2 border rounded">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1 text-sm">
-                                        <strong>{{ $comment->task->title }}</strong>
-                                        @switch($comment->task->priority)
-                                            @case('URGENT')
-                                                <span class="badge bg-danger">Urgente</span>
-                                                @break
-                                            @case('HIGH')
-                                                <span class="badge bg-warning">Alta</span>
-                                                @break
-                                            @case('MEDIUM')
-                                                <span class="badge bg-info">Media</span>
-                                                @break
-                                            @case('LOW')
-                                                <span class="badge bg-secondary">Baja</span>
-                                                @break
-                                        @endswitch
-                                    </h6>
-                                    <p class="mb-1 text-sm">{{ Str::limit($comment->content, 80) }}</p>
-                                    <small class="text-muted">
-                                        <i class="fas fa-clock me-1"></i>
-                                        {{ $comment->created_at->diffForHumans() }}
-                                    </small>
+                    <!-- Resumen Personal debajo de tareas -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-graph-up text-primary me-2"></i>
+                                Resumen Personal
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-3 mb-3">
+                                    <div class="fw-bold text-primary fs-4">{{ $taskSummary['total'] }}</div>
+                                    <small class="text-muted">Total Tareas</small>
+                                </div>
+                                <div class="col-3 mb-3">
+                                    <div class="fw-bold text-success fs-4">{{ $taskSummary['completed'] }}</div>
+                                    <small class="text-muted">Completadas</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="fw-bold text-warning fs-4">{{ $taskSummary['in_progress'] }}</div>
+                                    <small class="text-muted">En Progreso</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="fw-bold text-info fs-4">{{ $taskSummary['pending'] }}</div>
+                                    <small class="text-muted">Pendientes</small>
                                 </div>
                             </div>
-                        @endforeach
-                    @else
-                        <div class="text-center py-3">
-                            <i class="fas fa-comments fa-2x text-muted mb-2"></i>
-                            <p class="text-muted mb-0">No hay comentarios recientes</p>
                         </div>
-                    @endif
+                    </div>
+                </div>
+
+                <!-- Panel lateral -->
+                <div class="col-lg-4">
+                    <!-- Proyectos activos -->
+                    <div class="card">
+                        <div class="card-header bg-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-kanban text-primary me-2"></i>
+                                    Proyectos Activos
+                                </h5>
+                                <a href="{{ route('project.index') }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i>Ver más
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if($activeProjectsList->count() > 0)
+                                @foreach($activeProjectsList as $project)
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="feature-icon primary me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                            <i class="bi bi-folder"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold">{{ $project->title }}</h6>
+                                            <small class="text-muted">Por {{ $project->creator->name }}</small>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="text-center py-3">
+                                    <i class="bi bi-folder-plus display-4 text-muted mb-2"></i>
+                                    <p class="text-muted small mb-0">No hay proyectos activos</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Comentarios en Curso -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-chat-dots text-primary me-2"></i>
+                                    Comentarios en Curso
+                                </h5>
+                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i>Ver más
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if($commentsInProgress->count() > 0)
+                                @php $activeCommentsShown = false; $pendingCommentsShown = false; @endphp
+                                
+                                @foreach($commentsInProgress as $comment)
+                                    @if($comment->task->status === 'ACTIVE' && !$activeCommentsShown)
+                                        @php $activeCommentsShown = true; @endphp
+                                    @elseif($comment->task->status === 'PENDING' && !$pendingCommentsShown)
+                                        @if($activeCommentsShown)
+                                            <div class="border-top pt-3 mb-3">
+                                                <small class="text-muted fw-bold">COMENTARIOS PENDIENTES</small>
+                                            </div>
+                                        @endif
+                                        @php $pendingCommentsShown = true; @endphp
+                                    @endif
+                                    
+                                    <div class="d-flex align-items-start mb-3">
+                                        <div class="feature-icon {{ $comment->task->status === 'ACTIVE' ? 'success' : 'secondary' }} me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                            <i class="bi bi-chat"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 fw-bold d-flex align-items-center">
+                                                {{ $comment->task->title }}
+                                                <span class="badge bg-{{ $comment->task->status === 'ACTIVE' ? 'success' : 'secondary' }} ms-2 small">
+                                                    {{ $comment->task->status === 'ACTIVE' ? 'ACTIVA' : 'PENDIENTE' }}
+                                                </span>
+                                            </h6>
+                                            <p class="mb-1 small text-muted">
+                                                {{ Str::limit($comment->content, 60) }}
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="bi bi-person me-1"></i>{{ $comment->user->name }}
+                                                <span class="mx-1">•</span>
+                                                {{ $comment->created_at->diffForHumans() }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="text-center py-3">
+                                    <i class="bi bi-chat-square display-4 text-muted mb-2"></i>
+                                    <p class="text-muted small mb-0">No hay comentarios en curso</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
-}
-
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
-}
-
-.border-left-info {
-    border-left: 0.25rem solid #36b9cc !important;
-}
-
-.border-right {
-    border-right: 1px solid #e3e6f0;
-}
-
-.text-sm {
-    font-size: 0.875rem;
-}
-
-.card {
-    border: 1px solid #e3e6f0;
-}
-
-.card-header {
-    background-color: #f8f9fc;
-    border-bottom: 1px solid #e3e6f0;
-}
-
-.badge {
-    font-size: 0.75rem;
-}
-</style>
 @endsection

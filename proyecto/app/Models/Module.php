@@ -76,6 +76,13 @@ class Module extends Model
         return $query->where('is_core', true);
     }
 
+    public function scopeTeamsForProject($query)
+    {
+        return $this->teams()->whereHas('project', function ($q) {
+            $q->where('id', $this->project_id);
+        });
+    }
+
     // Métodos auxiliares
     public function isCore(): bool
     {
@@ -89,4 +96,5 @@ class Module extends Model
         
         return $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
     }
+
 }

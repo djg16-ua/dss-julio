@@ -3,308 +3,243 @@
 @section('title', 'Mis Proyectos')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-0 text-gray-800">Mis Proyectos</h1>
-            <p class="text-muted">Gestiona todos tus proyectos</p>
-        </div>
-        <a href="{{ route('projects.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>Nuevo Proyecto
-        </a>
-    </div>
-
-    <!-- Estadísticas -->
-    <div class="row mb-4">
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['total_projects'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-project-diagram fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Activos</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['active_projects'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-play fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pendientes</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['pending_projects'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clock fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Completados</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['completed_projects'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-check fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card border-left-secondary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Públicos</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['public_projects'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-globe fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card border-left-dark shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">Privados</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['private_projects'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-lock fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Filtros y búsqueda -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Filtros de búsqueda</h6>
-        </div>
-        <div class="card-body">
-            <form method="GET" action="{{ route('projects.index') }}" class="row g-3">
-                <div class="col-md-4">
-                    <label for="search" class="form-label">Buscar</label>
-                    <input type="text" class="form-control" id="search" name="search" 
-                           placeholder="Título o descripción..." value="{{ request('search') }}">
-                </div>
-                <div class="col-md-3">
-                    <label for="status" class="form-label">Estado</label>
-                    <select class="form-select" id="status" name="status">
-                        <option value="">Todos los estados</option>
-                        <option value="PENDING" {{ request('status') == 'PENDING' ? 'selected' : '' }}>Pendiente</option>
-                        <option value="ACTIVE" {{ request('status') == 'ACTIVE' ? 'selected' : '' }}>Activo</option>
-                        <option value="COMPLETED" {{ request('status') == 'COMPLETED' ? 'selected' : '' }}>Completado</option>
-                        <option value="PAUSED" {{ request('status') == 'PAUSED' ? 'selected' : '' }}>Pausado</option>
-                        <option value="CANCELLED" {{ request('status') == 'CANCELLED' ? 'selected' : '' }}>Cancelado</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="public" class="form-label">Privacidad</label>
-                    <select class="form-select" id="public" name="public">
-                        <option value="">Todos</option>
-                        <option value="1" {{ request('public') == '1' ? 'selected' : '' }}>Públicos</option>
-                        <option value="0" {{ request('public') == '0' ? 'selected' : '' }}>Privados</option>
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="fas fa-search"></i> Buscar
-                    </button>
-                    <a href="{{ route('projects.index') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-times"></i>
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Tabla de proyectos -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">
-                Lista de Proyectos ({{ $projects->count() }} proyectos)
-            </h6>
-        </div>
-        <div class="card-body">
-            @if($projects->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                        <thead>
-                            <tr>
-                                <th>Título</th>
-                                <th>Estado</th>
-                                <th>Privacidad</th>
-                                <th>Creador</th>
-                                <th>Fechas</th>
-                                <th>Equipos</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($projects as $project)
-                                <tr>
-                                    <td>
-                                        <div>
-                                            <strong>{{ $project->title }}</strong>
-                                            @if($project->description)
-                                                <br>
-                                                <small class="text-muted">{{ Str::limit($project->description, 50) }}</small>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td>
-                                        @switch($project->status)
-                                            @case('ACTIVE')
-                                                <span class="badge bg-success">Activo</span>
-                                                @break
-                                            @case('PENDING')
-                                                <span class="badge bg-warning">Pendiente</span>
-                                                @break
-                                            @case('COMPLETED')
-                                                <span class="badge bg-info">Completado</span>
-                                                @break
-                                            @case('PAUSED')
-                                                <span class="badge bg-secondary">Pausado</span>
-                                                @break
-                                            @case('CANCELLED')
-                                                <span class="badge bg-danger">Cancelado</span>
-                                                @break
-                                            @default
-                                                <span class="badge bg-light text-dark">{{ $project->status }}</span>
-                                        @endswitch
-                                    </td>
-                                    <td>
-                                        @if($project->public)
-                                            <span class="badge bg-primary">
-                                                <i class="fas fa-globe me-1"></i>Público
-                                            </span>
-                                        @else
-                                            <span class="badge bg-dark">
-                                                <i class="fas fa-lock me-1"></i>Privado
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar avatar-sm me-2">
-                                                <div class="avatar-title rounded-circle bg-light text-dark">
-                                                    {{ strtoupper(substr($project->creator->name, 0, 1)) }}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <strong>{{ $project->creator->name }}</strong>
-                                                @if($project->creator->id === auth()->id())
-                                                    <small class="text-primary">(Tú)</small>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <small>
-                                            @if($project->start_date)
-                                                <strong>Inicio:</strong> {{ \Carbon\Carbon::parse($project->start_date)->format('d/m/Y') }}<br>
-                                            @endif
-                                            @if($project->end_date)
-                                                <strong>Fin:</strong> {{ \Carbon\Carbon::parse($project->end_date)->format('d/m/Y') }}<br>
-                                            @endif
-                                            <strong>Creado:</strong> {{ $project->created_at->format('d/m/Y') }}
-                                        </small>
-                                    </td>
-                                    <td>
-                                        @php
-                                            $projectTeams = $project->teams ?? collect();
-                                        @endphp
-                                        @if($projectTeams->count() > 0)
-                                            @foreach($projectTeams->take(2) as $team)
-                                                <span class="badge bg-light text-dark mb-1">{{ $team->name }}</span><br>
-                                            @endforeach
-                                            @if($projectTeams->count() > 2)
-                                                <small class="text-muted">+{{ $projectTeams->count() - 2 }} más</small>
-                                            @endif
-                                        @else
-                                            <span class="text-muted">Sin equipos</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="btn-group" role="group">
-                                            <a href="{{ route('projects.show', $project) }}" 
-                                               class="btn btn-sm btn-outline-primary" title="Ver proyecto">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{{ route('projects.edit', $project) }}" 
-                                               class="btn btn-sm btn-outline-warning" title="Editar proyecto">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            @if($project->created_by === auth()->id())
-                                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                        title="Eliminar proyecto"
-                                                        onclick="confirmDelete('{{ $project->id }}', '{{ $project->title }}')">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @else
-                <div class="text-center py-5">
-                    <div class="mb-3">
-                        <i class="fas fa-project-diagram fa-3x text-muted"></i>
-                    </div>
-                    <h5 class="text-muted">No hay proyectos disponibles</h5>
-                    <p class="text-muted">
-                        @if(request()->hasAny(['search', 'status', 'public']))
-                            No se encontraron proyectos que coincidan con los filtros aplicados.
-                            <a href="{{ route('projects.index') }}" class="text-decoration-none">Limpiar filtros</a>
-                        @else
-                            Aún no formas parte de ningún proyecto. 
-                            <a href="{{ route('projects.create') }}" class="text-decoration-none">Crea tu primer proyecto</a>
-                        @endif
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <h1 class="display-5 fw-bold text-primary">
+                        <i class="bi bi-kanban me-3"></i>Mis Proyectos
+                    </h1>
+                    <p class="lead text-muted">
+                        Gestiona todos tus proyectos de forma eficiente
                     </p>
                 </div>
-            @endif
+                <div class="col-lg-4 text-lg-end">
+                    <a href="{{ route('project.create') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Nuevo Proyecto
+                    </a>
+                </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="row g-4 mb-5">
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="card feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon primary mx-auto mb-3">
+                                <i class="bi bi-kanban"></i>
+                            </div>
+                            <h3 class="fw-bold text-primary">{{ $stats['total_projects'] }}</h3>
+                            <p class="text-muted mb-0">Total</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="card feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon success mx-auto mb-3">
+                                <i class="bi bi-play-circle"></i>
+                            </div>
+                            <h3 class="fw-bold text-primary">{{ $stats['active_projects'] }}</h3>
+                            <p class="text-muted mb-0">Activos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="card feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon secondary mx-auto mb-3">
+                                <i class="bi bi-clock"></i>
+                            </div>
+                            <h3 class="fw-bold text-primary">{{ $stats['pending_projects'] }}</h3>
+                            <p class="text-muted mb-0">Pendientes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="card feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon primary mx-auto mb-3">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            <h3 class="fw-bold text-primary">{{ $stats['completed_projects'] }}</h3>
+                            <p class="text-muted mb-0">Completados</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="card feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon secondary mx-auto mb-3">
+                                <i class="bi bi-globe"></i>
+                            </div>
+                            <h3 class="fw-bold text-primary">{{ $stats['public_projects'] }}</h3>
+                            <p class="text-muted mb-0">Públicos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="card feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon secondary mx-auto mb-3">
+                                <i class="bi bi-lock"></i>
+                            </div>
+                            <h3 class="fw-bold text-primary">{{ $stats['private_projects'] }}</h3>
+                            <p class="text-muted mb-0">Privados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros y búsqueda -->
+            <div class="card mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-funnel text-primary me-2"></i>
+                        Filtros de búsqueda
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="filter-form" class="row g-3">
+                        @csrf
+                        <div class="col-md-4">
+                            <label for="search" class="form-label fw-bold">Buscar</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   placeholder="Título o descripción..." value="{{ request('search') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label fw-bold">Estado</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">Todos los estados</option>
+                                <option value="PENDING" {{ request('status') == 'PENDING' ? 'selected' : '' }}>⏳ Pendiente</option>
+                                <option value="ACTIVE" {{ request('status') == 'ACTIVE' ? 'selected' : '' }}>✅ Activo</option>
+                                <option value="DONE" {{ request('status') == 'DONE' ? 'selected' : '' }}>🎉 Completado</option>
+                                <option value="PAUSED" {{ request('status') == 'PAUSED' ? 'selected' : '' }}>⏸️ Pausado</option>
+                                <option value="CANCELLED" {{ request('status') == 'CANCELLED' ? 'selected' : '' }}>❌ Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="public" class="form-label fw-bold">Privacidad</label>
+                            <select class="form-select" id="public" name="public">
+                                <option value="">Todos</option>
+                                <option value="1" {{ request('public') == '1' ? 'selected' : '' }}>🌍 Públicos</option>
+                                <option value="0" {{ request('public') == '0' ? 'selected' : '' }}>🔒 Privados</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="bi bi-search me-1"></i>Buscar
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="clear-filters" title="Limpiar filtros">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de proyectos -->
+            <div class="card">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list-ul text-primary me-2"></i>
+                        Lista de Proyectos (<span id="project-count">{{ $projects->count() }}</span> proyectos)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="projects-container">
+                        @if($projects->count() > 0)
+                            <div class="row g-3">
+                                @foreach($projects as $project)
+                                    <div class="col-lg-6 col-xl-4">
+                                        <div class="card border h-100 project-card" 
+                                             onclick="window.location.href='{{ route('project.show', $project) }}'"
+                                             style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                                            <div class="card-body p-3">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <h6 class="fw-bold mb-0 flex-grow-1 me-2">{{ $project->title }}</h6>
+                                                    <div class="d-flex flex-column align-items-end gap-1">
+                                                        @switch($project->status)
+                                                            @case('ACTIVE')
+                                                                <span class="badge bg-success">Activo</span>
+                                                                @break
+                                                            @case('PENDING')
+                                                                <span class="badge bg-warning">Pendiente</span>
+                                                                @break
+                                                            @case('COMPLETED')
+                                                                <span class="badge bg-info">Completado</span>
+                                                                @break
+                                                            @case('PAUSED')
+                                                                <span class="badge bg-secondary">Pausado</span>
+                                                                @break
+                                                            @case('CANCELLED')
+                                                                <span class="badge bg-danger">Cancelado</span>
+                                                                @break
+                                                            @default
+                                                                <span class="badge bg-light text-dark">{{ $project->status }}</span>
+                                                        @endswitch
+                                                        
+                                                        @if($project->public)
+                                                            <span class="badge bg-primary">
+                                                                <i class="bi bi-globe me-1"></i>Público
+                                                            </span>
+                                                        @else
+                                                            <span class="badge bg-dark">
+                                                                <i class="bi bi-lock me-1"></i>Privado
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                
+                                                @if($project->description)
+                                                    <p class="text-muted small mb-3">{{ Str::limit($project->description, 100) }}</p>
+                                                @endif
+                                                
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-person me-1"></i>
+                                                        {{ $project->creator->name }}
+                                                        @if($project->creator->id === auth()->id())
+                                                            <span class="text-primary">(Tú)</span>
+                                                        @endif
+                                                    </small>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-calendar me-1"></i>
+                                                        {{ $project->created_at->format('d/m/Y') }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="bi bi-folder-plus display-1 text-muted"></i>
+                                </div>
+                                <h5 class="text-muted">No hay proyectos disponibles</h5>
+                                <p class="text-muted">
+                                    @if(request()->hasAny(['search', 'status', 'public']))
+                                        No se encontraron proyectos que coincidan con los filtros aplicados.
+                                        <a href="{{ route('project.index') }}" class="text-decoration-none">Limpiar filtros</a>
+                                    @else
+                                        Aún no formas parte de ningún proyecto. 
+                                        <a href="{{ route('project.create') }}" class="text-decoration-none">Crea tu primer proyecto</a>
+                                    @endif
+                                </p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -321,7 +256,7 @@
                 ¿Estás seguro de que deseas eliminar el proyecto <strong id="projectToDelete"></strong>?
                 <br><br>
                 <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <i class="bi bi-exclamation-triangle me-2"></i>
                     <strong>Advertencia:</strong> Esta acción no se puede deshacer. Se eliminarán todos los módulos, tareas y comentarios asociados.
                 </div>
             </div>
@@ -339,83 +274,113 @@
 
 @push('scripts')
 <script>
-function confirmDelete(projectId, projectTitle) {
-    document.getElementById('projectToDelete').textContent = projectTitle;
-    document.getElementById('deleteForm').action = `/projects/${projectId}`;
+// Función para cargar proyectos con AJAX
+function loadProjects(filters = {}) {
+    const params = new URLSearchParams();
     
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    deleteModal.show();
+    // Añadir filtros a los parámetros
+    Object.keys(filters).forEach(key => {
+        if (filters[key]) {
+            params.append(key, filters[key]);
+        }
+    });
+    
+    // Añadir parámetro para indicar que es una petición AJAX
+    params.append('ajax', '1');
+    
+    // Mostrar indicador de carga
+    document.getElementById('projects-container').innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="text-muted mt-3">Buscando proyectos...</p>
+        </div>
+    `;
+    
+    // Realizar petición AJAX
+    fetch(`{{ route('project.index') }}?${params.toString()}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('projects-container').innerHTML = data.html;
+        document.getElementById('project-count').textContent = data.count;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('projects-container').innerHTML = `
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <i class="bi bi-exclamation-triangle display-1 text-danger"></i>
+                </div>
+                <h5 class="text-danger">Error al cargar proyectos</h5>
+                <p class="text-muted">Inténtalo de nuevo más tarde</p>
+            </div>
+        `;
+    });
 }
 
-// Aplicar filtros automáticamente al cambiar los selects
+// Manejar envío del formulario
+document.getElementById('filter-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const filters = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (value.trim() !== '' && key !== '_token') {
+            filters[key] = value;
+        }
+    }
+    
+    loadProjects(filters);
+});
+
+// Filtros automáticos al cambiar los selects
 document.getElementById('status').addEventListener('change', function() {
-    this.form.submit();
+    document.getElementById('filter-form').dispatchEvent(new Event('submit'));
 });
 
 document.getElementById('public').addEventListener('change', function() {
-    this.form.submit();
+    document.getElementById('filter-form').dispatchEvent(new Event('submit'));
+});
+
+// Filtro automático para búsqueda (con debounce)
+let searchTimeout;
+document.getElementById('search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        document.getElementById('filter-form').dispatchEvent(new Event('submit'));
+    }, 500); // Esperar 500ms después de que el usuario deje de escribir
+});
+
+// Limpiar filtros
+document.getElementById('clear-filters').addEventListener('click', function() {
+    document.getElementById('search').value = '';
+    document.getElementById('status').value = '';
+    document.getElementById('public').value = '';
+    loadProjects(); // Cargar todos los proyectos
+});
+
+// Efectos hover para las cards
+document.addEventListener('DOMContentLoaded', function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        .project-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+    `;
+    document.head.appendChild(style);
 });
 </script>
 @endpush
-
-<style>
-.avatar {
-    width: 2rem;
-    height: 2rem;
-}
-
-.avatar-title {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    font-size: 0.875rem;
-    font-weight: 600;
-}
-
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
-}
-
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
-}
-
-.border-left-warning {
-    border-left: 0.25rem solid #f6c23e !important;
-}
-
-.border-left-info {
-    border-left: 0.25rem solid #36b9cc !important;
-}
-
-.border-left-secondary {
-    border-left: 0.25rem solid #858796 !important;
-}
-
-.border-left-dark {
-    border-left: 0.25rem solid #5a5c69 !important;
-}
-
-.card {
-    border: 1px solid #e3e6f0;
-}
-
-.table th {
-    border-top: none;
-    font-weight: 600;
-    color: #5a5c69;
-    background-color: #f8f9fc;
-}
-
-.btn-group .btn {
-    border-radius: 0.35rem;
-    margin-right: 0.25rem;
-}
-
-.btn-group .btn:last-child {
-    margin-right: 0;
-}
-</style>
 @endsection

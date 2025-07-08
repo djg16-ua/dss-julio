@@ -19,19 +19,16 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Estadísticas principales (3 cards) - USANDO NUEVA RELACIÓN N:N
+        // Estadísticas principales (3 cards) - USANDO NUEVA ESTRUCTURA
         // Tareas activas del usuario (usando nueva relación n:n)
         $activeTasks = $user->assignedTasks()->where('status', 'ACTIVE')->count();
 
-        // Proyectos activos via teams
-        $activeProjects = $user->teams()
-            ->with(['projects' => function($query) {
-                $query->where('status', 'ACTIVE');
-            }])
-            ->get()
-            ->pluck('projects')
-            ->flatten()
-            ->unique('id')
+        // Proyectos activos donde el usuario participa a través de equipos
+        $activeProjects = Project::where('status', 'ACTIVE')
+            ->whereHas('teams.users', function($query) use ($user) {
+                $query->where('users.id', $user->id)
+                      ->where('team_user.is_active', true);
+            })
             ->count();
 
         // Comentarios en tareas activas (usando nueva relación)
@@ -81,19 +78,16 @@ class DashboardController extends Controller
             'pending' => $user->assignedTasks()->where('status', 'PENDING')->count(),
         ];
 
-        // Proyectos Activos (CON BOTÓN "VER MÁS") - Máximo 3 proyectos activos via teams
-        $activeProjectsList = $user->teams()
-            ->with(['projects' => function($query) {
-                $query->with('creator')
-                      ->where('status', 'ACTIVE')
-                      ->orderBy('created_at', 'desc');
-            }])
-            ->get()
-            ->pluck('projects')
-            ->flatten()
-            ->unique('id')
+        // Proyectos Activos (CON BOTÓN "VER MÁS") - Máximo 3 proyectos activos donde participa
+        $activeProjectsList = Project::where('status', 'ACTIVE')
+            ->whereHas('teams.users', function($query) use ($user) {
+                $query->where('users.id', $user->id)
+                      ->where('team_user.is_active', true);
+            })
+            ->with('creator')
+            ->orderBy('created_at', 'desc')
             ->take(3)
-            ->values();
+            ->get();
 
         // Comentarios en Curso (CON BOTÓN "VER MÁS")
         // Todos los comentarios en tareas ACTIVAS (sin límite)
