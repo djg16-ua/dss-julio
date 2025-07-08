@@ -670,6 +670,81 @@ class AdminController extends Controller
         return redirect()->route('admin.teams.edit', $team)
             ->with('success', "Equipo '{$team->name}' creado correctamente. Ahora puedes asignar módulos y gestionar más miembros.");
     }
+    /**
+     * Mostrar formulario para crear proyecto
+     */
+    public function createProject()
+    {
+        // Obtener equipos disponibles
+        $availableTeams = Team::with(['users' => function ($query) {
+            $query->withPivot(['is_active']);
+        }])->orderBy('name')->get();
+
+        // Estados disponibles para el proyecto
+        $projectStatuses = [
+            'PENDING' => 'Pendiente',
+            'ACTIVE' => 'Activo',
+            'DONE' => 'Completado',
+            'PAUSED' => 'Pausado',
+            'CANCELLED' => 'Cancelado'
+        ];
+
+        // Estadísticas del sistema
+        $stats = [
+            'total_projects' => Project::count(),
+            'active_projects' => Project::where('status', 'ACTIVE')->count(),
+            'total_teams' => Team::count(),
+            'total_modules' => Module::count(),
+        ];
+
+        return view('admin.projects.create', compact(
+            'availableTeams',
+            'projectStatuses',
+            'stats'
+        ));
+    }
+
+    /**
+     * Crear nuevo proyecto
+     */
+    public function storeProject(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255|unique:projects,title',
+            'description' => 'nullable|string|max:2000',
+            'status' => 'required|in:PENDING,ACTIVE,DONE,PAUSED,CANCELLED',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'public' => 'required|boolean',
+            'teams' => 'nullable|array',
+            'teams.*.team_id' => 'nullable|exists:teams,id',
+        ]);
+
+        // Crear el proyecto
+        $project = Project::create([
+            'title' => $request->title,
+            'description' => $request->description,
+            'status' => $request->status,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'public' => $request->public,
+            'created_by' => auth()->id(),
+        ]);
+
+        // Asignar equipos iniciales
+        if ($request->teams) {
+            foreach ($request->teams as $team) {
+                if (!empty($team['team_id'])) {
+                    $project->teams()->attach($team['team_id'], [
+                        'assigned_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->route('admin.projects.edit', $project)
+            ->with('success', "Proyecto '{$project->title}' creado correctamente. Ahora puedes crear módulos y gestionar más equipos.");
+    }
 
     /**
      * Actualizar información básica del equipo
