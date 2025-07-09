@@ -179,20 +179,14 @@
                                             Puedes asignar equipos al módulo ahora o hacerlo después desde la edición.
                                         </div>
 
-                                        @if($availableTeams->count() > 0)
                                         <div id="module-teams">
                                             <!-- Equipo 1 -->
                                             <div class="row g-3 mb-3 team-assignment-row">
                                                 <div class="col-md-10">
                                                     <label class="form-label">Equipo</label>
-                                                    <select class="form-select" name="teams[0][team_id]">
+                                                    <select class="form-select team-select" name="teams[0][team_id]">
                                                         <option value="">Seleccionar equipo...</option>
-                                                        @foreach($availableTeams as $team)
-                                                        <option value="{{ $team->id }}">
-                                                            {{ $team->name }}
-                                                            <small>({{ $team->users->where('pivot.is_active', true)->count() }} miembros activos)</small>
-                                                        </option>
-                                                        @endforeach
+                                                        <!-- Se llenará dinámicamente -->
                                                     </select>
                                                 </div>
                                                 <div class="col-md-2 d-flex align-items-end">
@@ -206,12 +200,6 @@
                                         <button type="button" class="btn btn-outline-warning" onclick="addTeam()">
                                             <i class="bi bi-people-plus me-2"></i>Agregar Otro Equipo
                                         </button>
-                                        @else
-                                        <div class="alert alert-warning">
-                                            <i class="bi bi-exclamation-triangle me-2"></i>
-                                            No hay equipos disponibles. Puedes crear equipos desde la sección de gestión de equipos.
-                                        </div>
-                                        @endif
                                     </div>
                                 </div>
 
@@ -415,10 +403,10 @@
 @push('scripts')
 <script>
     let teamIndex = 1;
-
-    // Preparar los datos para JavaScript
-    const availableTeams = @json($availableTeams);
+    
+    // Datos para JavaScript - cargar todos los equipos del sistema
     const allProjects = @json($projects);
+    const allTeams = @json(\App\Models\Team::with(['users' => function($query) { $query->where('is_active', true); }])->orderBy('name')->get());
 
     // Cargar módulos del proyecto seleccionado para dependencias
     function loadProjectModules(projectId) {
@@ -426,39 +414,96 @@
         dependsOnSelect.innerHTML = '<option value="">Sin dependencias</option>';
 
         if (projectId) {
-            // Hacer llamada AJAX para obtener los módulos del proyecto
-            fetch(`/admin/projects/${projectId}/modules`)
-                .then(response => response.json())
-                .then(modules => {
-                    modules.forEach(module => {
-                        const option = document.createElement('option');
-                        option.value = module.id;
-                        option.textContent = module.name;
-                        dependsOnSelect.appendChild(option);
-                    });
-                })
-                .catch(error => {
-                    console.log('Error loading modules:', error);
-                });
+            // Buscar proyecto específico y simular módulos vacíos (ya que es creación)
+            const project = allProjects.find(p => p.id == projectId);
+            if (project) {
+                // En creación, no hay módulos previos para mostrar como dependencias
+                // El select queda solo con "Sin dependencias"
+                console.log(`Proyecto seleccionado: ${project.title}`);
+            }
         }
+    }
+
+    // Cargar equipos del proyecto seleccionado
+    function loadProjectTeams(projectId) {
+        const teamsSection = document.getElementById('teams-section');
+        const noTeamsMessage = document.getElementById('no-teams-message');
+        const infoAlert = document.querySelector('.alert-info');
+        
+        if (!projectId) {
+            // No hay proyecto seleccionado
+            teamsSection.style.display = 'none';
+            noTeamsMessage.style.display = 'none';
+            if (infoAlert) {
+                infoAlert.style.display = 'block';
+                infoAlert.innerHTML = '<i class="bi bi-info-circle me-2"></i><strong>Selecciona primero un proyecto</strong> para ver los equipos disponibles.';
+            }
+            return;
+        }
+
+        // Mostrar loading temporal
+        if (infoAlert) {
+            infoAlert.style.display = 'block';
+            infoAlert.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Cargando equipos del proyecto...';
+        }
+
+        // Filtrar equipos por proyecto (sin AJAX)
+        setTimeout(() => {
+            const projectTeams = allTeams.filter(team => team.project_id == projectId);
+            updateTeamsInterface(projectTeams);
+        }, 300); // Pequeño delay para mostrar el loading
+    }
+
+    function updateTeamsInterface(teams) {
+        const teamsSection = document.getElementById('teams-section');
+        const noTeamsMessage = document.getElementById('no-teams-message');
+        const infoAlert = document.querySelector('.alert-info');
+        
+        if (teams.length > 0) {
+            // Hay equipos disponibles
+            updateTeamSelects(teams);
+            teamsSection.style.display = 'block';
+            noTeamsMessage.style.display = 'none';
+            if (infoAlert) infoAlert.style.display = 'none';
+        } else {
+            // No hay equipos disponibles
+            teamsSection.style.display = 'none';
+            noTeamsMessage.style.display = 'block';
+            if (infoAlert) infoAlert.style.display = 'none';
+        }
+    }
+
+    function updateTeamSelects(teams) {
+        const teamSelects = document.querySelectorAll('.team-select');
+        
+        teamSelects.forEach(select => {
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Seleccionar equipo...</option>';
+            
+            teams.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team.id;
+                const activeUsersCount = team.users ? team.users.filter(user => user.pivot?.is_active !== false).length : 0;
+                option.textContent = `${team.name} (${activeUsersCount} miembros${team.is_general ? ' - General' : ''})`;
+                select.appendChild(option);
+            });
+            
+            // Restaurar valor si existía
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        });
     }
 
     function addTeam() {
         const container = document.getElementById('module-teams');
 
-        // Generar opciones de equipos
-        let teamOptions = '<option value="">Seleccionar equipo...</option>';
-        availableTeams.forEach(team => {
-            const activeMembers = team.users.filter(user => user.pivot.is_active).length;
-            teamOptions += `<option value="${team.id}">${team.name} (${activeMembers} miembros activos)</option>`;
-        });
-
         const newTeamHtml = `
         <div class="row g-3 mb-3 team-assignment-row">
             <div class="col-md-10">
                 <label class="form-label">Equipo</label>
-                <select class="form-select" name="teams[${teamIndex}][team_id]">
-                    ${teamOptions}
+                <select class="form-select team-select" name="teams[${teamIndex}][team_id]">
+                    <option value="">Seleccionar equipo...</option>
                 </select>
             </div>
             <div class="col-md-2 d-flex align-items-end">
@@ -471,6 +516,13 @@
 
         container.insertAdjacentHTML('beforeend', newTeamHtml);
         teamIndex++;
+        
+        // Cargar equipos para el nuevo select si hay proyecto seleccionado
+        const projectId = document.getElementById('project_id').value;
+        if (projectId) {
+            const projectTeams = allTeams.filter(team => team.project_id == projectId);
+            updateTeamSelects(projectTeams);
+        }
     }
 
     function removeTeam(button) {
@@ -490,7 +542,9 @@
 
         // Listener para cambios en el proyecto
         document.getElementById('project_id').addEventListener('change', function() {
-            loadProjectModules(this.value);
+            const projectId = this.value;
+            loadProjectModules(projectId);
+            loadProjectTeams(projectId);
         });
     });
 </script>

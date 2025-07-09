@@ -115,6 +115,11 @@ class Task extends Model
         ]);
     }
 
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
     public function unassignUser($userId): void
     {
         $this->assignedUsers()->detach($userId);
