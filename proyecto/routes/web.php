@@ -14,15 +14,10 @@ use App\Http\Controllers\DashboardController;
 // RUTAS PRINCIPALES
 // ============================================
 
-// Para usuarios autenticados - redirigir a dashboard (PRIMERO)
-Route::get('/', function () {
-    return redirect()->route('dashboard');
-})->middleware('auth');
-
-// Para usuarios NO autenticados - mostrar welcome (SEGUNDO)
+// Página de inicio - disponible para todos (autenticados y no autenticados)
 Route::get('/', function () {
     return view('welcome');
-})->middleware('guest')->name('welcome');
+})->name('welcome');
 
 Route::get('/about', function () {
     return view('about');
@@ -255,4 +250,3 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::patch('/projects/{project}/modules/{module}', [App\Http\Controllers\AdminController::class, 'updateProjectModule'])->name('projects.update-module');
     Route::delete('/projects/{project}/modules/{module}', [App\Http\Controllers\AdminController::class, 'deleteProjectModule'])->name('projects.delete-module');
 });
-

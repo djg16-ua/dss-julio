@@ -15,12 +15,23 @@
                     La plataforma definitiva para organizar equipos, gestionar tareas y hacer seguimiento del progreso de tus proyectos de forma eficiente y colaborativa.
                 </p>
                 <div class="d-flex gap-3 flex-wrap">
-                    <a href="#" class="btn btn-light btn-lg">
-                        <i class="bi bi-rocket-takeoff me-2"></i>Comenzar Gratis
-                    </a>
-                    <a href="#" class="btn btn-outline-light btn-lg">
-                        <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
-                    </a>
+                    @auth
+                        <!-- Botones para usuarios autenticados -->
+                        <a href="{{ route('dashboard') }}" class="btn btn-light btn-lg">
+                            <i class="bi bi-speedometer2 me-2"></i>Ir al Dashboard
+                        </a>
+                        <a href="{{ route('project.index') }}" class="btn btn-outline-light btn-lg">
+                            <i class="bi bi-kanban me-2"></i>Mis Proyectos
+                        </a>
+                    @else
+                        <!-- Botones para usuarios no autenticados -->
+                        <a href="{{ route('register') }}" class="btn btn-light btn-lg">
+                            <i class="bi bi-rocket-takeoff me-2"></i>Comenzar Gratis
+                        </a>
+                        <a href="{{ route('login') }}" class="btn btn-outline-light btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
+                        </a>
+                    @endauth
                 </div>
             </div>
             <div class="col-lg-6 text-center">
@@ -179,12 +190,23 @@
                     Únete a miles de equipos que ya confían en TaskFlow para alcanzar sus objetivos
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap">
-                    <a href="#" class="btn btn-primary btn-lg">
-                        <i class="bi bi-rocket-takeoff me-2"></i>Comenzar Gratis
-                    </a>
-                    <a href="{{ url('/contact') }}" class="btn btn-outline-primary btn-lg">
-                        <i class="bi bi-calendar-check me-2"></i>Solicitar Demo
-                    </a>
+                    @auth
+                        <!-- CTA para usuarios autenticados -->
+                        <a href="{{ route('project.create') }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-plus-circle me-2"></i>Crear Proyecto
+                        </a>
+                        <a href="{{ route('dashboard') }}" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-speedometer2 me-2"></i>Ver Dashboard
+                        </a>
+                    @else
+                        <!-- CTA para usuarios no autenticados -->
+                        <a href="{{ route('register') }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-rocket-takeoff me-2"></i>Comenzar Gratis
+                        </a>
+                        <a href="{{ url('/contact') }}" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-calendar-check me-2"></i>Solicitar Demo
+                        </a>
+                    @endauth
                 </div>
             </div>
         </div>

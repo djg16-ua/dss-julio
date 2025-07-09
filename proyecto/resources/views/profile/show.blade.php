@@ -17,9 +17,14 @@
                     </p>
                 </div>
                 <div class="col-lg-4 text-lg-end">
-                    <a href="{{ route('profile.edit') }}" class="btn btn-primary">
-                        <i class="bi bi-gear me-2"></i>Editar Perfil
-                    </a>
+                    <div class="d-flex gap-2 justify-content-lg-end">
+                        <a href="{{ route('dashboard') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-speedometer2"></i>
+                        </a>
+                        <a href="{{ route('profile.edit') }}" class="btn btn-primary">
+                            <i class="bi bi-gear me-2"></i>Editar Perfil
+                        </a>
+                    </div>
                 </div>
             </div>
 
