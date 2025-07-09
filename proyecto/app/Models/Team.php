@@ -87,10 +87,12 @@ class Team extends Model
         parent::boot();
 
         // Prevenir eliminación del equipo general
-        static::deleting(function ($team) {
+        static::deleting(function ($team)) {
             if ($team->is_general) {
                 throw new \Exception('No se puede eliminar el equipo general del proyecto.');
             }
+        }
+    }
     /**
      * Obtener total de módulos a través de proyectos
      */
