@@ -91,25 +91,28 @@
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label for="assigned_to" class="form-label fw-bold">Asignado a</label>
-                                        <select class="form-select @error('assigned_to') is-invalid @enderror" id="assigned_to" name="assigned_to">
-                                            <option value="">Sin asignar</option>
-                                            @foreach($users as $user)
-                                            <option value="{{ $user->id }}" {{ old('assigned_to', $task->assigned_to) == $user->id ? 'selected' : '' }}>
+                                        <label for="assigned_users" class="form-label fw-bold">Asignado a</label>
+                                        <select class="form-select @error('assigned_users') is-invalid @enderror" id="assigned_users" name="assigned_users[]" multiple>
+                                            @foreach($availableUsers as $user)
+                                            @php
+                                                $selectedUsers = old('assigned_users', $task->assignedUsers->pluck('id')->toArray());
+                                            @endphp
+                                            <option value="{{ $user->id }}" {{ in_array($user->id, $selectedUsers) ? 'selected' : '' }}>
                                                 {{ $user->name }} ({{ $user->email }})
                                             </option>
                                             @endforeach
                                         </select>
-                                        @error('assigned_to')
+                                        @error('assigned_users')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
+                                        <div class="form-text">Mantén Ctrl presionado para seleccionar múltiples usuarios</div>
                                     </div>
 
                                     <div class="col-md-4">
                                         <label for="status" class="form-label fw-bold">Estado</label>
                                         <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
                                             <option value="PENDING" {{ old('status', $task->status) === 'PENDING' ? 'selected' : '' }}>Pendiente</option>
-                                            <option value="IN_PROGRESS" {{ old('status', $task->status) === 'IN_PROGRESS' ? 'selected' : '' }}>En Progreso</option>
+                                            <option value="ACTIVE" {{ old('status', $task->status) === 'ACTIVE' ? 'selected' : '' }}>Activa</option>
                                             <option value="DONE" {{ old('status', $task->status) === 'DONE' ? 'selected' : '' }}>Completada</option>
                                             <option value="PAUSED" {{ old('status', $task->status) === 'PAUSED' ? 'selected' : '' }}>Pausada</option>
                                             <option value="CANCELLED" {{ old('status', $task->status) === 'CANCELLED' ? 'selected' : '' }}>Cancelada</option>
@@ -121,9 +124,9 @@
 
                                     <div class="col-md-4">
                                         <label for="end_date" class="form-label fw-bold">Fecha Límite</label>
-                                        <input type="date" class="form-control @error('end_date') is-invalid @enderror"
+                                        <input type="datetime-local" class="form-control @error('end_date') is-invalid @enderror"
                                             id="end_date" name="end_date"
-                                            value="{{ old('end_date', $task->end_date?->format('Y-m-d')) }}">
+                                            value="{{ old('end_date', $task->end_date?->format('Y-m-d\TH:i')) }}">
                                         @error('end_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
@@ -137,6 +140,9 @@
                                             @if($otherTask->id !== $task->id)
                                             <option value="{{ $otherTask->id }}" {{ old('depends_on', $task->depends_on) == $otherTask->id ? 'selected' : '' }}>
                                                 {{ Str::limit($otherTask->title, 40) }}
+                                                @if($otherTask->assignedUsers->count() > 0)
+                                                <small>({{ $otherTask->assignedUsers->pluck('name')->join(', ') }})</small>
+                                                @endif
                                             </option>
                                             @endif
                                             @endforeach
@@ -182,10 +188,27 @@
                                         <small class="text-muted">Dependientes</small>
                                     </div>
                                 </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div class="fw-bold h4 text-success">{{ $task->assignedUsers->count() }}</div>
+                                        <small class="text-muted">Asignados</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        @php
+                                        $isOverdue = $task->end_date && $task->end_date->isPast() && $task->status !== 'DONE';
+                                        @endphp
+                                        <div class="fw-bold h4 {{ $isOverdue ? 'text-danger' : 'text-secondary' }}">
+                                            {{ $isOverdue ? 'SÍ' : 'NO' }}
+                                        </div>
+                                        <small class="text-muted">Vencida</small>
+                                    </div>
+                                </div>
                             </div>
 
                             @php
-                            $progress = $task->status === 'DONE' ? 100 : ($task->status === 'IN_PROGRESS' ? 50 : 0);
+                            $progress = $task->status === 'DONE' ? 100 : ($task->status === 'ACTIVE' ? 50 : 0);
                             @endphp
                             <div class="mt-3">
                                 <div class="d-flex justify-content-between mb-1">
@@ -201,6 +224,11 @@
 
                             <div class="small text-muted">
                                 <div><strong>Creador:</strong> {{ $task->creator->name ?? 'Sistema' }}</div>
+                                @if($task->assignedUsers->count() > 0)
+                                <div><strong>Asignado a:</strong> {{ $task->assignedUsers->pluck('name')->join(', ') }}</div>
+                                @else
+                                <div><strong>Asignado a:</strong> <span class="text-warning">Sin asignar</span></div>
+                                @endif
                                 @if($task->module)
                                 <div><strong>Módulo:</strong> {{ $task->module->name }}</div>
                                 <div><strong>Proyecto:</strong> {{ $task->module->project->title }}</div>
@@ -210,6 +238,9 @@
                                 @if($task->completed_at)
                                 <div><strong>Completada:</strong> {{ $task->completed_at->format('d/m/Y H:i') }}</div>
                                 @endif
+                                @if($task->end_date)
+                                <div><strong>Fecha límite:</strong> {{ $task->end_date->format('d/m/Y H:i') }}</div>
+                                @endif
                                 <div><strong>ID:</strong> {{ $task->id }}</div>
                                 @if($task->dependency)
                                 <div><strong>Depende de:</strong> {{ $task->dependency->title }}</div>
@@ -217,6 +248,35 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Usuarios asignados -->
+                    @if($task->assignedUsers->count() > 0)
+                    <div class="card shadow-sm mt-4">
+                        <div class="card-header bg-primary text-white py-3">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-people me-2"></i>
+                                Usuarios Asignados
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            @foreach($task->assignedUsers as $user)
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="feature-icon primary me-3" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">{{ $user->name }}</div>
+                                    <small class="text-muted">{{ $user->email }}</small>
+                                    <div class="small text-muted">
+                                        Asignado: {{ $user->pivot->assigned_at->format('d/m/Y H:i') }}
+                                    </div>
+                                </div>
+                            </div>
+                            @if(!$loop->last)<hr class="my-2">@endif
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
 
@@ -335,18 +395,18 @@
                                                         @php
                                                         $statusColors = [
                                                         'PENDING' => 'secondary',
-                                                        'IN_PROGRESS' => 'warning',
+                                                        'ACTIVE' => 'primary',
                                                         'DONE' => 'success',
-                                                        'PAUSED' => 'info',
+                                                        'PAUSED' => 'warning',
                                                         'CANCELLED' => 'danger'
                                                         ];
                                                         @endphp
                                                         <span class="badge bg-{{ $statusColors[$dependent->status] ?? 'secondary' }}">
                                                             {{ $dependent->status }}
                                                         </span>
-                                                        @if($dependent->assignedUser)
+                                                        @if($dependent->assignedUsers->count() > 0)
                                                         <span class="badge bg-light text-dark">
-                                                            {{ $dependent->assignedUser->name }}
+                                                            {{ $dependent->assignedUsers->pluck('name')->join(', ') }}
                                                         </span>
                                                         @endif
                                                     </div>
@@ -469,9 +529,34 @@
         const statusSelect = document.getElementById('status');
         if (statusSelect) {
             statusSelect.addEventListener('change', function() {
-                // Si se marca como completada, podríamos agregar lógica adicional aquí
                 if (this.value === 'DONE') {
                     console.log('Tarea marcada como completada');
+                    // Aquí podrías agregar lógica adicional como confirmación
+                }
+            });
+        }
+
+        // Hacer el select múltiple más user-friendly
+        const assignedUsersSelect = document.getElementById('assigned_users');
+        if (assignedUsersSelect) {
+            assignedUsersSelect.addEventListener('focus', function() {
+                if (!this.hasAttribute('data-tooltip-shown')) {
+                    this.title = 'Mantén Ctrl presionado para seleccionar múltiples usuarios';
+                    this.setAttribute('data-tooltip-shown', 'true');
+                }
+            });
+        }
+
+        // Validación de fecha límite
+        const endDateInput = document.getElementById('end_date');
+        if (endDateInput) {
+            endDateInput.addEventListener('change', function() {
+                const selectedDateTime = new Date(this.value);
+                const now = new Date();
+
+                if (selectedDateTime < now) {
+                    alert('La fecha límite no puede ser anterior al momento actual.');
+                    this.value = '';
                 }
             });
         }

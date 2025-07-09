@@ -104,21 +104,20 @@
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label for="assigned_to" class="form-label fw-bold">
-                                            <i class="bi bi-person me-1"></i>Asignar a (Opcional)
+                                        <label for="assigned_users" class="form-label fw-bold">
+                                            <i class="bi bi-people me-1"></i>Asignar a (Opcional)
                                         </label>
-                                        <select class="form-select @error('assigned_to') is-invalid @enderror" id="assigned_to" name="assigned_to">
-                                            <option value="">Sin asignar</option>
+                                        <select class="form-select @error('assigned_users') is-invalid @enderror" id="assigned_users" name="assigned_users[]" multiple>
                                             @foreach($users as $user)
-                                            <option value="{{ $user->id }}" {{ old('assigned_to') == $user->id ? 'selected' : '' }}>
+                                            <option value="{{ $user->id }}" {{ in_array($user->id, old('assigned_users', [])) ? 'selected' : '' }}>
                                                 {{ $user->name }} ({{ $user->email }})
                                             </option>
                                             @endforeach
                                         </select>
-                                        @error('assigned_to')
+                                        @error('assigned_users')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                        <div class="form-text">Usuario responsable de completar la tarea</div>
+                                        <div class="form-text">Usuarios responsables de completar la tarea (mantén Ctrl para seleccionar múltiples)</div>
                                     </div>
 
                                     <div class="col-md-4">
@@ -127,7 +126,7 @@
                                         </label>
                                         <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
                                             <option value="PENDING" {{ old('status', 'PENDING') === 'PENDING' ? 'selected' : '' }}>Pendiente</option>
-                                            <option value="IN_PROGRESS" {{ old('status') === 'IN_PROGRESS' ? 'selected' : '' }}>En Progreso</option>
+                                            <option value="ACTIVE" {{ old('status') === 'ACTIVE' ? 'selected' : '' }}>Activa</option>
                                             <option value="DONE" {{ old('status') === 'DONE' ? 'selected' : '' }}>Completada</option>
                                             <option value="PAUSED" {{ old('status') === 'PAUSED' ? 'selected' : '' }}>Pausada</option>
                                             <option value="CANCELLED" {{ old('status') === 'CANCELLED' ? 'selected' : '' }}>Cancelada</option>
@@ -142,13 +141,13 @@
                                         <label for="end_date" class="form-label fw-bold">
                                             <i class="bi bi-calendar-event me-1"></i>Fecha Límite (Opcional)
                                         </label>
-                                        <input type="date" class="form-control @error('end_date') is-invalid @enderror"
+                                        <input type="datetime-local" class="form-control @error('end_date') is-invalid @enderror"
                                             id="end_date" name="end_date" value="{{ old('end_date') }}"
-                                            min="{{ date('Y-m-d') }}">
+                                            min="{{ now()->format('Y-m-d\TH:i') }}">
                                         @error('end_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                        <div class="form-text">Fecha límite para completar la tarea</div>
+                                        <div class="form-text">Fecha y hora límite para completar la tarea</div>
                                     </div>
 
                                     <div class="col-md-4">
@@ -160,8 +159,8 @@
                                             @foreach($tasks as $task)
                                             <option value="{{ $task->id }}" {{ old('depends_on') == $task->id ? 'selected' : '' }}>
                                                 {{ Str::limit($task->title, 40) }}
-                                                @if($task->assignedUser)
-                                                <small>({{ $task->assignedUser->name }})</small>
+                                                @if($task->assignedUsers->count() > 0)
+                                                <small>({{ $task->assignedUsers->pluck('name')->join(', ') }})</small>
                                                 @endif
                                             </option>
                                             @endforeach
@@ -211,10 +210,10 @@
 
                             <div class="mb-4">
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-2-circle me-2"></i>Asignación
+                                    <i class="bi bi-2-circle me-2"></i>Asignación Múltiple
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Puedes asignar la tarea a un usuario específico o dejarla sin asignar para asignarla después.
+                                    Puedes asignar la tarea a múltiples usuarios. Mantén presionado Ctrl para seleccionar varios.
                                 </p>
                             </div>
 
@@ -273,15 +272,15 @@
                                 <small class="text-muted">Pendiente</small>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge bg-warning">IN_PROGRESS</span>
-                                <small class="text-muted">En Progreso</small>
+                                <span class="badge bg-primary">ACTIVE</span>
+                                <small class="text-muted">Activa</small>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="badge bg-success">DONE</span>
                                 <small class="text-muted">Completada</small>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge bg-info">PAUSED</span>
+                                <span class="badge bg-warning">PAUSED</span>
                                 <small class="text-muted">Pausada</small>
                             </div>
                             <div class="d-flex justify-content-between align-items-center">
@@ -400,13 +399,24 @@
         const endDateInput = document.getElementById('end_date');
         if (endDateInput) {
             endDateInput.addEventListener('change', function() {
-                const selectedDate = new Date(this.value);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                const selectedDateTime = new Date(this.value);
+                const now = new Date();
 
-                if (selectedDate < today) {
-                    alert('La fecha límite no puede ser anterior a hoy.');
+                if (selectedDateTime < now) {
+                    alert('La fecha límite no puede ser anterior al momento actual.');
                     this.value = '';
+                }
+            });
+        }
+
+        // Hacer el select múltiple más user-friendly
+        const assignedUsersSelect = document.getElementById('assigned_users');
+        if (assignedUsersSelect) {
+            assignedUsersSelect.addEventListener('focus', function() {
+                if (!this.hasAttribute('data-tooltip-shown')) {
+                    // Mostrar tooltip solo la primera vez
+                    this.title = 'Mantén Ctrl presionado para seleccionar múltiples usuarios';
+                    this.setAttribute('data-tooltip-shown', 'true');
                 }
             });
         }

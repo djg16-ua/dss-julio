@@ -33,7 +33,7 @@
                 <div class="col-lg-3 col-md-6">
                     <div class="card feature-card border-dark">
                         <div class="card-body text-center p-4">
-                            <div class="feature-icon secondary mx-auto mb-3">
+                            <div class="feature-icon secondary mx-auto mb-3" style="width: 60px; height: 60px; background: #6c757d; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
                                 <i class="bi bi-check-square"></i>
                             </div>
                             <h3 class="fw-bold text-primary">{{ $stats['total_tasks'] ?? 0 }}</h3>
@@ -44,7 +44,7 @@
                 <div class="col-lg-3 col-md-6">
                     <div class="card feature-card border-warning">
                         <div class="card-body text-center p-4">
-                            <div class="feature-icon warning mx-auto mb-3">
+                            <div class="feature-icon warning mx-auto mb-3" style="width: 60px; height: 60px; background: #ffc107; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
                                 <i class="bi bi-clock"></i>
                             </div>
                             <h3 class="fw-bold text-primary">{{ $stats['pending_tasks'] ?? 0 }}</h3>
@@ -55,7 +55,7 @@
                 <div class="col-lg-3 col-md-6">
                     <div class="card feature-card border-success">
                         <div class="card-body text-center p-4">
-                            <div class="feature-icon success mx-auto mb-3">
+                            <div class="feature-icon success mx-auto mb-3" style="width: 60px; height: 60px; background: #198754; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
                                 <i class="bi bi-check-circle"></i>
                             </div>
                             <h3 class="fw-bold text-primary">{{ $stats['completed_tasks'] ?? 0 }}</h3>
@@ -66,7 +66,7 @@
                 <div class="col-lg-3 col-md-6">
                     <div class="card feature-card border-danger">
                         <div class="card-body text-center p-4">
-                            <div class="feature-icon secondary mx-auto mb-3">
+                            <div class="feature-icon secondary mx-auto mb-3" style="width: 60px; height: 60px; background: #dc3545; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
                                 <i class="bi bi-exclamation-triangle"></i>
                             </div>
                             <h3 class="fw-bold text-primary">{{ $stats['overdue_tasks'] ?? 0 }}</h3>
@@ -93,7 +93,7 @@
                                         <select class="form-select" id="status" name="status">
                                             <option value="">Todos</option>
                                             <option value="PENDING" {{ request('status') === 'PENDING' ? 'selected' : '' }}>Pendiente</option>
-                                            <option value="IN_PROGRESS" {{ request('status') === 'IN_PROGRESS' ? 'selected' : '' }}>En Progreso</option>
+                                            <option value="ACTIVE" {{ request('status') === 'ACTIVE' ? 'selected' : '' }}>Activa</option>
                                             <option value="DONE" {{ request('status') === 'DONE' ? 'selected' : '' }}>Completada</option>
                                             <option value="PAUSED" {{ request('status') === 'PAUSED' ? 'selected' : '' }}>Pausada</option>
                                             <option value="CANCELLED" {{ request('status') === 'CANCELLED' ? 'selected' : '' }}>Cancelada</option>
@@ -146,12 +146,12 @@
                         <!-- Información principal de la tarea -->
                         <div class="col-lg-3 col-md-4">
                             <div class="d-flex align-items-start">
-                                <div class="feature-icon {{ $task->status === 'DONE' ? 'success' : ($task->status === 'IN_PROGRESS' ? 'warning' : 'secondary') }} me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
-                                    <i class="bi bi-{{ $task->status === 'DONE' ? 'check-circle' : ($task->status === 'IN_PROGRESS' ? 'clock' : 'circle') }}"></i>
+                                <div class="feature-icon {{ $task->status === 'DONE' ? 'success' : ($task->status === 'ACTIVE' ? 'warning' : 'secondary') }} me-3" style="width: 50px; height: 50px; font-size: 1.2rem; background: {{ $task->status === 'DONE' ? '#198754' : ($task->status === 'ACTIVE' ? '#ffc107' : '#6c757d') }}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-{{ $task->status === 'DONE' ? 'check-circle' : ($task->status === 'ACTIVE' ? 'clock' : 'circle') }}"></i>
                                 </div>
                                 <div>
                                     <h5 class="mb-1 fw-bold">{{ $task->title }}</h5>
-                                    <p class="mb-1 text-muted small">{{ Str::limit($task->description, 80) }}</p>
+                                    <p class="mb-1 text-muted small">{{ Str::limit($task->description ?? '', 80) }}</p>
                                     <div class="d-flex gap-1 mb-1">
                                         @php
                                             $priorityColors = [
@@ -178,8 +178,16 @@
                             <div class="small">
                                 <div class="mb-2">
                                     <strong>Asignado a:</strong><br>
-                                    @if($task->assignedUser)
-                                        <span class="text-success">{{ $task->assignedUser->name }}</span>
+                                    @if($task->assignedUsers && $task->assignedUsers->count() > 0)
+                                        @foreach($task->assignedUsers->take(2) as $user)
+                                            <span class="badge bg-primary me-1 mb-1">{{ $user->name }}</span>
+                                        @endforeach
+                                        @if($task->assignedUsers->count() > 2)
+                                            <span class="badge bg-info">+{{ $task->assignedUsers->count() - 2 }} más</span>
+                                        @endif
+                                    @elseif(isset($task->assignedUser) && $task->assignedUser)
+                                        {{-- Compatibilidad con estructura antigua --}}
+                                        <span class="badge bg-primary">{{ $task->assignedUser->name }}</span>
                                     @else
                                         <span class="text-muted">Sin asignar</span>
                                     @endif
@@ -212,7 +220,7 @@
                                     <select name="status" class="form-select form-select-sm"
                                         onchange="this.form.submit()">
                                         <option value="PENDING" {{ $task->status === 'PENDING' ? 'selected' : '' }}>Pendiente</option>
-                                        <option value="IN_PROGRESS" {{ $task->status === 'IN_PROGRESS' ? 'selected' : '' }}>En Progreso</option>
+                                        <option value="ACTIVE" {{ $task->status === 'ACTIVE' ? 'selected' : '' }}>Activa</option>
                                         <option value="DONE" {{ $task->status === 'DONE' ? 'selected' : '' }}>Completada</option>
                                         <option value="PAUSED" {{ $task->status === 'PAUSED' ? 'selected' : '' }}>Pausada</option>
                                         <option value="CANCELLED" {{ $task->status === 'CANCELLED' ? 'selected' : '' }}>Cancelada</option>
@@ -222,8 +230,8 @@
                             <div class="small text-center">
                                 @if($task->status === 'DONE')
                                     <span class="badge bg-success">100% Completada</span>
-                                @elseif($task->status === 'IN_PROGRESS')
-                                    <span class="badge bg-warning">En Progreso</span>
+                                @elseif($task->status === 'ACTIVE')
+                                    <span class="badge bg-primary">En Progreso</span>
                                 @else
                                     <span class="badge bg-secondary">{{ $task->status }}</span>
                                 @endif
@@ -242,14 +250,24 @@
                                 <div class="mb-1">
                                     <strong>Vence:</strong><br>
                                     <span class="text-{{ $task->end_date->isPast() && $task->status !== 'DONE' ? 'danger' : 'muted' }}">
-                                        {{ $task->end_date->format('d/m/Y') }}
+                                        @if($task->end_date instanceof \Carbon\Carbon)
+                                            {{ $task->end_date->format('d/m/Y H:i') }}
+                                        @else
+                                            {{ \Carbon\Carbon::parse($task->end_date)->format('d/m/Y H:i') }}
+                                        @endif
                                     </span>
                                 </div>
                                 @endif
                                 @if($task->completed_at)
                                 <div>
                                     <strong>Completada:</strong><br>
-                                    <span class="text-success">{{ $task->completed_at->format('d/m/Y') }}</span>
+                                    <span class="text-success">
+                                        @if($task->completed_at instanceof \Carbon\Carbon)
+                                            {{ $task->completed_at->format('d/m/Y') }}
+                                        @else
+                                            {{ \Carbon\Carbon::parse($task->completed_at)->format('d/m/Y') }}
+                                        @endif
+                                    </span>
                                 </div>
                                 @endif
                             </div>
@@ -261,7 +279,7 @@
                                 <div class="col-6">
                                     <div class="card text-center bg-light">
                                         <div class="card-body p-2">
-                                            <div class="fw-bold text-primary">{{ $task->comments->count() }}</div>
+                                            <div class="fw-bold text-primary">{{ $task->comments ? $task->comments->count() : 0 }}</div>
                                             <small class="text-muted">
                                                 <i class="bi bi-chat me-1"></i>Comentarios
                                             </small>
@@ -271,7 +289,7 @@
                                 <div class="col-6">
                                     <div class="card text-center bg-light">
                                         <div class="card-body p-2">
-                                            <div class="fw-bold text-info">{{ $task->dependents->count() }}</div>
+                                            <div class="fw-bold text-info">{{ $task->dependents ? $task->dependents->count() : 0 }}</div>
                                             <small class="text-muted">
                                                 <i class="bi bi-arrow-right me-1"></i>Dependientes
                                             </small>
@@ -319,16 +337,28 @@
                                 <i class="bi bi-exclamation-triangle me-2"></i>
                                 <strong>Esta acción es irreversible.</strong> Se eliminarán todos los comentarios asociados.
                             </div>
-                            @if($task->comments->count() > 0)
+                            @if($task->comments && $task->comments->count() > 0)
                             <div class="alert alert-info">
                                 <i class="bi bi-info-circle me-2"></i>
                                 Esta tarea tiene <strong>{{ $task->comments->count() }} comentario(s)</strong> asociado(s).
                             </div>
                             @endif
-                            @if($task->dependents->count() > 0)
+                            @if($task->dependents && $task->dependents->count() > 0)
                             <div class="alert alert-danger">
                                 <i class="bi bi-exclamation-circle me-2"></i>
                                 <strong>Atención:</strong> {{ $task->dependents->count() }} tarea(s) dependen de esta.
+                            </div>
+                            @endif
+                            @if($task->assignedUsers && $task->assignedUsers->count() > 0)
+                            <div class="alert alert-info">
+                                <i class="bi bi-people me-2"></i>
+                                Esta tarea está asignada a <strong>{{ $task->assignedUsers->count() }} usuario(s)</strong>.
+                            </div>
+                            @elseif(isset($task->assignedUser) && $task->assignedUser)
+                            {{-- Compatibilidad con estructura antigua --}}
+                            <div class="alert alert-info">
+                                <i class="bi bi-person me-2"></i>
+                                Esta tarea está asignada a <strong>{{ $task->assignedUser->name }}</strong>.
                             </div>
                             @endif
                         </div>
@@ -396,4 +426,19 @@
     </div>
 </div>
 @endif
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-hide toasts after 5 seconds
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach(function(toast) {
+            setTimeout(function() {
+                const bsToast = new bootstrap.Toast(toast);
+                bsToast.hide();
+            }, 5000);
+        });
+    });
+</script>
+@endpush
 @endsection

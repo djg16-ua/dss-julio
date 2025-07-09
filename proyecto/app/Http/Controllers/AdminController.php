@@ -1931,7 +1931,7 @@ class AdminController extends Controller
      */
     public function tasks(Request $request)
     {
-        $query = Task::with(['assignedUser', 'creator', 'module.project', 'dependency', 'dependents', 'comments']);
+        $query = Task::with(['assignedUsers', 'creator', 'module.project', 'dependency', 'dependents', 'comments']);
 
         // Filtros
         if ($request->filled('search')) {
@@ -1942,7 +1942,7 @@ class AdminController extends Controller
                     ->orWhereHas('module.project', function ($projectQuery) use ($search) {
                         $projectQuery->where('title', 'like', "%{$search}%");
                     })
-                    ->orWhereHas('assignedUser', function ($userQuery) use ($search) {
+                    ->orWhereHas('assignedUsers', function ($userQuery) use ($search) {
                         $userQuery->where('name', 'like', "%{$search}%");
                     });
             });
@@ -1958,9 +1958,9 @@ class AdminController extends Controller
 
         if ($request->filled('assigned')) {
             if ($request->assigned === 'assigned') {
-                $query->whereNotNull('assigned_to');
+                $query->whereHas('assignedUsers');
             } elseif ($request->assigned === 'unassigned') {
-                $query->whereNull('assigned_to');
+                $query->whereDoesntHave('assignedUsers');
             }
         }
 
@@ -1992,13 +1992,13 @@ class AdminController extends Controller
         $stats = [
             'total_tasks' => Task::count(),
             'pending_tasks' => Task::where('status', 'PENDING')->count(),
-            'in_progress_tasks' => Task::where('status', 'IN_PROGRESS')->count(),
+            'active_tasks' => Task::where('status', 'ACTIVE')->count(),
             'completed_tasks' => Task::where('status', 'DONE')->count(),
             'overdue_tasks' => Task::where('end_date', '<', now())
                 ->whereNotIn('status', ['DONE', 'CANCELLED'])
                 ->count(),
-            'assigned_tasks' => Task::whereNotNull('assigned_to')->count(),
-            'unassigned_tasks' => Task::whereNull('assigned_to')->count(),
+            'assigned_tasks' => Task::whereHas('assignedUsers')->count(),
+            'unassigned_tasks' => Task::whereDoesntHave('assignedUsers')->count(),
         ];
 
         // Proyectos y módulos disponibles para filtros
@@ -2051,9 +2051,10 @@ class AdminController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:2000',
             'priority' => 'required|in:LOW,MEDIUM,HIGH,URGENT',
-            'status' => 'required|in:PENDING,IN_PROGRESS,DONE,PAUSED,CANCELLED',
+            'status' => 'required|in:PENDING,ACTIVE,DONE,PAUSED,CANCELLED',
             'module_id' => 'nullable|exists:modules,id',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'nullable|exists:users,id',
             'end_date' => 'nullable|date|after_or_equal:today',
             'depends_on' => 'nullable|exists:tasks,id',
         ]);
@@ -2066,18 +2067,19 @@ class AdminController extends Controller
             }
         }
 
-        // Si se asigna un módulo y un usuario, verificar que el usuario pertenezca al proyecto
-        if ($request->module_id && $request->assigned_to) {
+        // Si se asigna un módulo y usuarios, verificar que los usuarios pertenezcan al proyecto
+        if ($request->module_id && $request->assigned_users) {
             $module = Module::find($request->module_id);
-            $user = User::find($request->assigned_to);
+            foreach ($request->assigned_users as $userId) {
+                $user = User::find($userId);
+                $userInProject = $user->teams()
+                    ->where('project_id', $module->project_id)
+                    ->where('is_active', true)
+                    ->exists();
 
-            $userInProject = $user->teams()
-                ->where('project_id', $module->project_id)
-                ->where('is_active', true)
-                ->exists();
-
-            if (!$userInProject) {
-                return back()->with('error', 'El usuario asignado debe ser miembro del proyecto al que pertenece el módulo.');
+                if (!$userInProject) {
+                    return back()->with('error', "El usuario {$user->name} debe ser miembro del proyecto al que pertenece el módulo.");
+                }
             }
         }
 
@@ -2088,12 +2090,20 @@ class AdminController extends Controller
             'priority' => $request->priority,
             'status' => $request->status,
             'module_id' => $request->module_id,
-            'assigned_to' => $request->assigned_to,
             'end_date' => $request->end_date,
             'depends_on' => $request->depends_on,
             'created_by' => auth()->id(),
             'completed_at' => $request->status === 'DONE' ? now() : null,
         ]);
+
+        // Asignar usuarios si se especificaron
+        if ($request->assigned_users) {
+            $task->assignedUsers()->sync(
+                collect($request->assigned_users)->mapWithKeys(function ($userId) {
+                    return [$userId => ['assigned_at' => now()]];
+                })->toArray()
+            );
+        }
 
         return redirect()->route('admin.tasks.edit', $task)
             ->with('success', "Tarea '{$task->title}' creada correctamente.");
@@ -2104,7 +2114,7 @@ class AdminController extends Controller
      */
     public function editTask(Task $task)
     {
-        $task->load(['assignedUser', 'creator', 'module.project', 'dependency', 'dependents', 'comments.user']);
+        $task->load(['assignedUsers', 'creator', 'module.project', 'dependency', 'dependents', 'comments.user']);
 
         $modules = Module::with('project')->orderBy('name')->get();
 
@@ -2147,9 +2157,10 @@ class AdminController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:2000',
             'priority' => 'required|in:LOW,MEDIUM,HIGH,URGENT',
-            'status' => 'required|in:PENDING,IN_PROGRESS,DONE,PAUSED,CANCELLED',
+            'status' => 'required|in:PENDING,ACTIVE,DONE,PAUSED,CANCELLED',
             'module_id' => 'nullable|exists:modules,id',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'nullable|exists:users,id',
             'end_date' => 'nullable|date',
             'depends_on' => 'nullable|exists:tasks,id',
         ]);
@@ -2165,18 +2176,19 @@ class AdminController extends Controller
             }
         }
 
-        // Si se asigna un módulo y un usuario, verificar que el usuario pertenezca al proyecto
-        if ($request->module_id && $request->assigned_to) {
+        // Si se asigna un módulo y usuarios, verificar que los usuarios pertenezcan al proyecto
+        if ($request->module_id && $request->assigned_users) {
             $module = Module::find($request->module_id);
-            $user = User::find($request->assigned_to);
+            foreach ($request->assigned_users as $userId) {
+                $user = User::find($userId);
+                $userInProject = $user->teams()
+                    ->where('project_id', $module->project_id)
+                    ->where('is_active', true)
+                    ->exists();
 
-            $userInProject = $user->teams()
-                ->where('project_id', $module->project_id)
-                ->where('is_active', true)
-                ->exists();
-
-            if (!$userInProject) {
-                return back()->with('error', 'El usuario asignado debe ser miembro del proyecto al que pertenece el módulo.');
+                if (!$userInProject) {
+                    return back()->with('error', "El usuario {$user->name} debe ser miembro del proyecto al que pertenece el módulo.");
+                }
             }
         }
 
@@ -2194,11 +2206,23 @@ class AdminController extends Controller
             'priority' => $request->priority,
             'status' => $request->status,
             'module_id' => $request->module_id,
-            'assigned_to' => $request->assigned_to,
             'end_date' => $request->end_date,
             'depends_on' => $request->depends_on,
             'completed_at' => $completedAt,
         ]);
+
+        // Actualizar usuarios asignados
+        if ($request->has('assigned_users')) {
+            if ($request->assigned_users) {
+                $task->assignedUsers()->sync(
+                    collect($request->assigned_users)->mapWithKeys(function ($userId) {
+                        return [$userId => ['assigned_at' => now()]];
+                    })->toArray()
+                );
+            } else {
+                $task->assignedUsers()->detach();
+            }
+        }
 
         return redirect()->route('admin.tasks.edit', $task)
             ->with('success', 'Tarea actualizada correctamente.');
@@ -2210,7 +2234,7 @@ class AdminController extends Controller
     public function updateTaskStatus(Request $request, Task $task)
     {
         $request->validate([
-            'status' => 'required|in:PENDING,IN_PROGRESS,DONE,PAUSED,CANCELLED'
+            'status' => 'required|in:PENDING,ACTIVE,DONE,PAUSED,CANCELLED'
         ]);
 
         // Manejar cambio de estado a completado
@@ -2289,8 +2313,8 @@ class AdminController extends Controller
     public function getModuleTasks(Module $module)
     {
         $tasks = $module->tasks()
-            ->select('id', 'title', 'status', 'priority', 'assigned_to')
-            ->with('assignedUser:id,name')
+            ->select('id', 'title', 'status', 'priority')
+            ->with('assignedUsers:id,name')
             ->get();
 
         return response()->json($tasks);
@@ -2304,10 +2328,10 @@ class AdminController extends Controller
         $tasks = Task::whereHas('module', function ($query) use ($project) {
             $query->where('project_id', $project->id);
         })
-            ->select('id', 'title', 'status', 'priority', 'module_id', 'assigned_to')
+            ->select('id', 'title', 'status', 'priority', 'module_id')
             ->with([
                 'module:id,name',
-                'assignedUser:id,name'
+                'assignedUsers:id,name'
             ])
             ->get();
 

@@ -29,18 +29,34 @@ class Task extends Model
         'completed_at' => 'datetime',
     ];
 
+    // AGREGADO: Simular el campo assigned_to para el controlador
+    protected $appends = ['assigned_to'];
+
     // Relaciones
     public function module(): BelongsTo
     {
         return $this->belongsTo(Module::class);
     }
 
-    // NUEVA RELACIÓN: Many-to-Many con usuarios asignados
+    // Relación Many-to-Many con usuarios asignados (tabla task_user)
     public function assignedUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'task_user')
                     ->withPivot('assigned_at')
                     ->withTimestamps();
+    }
+
+    // AGREGADO: Simular assignedUser para las vistas que lo esperan
+    public function assignedUser(): BelongsTo
+    {
+        // Retorna el primer usuario asignado como si fuera una relación directa
+        $firstUser = $this->assignedUsers()->first();
+        if (!$firstUser) {
+            return $this->belongsTo(User::class, 'fake_assigned_to')->whereRaw('1 = 0');
+        }
+        
+        // Simular la relación
+        return $this->belongsTo(User::class)->where('id', $firstUser->id);
     }
 
     public function creator(): BelongsTo
@@ -63,7 +79,28 @@ class Task extends Model
         return $this->hasMany(Comment::class);
     }
 
-    // Scopes
+    // ACCESSOR: Simular el campo assigned_to que espera el controlador
+    public function getAssignedToAttribute()
+    {
+        $firstUser = $this->assignedUsers()->first();
+        return $firstUser ? $firstUser->id : null;
+    }
+
+    // MUTATOR: Para cuando se trate de asignar via assigned_to
+    public function setAssignedToAttribute($userId)
+    {
+        if ($userId) {
+            // Si ya tiene usuarios asignados, limpiar primero
+            $this->assignedUsers()->detach();
+            // Asignar el nuevo usuario
+            $this->assignedUsers()->attach($userId, ['assigned_at' => now()]);
+        } else {
+            // Si es null, desasignar todos
+            $this->assignedUsers()->detach();
+        }
+    }
+
+    // Scopes modificados para funcionar con la relación real
     public function scopeByStatus($query, $status)
     {
         return $query->where('status', $status);
@@ -74,7 +111,6 @@ class Task extends Model
         return $query->where('priority', $priority);
     }
 
-    // ACTUALIZADO: Scope para buscar tareas asignadas a un usuario específico
     public function scopeAssignedTo($query, $userId)
     {
         return $query->whereHas('assignedUsers', function ($q) use ($userId) {
@@ -88,7 +124,25 @@ class Task extends Model
             ->whereNotIn('status', ['DONE', 'CANCELLED']);
     }
 
-    // Métodos auxiliares
+    // SCOPE PERSONALIZADO: Para que el controlador pueda usar whereNotNull('assigned_to')
+    public function scopeWhereNotNull($query, $column)
+    {
+        if ($column === 'assigned_to') {
+            return $query->whereHas('assignedUsers');
+        }
+        return $query->whereNotNull($column);
+    }
+
+    // SCOPE PERSONALIZADO: Para que el controlador pueda usar whereNull('assigned_to')
+    public function scopeWhereNull($query, $column)
+    {
+        if ($column === 'assigned_to') {
+            return $query->whereDoesntHave('assignedUsers');
+        }
+        return $query->whereNull($column);
+    }
+
+    // Métodos auxiliares originales
     public function isCompleted(): bool
     {
         return $this->status === 'DONE';
@@ -107,17 +161,12 @@ class Task extends Model
         ]);
     }
 
-    // NUEVOS MÉTODOS para manejar asignaciones
+    // Métodos para manejar asignaciones (mantenidos del original)
     public function assignUser($userId, $assignedAt = null): void
     {
         $this->assignedUsers()->attach($userId, [
             'assigned_at' => $assignedAt ?? now()
         ]);
-    }
-
-    public function assignedUser(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function unassignUser($userId): void
