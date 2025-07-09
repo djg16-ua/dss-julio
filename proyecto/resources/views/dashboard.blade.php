@@ -17,7 +17,7 @@
                     </p>
                 </div>
                 <div class="col-lg-4 text-lg-end">
-                    <a href="#" class="btn bg-{{ Auth::user()->isAdmin() ? 'primary' : 'secondary' }} text-white fs-6 px-3 py-2 text-decoration-none">
+                    <a href="{{ route('profile.show') }}" class="btn bg-{{ Auth::user()->isAdmin() ? 'primary' : 'secondary' }} text-white fs-6 px-3 py-2 text-decoration-none">
                         <i class="bi bi-person-badge me-1"></i>
                         {{ Auth::user()->role }}
                     </a>
