@@ -70,7 +70,7 @@
                             <small class="text-muted">Equipos</small>
                             <div class="mt-2">
                                 <small class="text-warning">
-                                    {{ $stats['avg_team_size'] ?? 0 }} promedio miembros
+                                    {{ $stats['avg_team_size'] ?? 0 }} miembros promedio
                                 </small>
                             </div>
                         </div>
@@ -235,7 +235,7 @@
                     </div>
                 </div>
 
-                <!-- Métricas de rendimiento -->
+                <!-- Métricas de rendimiento CORREGIDAS -->
                 <div class="col-lg-4">
                     <div class="card h-100">
                         <div class="card-header bg-secondary text-white">
@@ -249,7 +249,7 @@
                                     <div class="card bg-light">
                                         <div class="card-body p-3 text-center">
                                             <h6 class="fw-bold text-success">{{ $stats['completion_rate'] ?? 0 }}%</h6>
-                                            <small class="text-muted">Tasa de Completación</small>
+                                            <small class="text-muted">Tasa de Completación de Tareas</small>
                                         </div>
                                     </div>
                                 </div>
@@ -257,7 +257,7 @@
                                     <div class="card bg-light">
                                         <div class="card-body p-3 text-center">
                                             <h6 class="fw-bold text-info">{{ $stats['avg_project_duration'] ?? 0 }}</h6>
-                                            <small class="text-muted">Días promedio por proyecto</small>
+                                            <small class="text-muted">Días promedio proyecto</small>
                                         </div>
                                     </div>
                                 </div>
@@ -272,8 +272,8 @@
                                 <div class="col-12">
                                     <div class="card bg-light">
                                         <div class="card-body p-3 text-center">
-                                            <h6 class="fw-bold text-primary">{{ $stats['projects_per_team'] ?? 0 }}</h6>
-                                            <small class="text-muted">Proyectos promedio por equipo</small>
+                                            <h6 class="fw-bold text-primary">{{ $stats['custom_teams_per_project'] ?? 0 }}</h6>
+                                            <small class="text-muted">Equipos personalizados por proyecto</small>
                                         </div>
                                     </div>
                                 </div>
@@ -328,13 +328,111 @@
                 </div>
             </div>
 
-            <!-- Proyectos más grandes -->
+            <!-- Análisis de equipos y colaboración -->
+            <div class="row g-4 mb-5">
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-people-fill me-2"></i>Análisis de Equipos
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h5 class="fw-bold text-info">{{ $stats['total_teams'] ?? 0 }}</h5>
+                                        <small class="text-muted">Total Equipos</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h5 class="fw-bold text-success">{{ $stats['general_teams'] ?? 0 }}</h5>
+                                        <small class="text-muted">Equipos Generales</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h5 class="fw-bold text-warning">{{ ($stats['total_teams'] ?? 0) - ($stats['general_teams'] ?? 0) }}</h5>
+                                        <small class="text-muted">Equipos Personalizados</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h5 class="fw-bold text-primary">{{ $stats['active_members'] ?? 0 }}</h5>
+                                        <small class="text-muted">Miembros Activos</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="small text-muted">
+                                <div class="mb-2">
+                                    <strong>Promedio de miembros por equipo:</strong> {{ $stats['avg_team_size'] ?? 0 }}
+                                </div>
+                                <div>
+                                    <strong>Equipos personalizados por proyecto:</strong> {{ $stats['custom_teams_per_project'] ?? 0 }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Análisis de productividad -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-graph-up-arrow me-2"></i>Análisis de Productividad
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h5 class="fw-bold text-success">{{ $stats['completed_tasks'] ?? 0 }}</h5>
+                                        <small class="text-muted">Tareas Completadas</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h5 class="fw-bold text-warning">{{ ($stats['total_tasks'] ?? 0) - ($stats['completed_tasks'] ?? 0) }}</h5>
+                                        <small class="text-muted">Tareas Pendientes</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h5 class="fw-bold text-info">{{ $stats['total_modules'] ?? 0 }}</h5>
+                                        <small class="text-muted">Total Módulos</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h5 class="fw-bold text-primary">{{ $stats['avg_modules_per_project'] ?? 0 }}</h5>
+                                        <small class="text-muted">Módulos por Proyecto</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="text-center">
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-success" style="width: {{ $stats['completion_rate'] ?? 0 }}%"></div>
+                                </div>
+                                <small class="text-muted">
+                                    <strong>{{ $stats['completion_rate'] ?? 0 }}%</strong> de tareas completadas
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proyectos más activos -->
             <div class="row g-4">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header bg-success text-white">
+                        <div class="card-header bg-primary text-white">
                             <h5 class="card-title mb-0">
-                                <i class="bi bi-building me-2"></i>Proyectos Más Grandes
+                                <i class="bi bi-building me-2"></i>Proyectos Más Activos
                             </h5>
                         </div>
                         <div class="card-body">
@@ -349,11 +447,19 @@
                                             <th>Módulos</th>
                                             <th>Tareas</th>
                                             <th>Estado</th>
+                                            <th>Progreso</th>
                                             <th>Creado</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($biggestProjects as $project)
+                                        @php
+                                        $totalTasks = $project->tasks_count ?? 0;
+                                        $completedTasks = 0;
+                                        // Si tuvieras una relación para tareas completadas:
+                                        // $completedTasks = $project->completed_tasks_count ?? 0;
+                                        $progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+                                        @endphp
                                         <tr>
                                             <td>
                                                 <div class="fw-bold">{{ Str::limit($project->title, 30) }}</div>
@@ -376,6 +482,12 @@
                                                 <span class="badge bg-{{ $statusColors[$project->status] ?? 'secondary' }}">
                                                     {{ $project->status }}
                                                 </span>
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-success" style="width: {{ $progress }}%"></div>
+                                                </div>
+                                                <small class="text-muted">{{ $progress }}%</small>
                                             </td>
                                             <td>
                                                 <small class="text-muted">{{ $project->created_at->format('d/m/Y') }}</small>
