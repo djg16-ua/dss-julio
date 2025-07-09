@@ -153,7 +153,7 @@
                             <div class="card">
                                 <div class="card-header">
                                     <h6 class="mb-0">
-                                        <i class="bi bi-person-plus me-2"></i>Invitar miembros al proyecto
+                                        <i class="bi bi-person-plus me-2"></i>Añadir miembros al proyecto
                                     </h6>
                                 </div>
                                 <div class="card-body">
@@ -170,9 +170,9 @@
                                     </div>
                                     
                                     <div id="selected-members" class="mt-3" style="display: none;">
-                                        <h6 class="fw-bold text-primary mb-2">Miembros seleccionados:</h6>
-                                        <div id="selected-members-list" class="d-flex flex-wrap gap-2">
-                                            <!-- Miembros seleccionados aparecerán aquí -->
+                                        <h6 class="fw-bold text-primary mb-3">Miembros seleccionados:</h6>
+                                        <div id="selected-members-list">
+                                            <!-- Miembros seleccionados aparecerán aquí con sus roles -->
                                         </div>
                                     </div>
                                 </div>
@@ -232,6 +232,17 @@
 <script>
 let selectedMembers = [];
 let teamCounter = 0;
+
+// Opciones de roles disponibles
+const roleOptions = {
+    'SENIOR_DEV': { label: '🚀 Senior Developer', description: 'Desarrollador senior' },
+    'DEVELOPER': { label: '💻 Developer', description: 'Desarrollador' },
+    'JUNIOR_DEV': { label: '🌱 Junior Developer', description: 'Desarrollador junior' },
+    'DESIGNER': { label: '🎨 Designer', description: 'Diseñador' },
+    'TESTER': { label: '🧪 Tester', description: 'Tester/QA' },
+    'ANALYST': { label: '📊 Analyst', description: 'Analista' },
+    'OBSERVER': { label: '👀 Observer', description: 'Observador' }
+};
 
 // Validación de fechas
 document.getElementById('start_date').addEventListener('change', function() {
@@ -346,7 +357,12 @@ function displayUsers(users) {
 function addMember(id, name, email) {
     if (selectedMembers.find(member => member.id === id)) return;
     
-    selectedMembers.push({ id, name, email });
+    selectedMembers.push({ 
+        id, 
+        name, 
+        email, 
+        role: 'DEVELOPER' // Rol por defecto
+    });
     updateSelectedMembers();
     
     // Refrescar búsqueda
@@ -367,6 +383,29 @@ function removeMember(id) {
     }
 }
 
+function updateMemberRole(id, newRole) {
+    const member = selectedMembers.find(m => m.id === id);
+    if (member) {
+        member.role = newRole;
+        
+        // Actualizar el input hidden correspondiente
+        const memberCard = document.querySelector(`[data-member-id="${id}"]`);
+        if (memberCard) {
+            const hiddenInput = memberCard.querySelector('.member-combined');
+            if (hiddenInput) {
+                hiddenInput.value = `${id}|${newRole}`;
+            }
+        }
+        
+        // Actualizar descripción del rol
+        const roleSelect = memberCard.querySelector('.member-role-select');
+        const description = memberCard.querySelector('.text-muted');
+        if (description) {
+            description.textContent = roleOptions[newRole].description;
+        }
+    }
+}
+
 function updateSelectedMembers() {
     const container = document.getElementById('selected-members');
     const listContainer = document.getElementById('selected-members-list');
@@ -378,28 +417,45 @@ function updateSelectedMembers() {
     
     container.style.display = 'block';
     
-    // Crear inputs hidden para enviar al servidor
-    const form = document.querySelector('form');
-    
-    // Remover inputs anteriores
-    form.querySelectorAll('input[name="additional_members[]"]').forEach(input => input.remove());
-    
-    // Añadir nuevos inputs
-    selectedMembers.forEach(member => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'additional_members[]';
-        input.value = member.id;
-        form.appendChild(input);
-    });
-    
-    // Actualizar vista
-    listContainer.innerHTML = selectedMembers.map(member => `
-        <span class="badge bg-primary d-flex align-items-center">
-            ${member.name}
-            <button type="button" class="btn-close btn-close-white ms-2" onclick="removeMember(${member.id})" style="font-size: 0.7em;"></button>
-        </span>
-    `).join('');
+    // Actualizar vista - cada miembro tendrá su propio input hidden
+    listContainer.innerHTML = selectedMembers.map((member, index) => {
+        const roleOptionsHtml = Object.entries(roleOptions).map(([value, data]) => 
+            `<option value="${value}" ${member.role === value ? 'selected' : ''}>${data.label}</option>`
+        ).join('');
+        
+        return `
+            <div class="card mb-2 member-card" data-member-id="${member.id}">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle me-2">
+                                    ${member.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <strong>${member.name}</strong><br>
+                                    <small class="text-muted">${member.email}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <select class="form-select form-select-sm member-role-select" onchange="updateMemberRole(${member.id}, this.value)">
+                                ${roleOptionsHtml}
+                            </select>
+                            <small class="text-muted">${roleOptions[member.role].description}</small>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMember(${member.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Input hidden para este miembro específico -->
+                    <input type="hidden" class="member-combined" name="additional_members[]" value="${member.id}|${member.role}">
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // Gestión de equipos adicionales
@@ -414,18 +470,51 @@ function addTeamInput() {
     const teamDiv = document.createElement('div');
     teamDiv.className = 'mb-3 team-input';
     teamDiv.innerHTML = `
-        <div class="input-group">
-            <span class="input-group-text">
-                <i class="bi bi-people"></i>
-            </span>
-            <input type="text" class="form-control" name="additional_teams[]" placeholder="Nombre del equipo (ej: Frontend, Backend, QA)">
-            <button type="button" class="btn btn-outline-danger" onclick="removeTeamInput(this)">
-                <i class="bi bi-trash"></i>
-            </button>
+        <div class="row g-2">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-people"></i>
+                    </span>
+                    <input type="text" class="form-control team-name" placeholder="Nombre del equipo" required>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-card-text"></i>
+                    </span>
+                    <input type="text" class="form-control team-description" placeholder="Descripción (opcional)">
+                    <button type="button" class="btn btn-outline-danger" onclick="removeTeamInput(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
         </div>
+        <input type="hidden" class="team-combined" name="additional_teams[]" value="">
     `;
     
     container.appendChild(teamDiv);
+    
+    // Añadir event listeners para combinar nombre y descripción
+    const nameInput = teamDiv.querySelector('.team-name');
+    const descInput = teamDiv.querySelector('.team-description');
+    const hiddenInput = teamDiv.querySelector('.team-combined');
+    
+    function updateHiddenInput() {
+        const name = nameInput.value.trim();
+        const description = descInput.value.trim();
+        
+        if (name) {
+            // Combinar nombre y descripción en un string separado por "|"
+            hiddenInput.value = description ? `${name}|${description}` : name;
+        } else {
+            hiddenInput.value = '';
+        }
+    }
+    
+    nameInput.addEventListener('input', updateHiddenInput);
+    descInput.addEventListener('input', updateHiddenInput);
 }
 
 function removeTeamInput(button) {
@@ -475,6 +564,19 @@ function removeTeamInput(button) {
 .btn-primary:hover {
     background-color: #2e59d9;
     border-color: #2653d4;
+}
+
+.avatar-circle {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: #4e73df;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
 }
 </style>
 @endsection

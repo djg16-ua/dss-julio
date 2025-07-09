@@ -74,8 +74,8 @@
                     <div class="card feature-card">
                         <div class="card-body p-4">
                             <div class="text-center mb-4">
-                                <div class="feature-icon primary mx-auto mb-3" style="width: 80px; height: 80px;">
-                                    <i class="bi bi-kanban" style="font-size: 2.5rem;"></i>
+                                <div class="mx-auto mb-3" style="width: 80px; height: 80px; border-radius: 50%; background-color: rgba(78, 115, 223, 0.1); display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-kanban text-primary" style="font-size: 2.5rem;"></i>
                                 </div>
                                 <h4 class="fw-bold text-primary">Información del Proyecto</h4>
                             </div>
@@ -85,10 +85,8 @@
                                     <i class="bi bi-person me-2"></i>Creador
                                 </h6>
                                 <div class="d-flex align-items-center">
-                                    <div class="avatar avatar-sm me-2">
-                                        <div class="avatar-title rounded-circle bg-primary text-white">
-                                            {{ strtoupper(substr($project->creator->name, 0, 1)) }}
-                                        </div>
+                                    <div class="avatar-circle me-2">
+                                        {{ strtoupper(substr($project->creator->name, 0, 1)) }}
                                     </div>
                                     <div>
                                         <strong>{{ $project->creator->name }}</strong>
@@ -142,9 +140,7 @@
                         <div class="col-md-6">
                             <div class="card feature-card">
                                 <div class="card-body text-center p-3">
-                                    <div class="feature-icon success mx-auto mb-2" style="width: 50px; height: 50px;">
-                                        <i class="bi bi-collection"></i>
-                                    </div>
+                                    <i class="bi bi-collection text-success mb-2" style="font-size: 2rem;"></i>
                                     <h5 class="fw-bold text-primary mb-1">{{ $projectStats['total_modules'] ?? 0 }}</h5>
                                     <p class="text-muted mb-0 small">Módulos</p>
                                 </div>
@@ -153,9 +149,7 @@
                         <div class="col-md-6">
                             <div class="card feature-card">
                                 <div class="card-body text-center p-3">
-                                    <div class="feature-icon secondary mx-auto mb-2" style="width: 50px; height: 50px;">
-                                        <i class="bi bi-check2-square"></i>
-                                    </div>
+                                    <i class="bi bi-check2-square text-secondary mb-2" style="font-size: 2rem;"></i>
                                     <h5 class="fw-bold text-primary mb-1">{{ $projectStats['total_tasks'] ?? 0 }}</h5>
                                     <p class="text-muted mb-0 small">Tareas Totales</p>
                                 </div>
@@ -164,9 +158,7 @@
                         <div class="col-md-6">
                             <div class="card feature-card">
                                 <div class="card-body text-center p-3">
-                                    <div class="feature-icon primary mx-auto mb-2" style="width: 50px; height: 50px;">
-                                        <i class="bi bi-check-circle-fill"></i>
-                                    </div>
+                                    <i class="bi bi-check-circle-fill text-primary mb-2" style="font-size: 2rem;"></i>
                                     <h5 class="fw-bold text-primary mb-1">{{ $projectStats['completed_tasks'] ?? 0 }}</h5>
                                     <p class="text-muted mb-0 small">Tareas Completadas</p>
                                 </div>
@@ -175,9 +167,7 @@
                         <div class="col-md-6">
                             <div class="card feature-card">
                                 <div class="card-body text-center p-3">
-                                    <div class="feature-icon primary mx-auto mb-2" style="width: 50px; height: 50px;">
-                                        <i class="bi bi-people"></i>
-                                    </div>
+                                    <i class="bi bi-people text-primary mb-2" style="font-size: 2rem;"></i>
                                     <h5 class="fw-bold text-primary mb-1">{{ $projectStats['team_members'] ?? 0 }}</h5>
                                     <p class="text-muted mb-0 small">Miembros del Proyecto</p>
                                 </div>
@@ -187,12 +177,29 @@
 
                     <!-- Descripción del proyecto -->
                     @if($project->description)
-                        <div class="card feature-card">
-                            <div class="card-body p-4">
-                                <h5 class="fw-bold text-primary mb-3">
+                        <div class="card feature-card" style="max-height: 163px; overflow: hidden;">
+                            <div class="card-body py-2 px-3">
+                                <h6 class="fw-bold text-primary mb-1">
                                     <i class="bi bi-card-text me-2"></i>Descripción
-                                </h5>
-                                <p class="text-muted mb-0" style="line-height: 1.6;">{{ $project->description }}</p>
+                                </h6>
+                                <div class="description-content">
+                                    <p class="text-muted mb-0" style="line-height: 1.4;" id="project-description">
+                                        {{ Str::limit($project->description, 120) }}
+                                    </p>
+                                    @if(strlen($project->description) > 120)
+                                        <button type="button" class="btn btn-link p-0 mt-1" id="toggle-description">
+                                            <small>Ver más <i class="bi bi-chevron-down"></i></small>
+                                        </button>
+                                        <div id="full-description" style="display: none;">
+                                            <p class="text-muted mb-0" style="line-height: 1.4;">
+                                                {{ $project->description }}
+                                            </p>
+                                            <button type="button" class="btn btn-link p-0 mt-1" id="toggle-description-less">
+                                                <small>Ver menos <i class="bi bi-chevron-up"></i></small>
+                                            </button>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     @endif
@@ -207,7 +214,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">
                                     <i class="bi bi-people-fill text-primary me-2"></i>
-                                    Miembros del Proyecto ({{ $projectStats['team_members'] ?? 0 }})
+                                    Miembros del Proyecto (<span id="members-count">{{ $projectStats['team_members'] ?? 0 }}</span>)
                                 </h5>
                                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMemberModal">
                                     <i class="bi bi-person-plus me-1"></i>Añadir Miembro
@@ -215,56 +222,63 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            @php
-                                $generalTeam = $project->getGeneralTeam();
-                                $projectMembers = $generalTeam ? $generalTeam->users()->where('team_user.is_active', true)->get() : collect();
-                            @endphp
-                            
-                            @if($projectMembers->count() > 0)
-                                <div class="row g-3">
-                                    @foreach($projectMembers as $member)
-                                        <div class="col-lg-4 col-md-6">
-                                            <div class="d-flex align-items-center justify-content-between p-3 border rounded">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="avatar avatar-sm me-3">
-                                                        <div class="avatar-title rounded-circle bg-primary text-white">
+                            <div id="members-container">
+                                @php
+                                    $generalTeam = $project->getGeneralTeam();
+                                    $projectMembers = $generalTeam ? $generalTeam->users()->where('team_user.is_active', true)->get() : collect();
+                                    
+                                    // Orden jerárquico de roles
+                                    $roleOrder = ['LEAD', 'SENIOR_DEV', 'DEVELOPER', 'JUNIOR_DEV', 'DESIGNER', 'TESTER', 'ANALYST', 'OBSERVER'];
+                                    $sortedMembers = $projectMembers->sortBy(function($member) use ($roleOrder) {
+                                        return array_search($member->pivot->role, $roleOrder);
+                                    });
+                                @endphp
+                                
+                                @if($sortedMembers->count() > 0)
+                                    <div class="row g-3">
+                                        @foreach($sortedMembers as $member)
+                                            <div class="col-lg-4 col-md-6" data-member-id="{{ $member->id }}">
+                                                <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="avatar-circle me-3">
                                                             {{ strtoupper(substr($member->name, 0, 1)) }}
                                                         </div>
+                                                        <div>
+                                                            <h6 class="mb-0">{{ $member->name }}</h6>
+                                                            <small class="text-muted">{{ $member->email }}</small>
+                                                            <br>
+                                                            <span class="badge bg-{{ $member->pivot->role === 'LEAD' ? 'warning' : 'info' }}">
+                                                                {{ $member->pivot->role }}
+                                                            </span>
+                                                            @if($member->id === auth()->id())
+                                                                <span class="badge bg-success">Tú</span>
+                                                            @endif
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <h6 class="mb-0">{{ $member->name }}</h6>
-                                                        <small class="text-muted">{{ $member->email }}</small>
-                                                        <br>
-                                                        <span class="badge bg-{{ $member->pivot->role === 'LEAD' ? 'warning' : 'info' }}">
-                                                            {{ $member->pivot->role }}
-                                                        </span>
-                                                        @if($member->id === auth()->id())
-                                                            <span class="badge bg-success">Tú</span>
-                                                        @endif
-                                                    </div>
+                                                    @if($member->id !== $project->created_by && $member->id !== auth()->id())
+                                                        <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                                onclick="removeMember({{ $member->id }}, '{{ $member->name }}')"
+                                                                title="Remover del proyecto">
+                                                            <i class="bi bi-x"></i>
+                                                        </button>
+                                                    @endif
                                                 </div>
-                                                @if($member->id !== $project->created_by && $member->id !== auth()->id())
-                                                    <button type="button" class="btn btn-outline-danger btn-sm" 
-                                                            onclick="removeMember({{ $member->id }}, '{{ $member->name }}')"
-                                                            title="Remover del proyecto">
-                                                        <i class="bi bi-x"></i>
-                                                    </button>
-                                                @endif
                                             </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @else
-                                <div class="text-center py-4">
-                                    <i class="bi bi-people display-4 text-muted mb-3"></i>
-                                    <h6 class="text-muted">No hay miembros en el proyecto</h6>
-                                    <p class="text-muted mb-3">Añade miembros para empezar a colaborar</p>
-                                </div>
-                            @endif
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="text-center py-4" id="no-members-message">
+                                        <i class="bi bi-people display-4 text-muted mb-3"></i>
+                                        <h6 class="text-muted">No hay miembros en el proyecto</h6>
+                                        <p class="text-muted mb-3">Añade miembros para empezar a colaborar</p>
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            
             <div class="row">
                 <div class="col-12">
                     <ul class="nav nav-pills mb-4" id="projectTabs" role="tablist">
@@ -300,15 +314,20 @@
                                             <i class="bi bi-diagram-3 text-primary me-2"></i>
                                             Equipos Personalizados ({{ $project->teams->count() }})
                                         </h5>
-                                        <a href="{{ route('team.create', $project) }}" class="btn btn-primary btn-sm">
-                                            <i class="bi bi-plus-circle me-1"></i>Crear Equipo
-                                        </a>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ route('team.index', $project) }}" class="btn btn-outline-info btn-sm">
+                                                <i class="bi bi-eye me-1"></i>Ver Más
+                                            </a>
+                                            <a href="{{ route('team.create', $project) }}" class="btn btn-primary btn-sm">
+                                                <i class="bi bi-plus-circle me-1"></i>Crear Equipo
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="card-body">
                                     @if($project->teams->count() > 0)
                                         <div class="row g-3">
-                                            @foreach($project->teams as $team)
+                                            @foreach($project->teams->take(4) as $team)
                                             <div class="col-lg-6">
                                                 <div class="card border h-100">
                                                     <div class="card-body p-3">
@@ -343,11 +362,11 @@
                                             </div>
                                             @endforeach
                                         </div>
-                                        <div class="mt-3 text-center">
-                                            <a href="{{ route('team.index', $project) }}" class="btn btn-outline-primary">
-                                                <i class="bi bi-list me-2"></i>Ver Todos los Equipos
-                                            </a>
-                                        </div>
+                                        @if($project->teams->count() > 4)
+                                            <div class="mt-3 text-center">
+                                                <small class="text-muted">Mostrando 4 de {{ $project->teams->count() }} equipos</small>
+                                            </div>
+                                        @endif
                                     @else
                                         <div class="text-center py-4">
                                             <i class="bi bi-diagram-3 display-4 text-muted mb-3"></i>
@@ -366,15 +385,25 @@
                         <div class="tab-pane fade" id="modules" role="tabpanel">
                             <div class="card">
                                 <div class="card-header bg-white py-3">
-                                    <h5 class="card-title mb-0">
-                                        <i class="bi bi-collection text-primary me-2"></i>
-                                        Módulos del Proyecto ({{ $project->modules->count() }})
-                                    </h5>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-collection text-primary me-2"></i>
+                                            Módulos del Proyecto ({{ $project->modules->count() }})
+                                        </h5>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-outline-info btn-sm">
+                                                <i class="bi bi-eye me-1"></i>Ver Más
+                                            </button>
+                                            <button class="btn btn-primary btn-sm">
+                                                <i class="bi bi-plus-circle me-1"></i>Crear Módulo
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     @if($project->modules->count() > 0)
                                         <div class="row g-3">
-                                            @foreach($project->modules as $module)
+                                            @foreach($project->modules->take(4) as $module)
                                             <div class="col-lg-6">
                                                 <div class="card border">
                                                     <div class="card-body p-3">
@@ -432,6 +461,11 @@
                                             </div>
                                             @endforeach
                                         </div>
+                                        @if($project->modules->count() > 4)
+                                            <div class="mt-3 text-center">
+                                                <small class="text-muted">Mostrando 4 de {{ $project->modules->count() }} módulos</small>
+                                            </div>
+                                        @endif
                                     @else
                                         <div class="text-center py-4">
                                             <i class="bi bi-collection display-4 text-muted mb-3"></i>
@@ -447,10 +481,20 @@
                         <div class="tab-pane fade" id="tasks" role="tabpanel">
                             <div class="card">
                                 <div class="card-header bg-white py-3">
-                                    <h5 class="card-title mb-0">
-                                        <i class="bi bi-check2-square text-primary me-2"></i>
-                                        Tareas Recientes ({{ $projectStats['total_tasks'] ?? 0 }} total)
-                                    </h5>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-check2-square text-primary me-2"></i>
+                                            Tareas Recientes ({{ $projectStats['total_tasks'] ?? 0 }} total)
+                                        </h5>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-outline-info btn-sm">
+                                                <i class="bi bi-eye me-1"></i>Ver Más
+                                            </button>
+                                            <button class="btn btn-primary btn-sm">
+                                                <i class="bi bi-plus-circle me-1"></i>Crear Tarea
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     @php
@@ -461,7 +505,7 @@
                                     
                                     @if($allTasks->count() > 0)
                                         <div class="list-group list-group-flush">
-                                            @foreach($allTasks->take(10) as $task)
+                                            @foreach($allTasks->take(6) as $task)
                                             <div class="list-group-item border-0 px-0">
                                                 <div class="d-flex align-items-start">
                                                     <div class="me-3">
@@ -501,9 +545,9 @@
                                             </div>
                                             @endforeach
                                             
-                                            @if($allTasks->count() > 10)
+                                            @if($allTasks->count() > 6)
                                                 <div class="text-center mt-3">
-                                                    <small class="text-muted">Mostrando las 10 tareas más recientes de {{ $allTasks->count() }} total</small>
+                                                    <small class="text-muted">Mostrando las 6 tareas más recientes de {{ $allTasks->count() }} total</small>
                                                 </div>
                                             @endif
                                         </div>
@@ -530,8 +574,8 @@
                                 <div class="card-body">
                                     <div class="timeline">
                                         <div class="d-flex mb-3">
-                                            <div class="feature-icon primary me-3" style="width: 40px; height: 40px; font-size: 0.9rem;">
-                                                <i class="bi bi-plus-circle"></i>
+                                            <div class="me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="bi bi-plus-circle text-primary" style="font-size: 1.5rem;"></i>
                                             </div>
                                             <div class="flex-grow-1">
                                                 <h6 class="fw-bold mb-1">Proyecto creado</h6>
@@ -545,8 +589,8 @@
                                         
                                         @if($project->updated_at != $project->created_at)
                                             <div class="d-flex mb-3">
-                                                <div class="feature-icon secondary me-3" style="width: 40px; height: 40px; font-size: 0.9rem;">
-                                                    <i class="bi bi-pencil"></i>
+                                                <div class="me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="bi bi-pencil text-secondary" style="font-size: 1.5rem;"></i>
                                                 </div>
                                                 <div class="flex-grow-1">
                                                     <h6 class="fw-bold mb-1">Proyecto actualizado</h6>
@@ -561,8 +605,8 @@
                                         
                                         @if($project->teams->count() > 0)
                                             <div class="d-flex mb-3">
-                                                <div class="feature-icon success me-3" style="width: 40px; height: 40px; font-size: 0.9rem;">
-                                                    <i class="bi bi-people"></i>
+                                                <div class="me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="bi bi-people text-success" style="font-size: 1.5rem;"></i>
                                                 </div>
                                                 <div class="flex-grow-1">
                                                     <h6 class="fw-bold mb-1">Equipos personalizados creados</h6>
@@ -609,20 +653,27 @@
                     <div class="mb-3" id="selected-user" style="display: none;">
                         <label for="user-role" class="form-label">Rol en el proyecto</label>
                         <select class="form-select" id="user-role">
-                            <option value="DEVELOPER">Desarrollador</option>
-                            <option value="SENIOR_DEV">Desarrollador Senior</option>
-                            <option value="LEAD">Líder</option>
-                            <option value="DESIGNER">Diseñador</option>
-                            <option value="TESTER">Tester</option>
-                            <option value="ANALYST">Analista</option>
-                            <option value="OBSERVER">Observador</option>
+                            <option value="DEVELOPER">💻 Desarrollador</option>
+                            <option value="SENIOR_DEV">🚀 Desarrollador Senior</option>
+                            <option value="JUNIOR_DEV">🌱 Desarrollador Junior</option>
+                            <option value="DESIGNER">🎨 Diseñador</option>
+                            <option value="TESTER">🧪 Tester</option>
+                            <option value="ANALYST">📊 Analista</option>
+                            <option value="OBSERVER">👀 Observador</option>
                         </select>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Solo puede haber un líder por proyecto (el creador)
+                        </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="confirmAddMember" disabled>Añadir al Proyecto</button>
+                <button type="button" class="btn btn-primary" id="confirmAddMember" disabled>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" style="display: none;"></span>
+                    Añadir al Proyecto
+                </button>
             </div>
         </div>
     </div>
@@ -670,6 +721,30 @@
 <script>
 let selectedUserId = null;
 
+// Control de descripción expandible
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggle-description');
+    const toggleLessBtn = document.getElementById('toggle-description-less');
+    const shortDesc = document.getElementById('project-description');
+    const fullDesc = document.getElementById('full-description');
+    
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            shortDesc.style.display = 'none';
+            fullDesc.style.display = 'block';
+            toggleBtn.style.display = 'none';
+        });
+    }
+    
+    if (toggleLessBtn) {
+        toggleLessBtn.addEventListener('click', function() {
+            shortDesc.style.display = 'block';
+            fullDesc.style.display = 'none';
+            toggleBtn.style.display = 'inline-block';
+        });
+    }
+});
+
 // Funciones para gestión de miembros
 function confirmDelete() {
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
@@ -678,6 +753,13 @@ function confirmDelete() {
 
 function removeMember(userId, userName) {
     if (confirm(`¿Estás seguro de que quieres remover a ${userName} del proyecto?`)) {
+        // Mostrar loading en el botón
+        const memberCard = document.querySelector(`[data-member-id="${userId}"]`);
+        const button = memberCard.querySelector('.btn-outline-danger');
+        const originalHtml = button.innerHTML;
+        button.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
+        button.disabled = true;
+        
         fetch(`{{ route('project.remove-member', [$project, '']) }}/${userId}`, {
             method: 'DELETE',
             headers: {
@@ -689,15 +771,49 @@ function removeMember(userId, userName) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload(); // Recargar para mostrar cambios
+                // Remover card del DOM con animación
+                memberCard.style.transition = 'all 0.3s ease';
+                memberCard.style.opacity = '0';
+                memberCard.style.transform = 'scale(0.8)';
+                
+                setTimeout(() => {
+                    memberCard.remove();
+                    updateMembersCount();
+                    checkIfNoMembers();
+                }, 300);
             } else {
+                button.innerHTML = originalHtml;
+                button.disabled = false;
                 alert('Error: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
+            button.innerHTML = originalHtml;
+            button.disabled = false;
             alert('Error al remover el miembro');
         });
+    }
+}
+
+function updateMembersCount() {
+    const memberCards = document.querySelectorAll('[data-member-id]');
+    const count = memberCards.length;
+    document.getElementById('members-count').textContent = count;
+}
+
+function checkIfNoMembers() {
+    const memberCards = document.querySelectorAll('[data-member-id]');
+    const container = document.getElementById('members-container');
+    
+    if (memberCards.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4" id="no-members-message">
+                <i class="bi bi-people display-4 text-muted mb-3"></i>
+                <h6 class="text-muted">No hay miembros en el proyecto</h6>
+                <p class="text-muted mb-3">Añade miembros para empezar a colaborar</p>
+            </div>
+        `;
     }
 }
 
@@ -764,10 +880,8 @@ function displaySearchResults(users) {
     container.innerHTML = users.map(user => `
         <div class="border rounded p-2 mb-2 user-result" data-user-id="${user.id}" style="cursor: pointer;">
             <div class="d-flex align-items-center">
-                <div class="avatar avatar-sm me-2">
-                    <div class="avatar-title rounded-circle bg-primary text-white">
-                        ${user.name.charAt(0).toUpperCase()}
-                    </div>
+                <div class="avatar-circle me-2">
+                    ${user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
                     <strong>${user.name}</strong><br>
@@ -801,7 +915,13 @@ function selectUser(userId, user) {
 document.getElementById('confirmAddMember').addEventListener('click', function() {
     if (!selectedUserId) return;
     
+    const button = this;
+    const spinner = button.querySelector('.spinner-border');
     const role = document.getElementById('user-role').value;
+    
+    // Mostrar loading
+    spinner.style.display = 'inline-block';
+    button.disabled = true;
     
     fetch(`{{ route('project.add-member', $project) }}`, {
         method: 'POST',
@@ -819,7 +939,7 @@ document.getElementById('confirmAddMember').addEventListener('click', function()
     .then(data => {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('addMemberModal')).hide();
-            location.reload(); // Recargar para mostrar cambios
+            addMemberToDOM(data.member);
         } else {
             alert('Error: ' + data.error);
         }
@@ -827,8 +947,101 @@ document.getElementById('confirmAddMember').addEventListener('click', function()
     .catch(error => {
         console.error('Error:', error);
         alert('Error al añadir el miembro');
+    })
+    .finally(() => {
+        spinner.style.display = 'none';
+        button.disabled = false;
     });
 });
+
+function addMemberToDOM(member) {
+    // Remover mensaje de "no hay miembros" si existe
+    const noMembersMsg = document.getElementById('no-members-message');
+    if (noMembersMsg) {
+        noMembersMsg.remove();
+    }
+    
+    // Buscar contenedor de miembros
+    let membersGrid = document.querySelector('#members-container .row.g-3');
+    
+    // Si no existe grid, crearlo
+    if (!membersGrid) {
+        const container = document.getElementById('members-container');
+        container.innerHTML = '<div class="row g-3"></div>';
+        membersGrid = container.querySelector('.row.g-3');
+    }
+    
+    // Crear nueva card de miembro
+    const memberCard = document.createElement('div');
+    memberCard.className = 'col-lg-4 col-md-6';
+    memberCard.setAttribute('data-member-id', member.id);
+    memberCard.style.opacity = '0';
+    memberCard.style.transform = 'scale(0.8)';
+    
+    const roleClass = member.role === 'LEAD' ? 'warning' : 'info';
+    const isCurrentUser = member.id === {{ auth()->id() }};
+    const canRemove = member.id !== {{ $project->created_by }} && member.id !== {{ auth()->id() }};
+    
+    memberCard.innerHTML = `
+        <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+            <div class="d-flex align-items-center">
+                <div class="avatar-circle me-3">
+                    ${member.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                    <h6 class="mb-0">${member.name}</h6>
+                    <small class="text-muted">${member.email}</small>
+                    <br>
+                    <span class="badge bg-${roleClass}">
+                        ${member.role}
+                    </span>
+                    ${isCurrentUser ? '<span class="badge bg-success">Tú</span>' : ''}
+                </div>
+            </div>
+            ${canRemove ? `
+                <button type="button" class="btn btn-outline-danger btn-sm" 
+                        onclick="removeMember(${member.id}, '${member.name}')"
+                        title="Remover del proyecto">
+                    <i class="bi bi-x"></i>
+                </button>
+            ` : ''}
+        </div>
+    `;
+    
+    // Determinar posición según jerarquía de roles
+    const roleOrder = ['LEAD', 'SENIOR_DEV', 'DEVELOPER', 'JUNIOR_DEV', 'DESIGNER', 'TESTER', 'ANALYST', 'OBSERVER'];
+    const memberRoleIndex = roleOrder.indexOf(member.role);
+    
+    // Buscar posición correcta
+    let inserted = false;
+    const existingMembers = membersGrid.querySelectorAll('[data-member-id]');
+    
+    for (let existingMember of existingMembers) {
+        const existingRole = existingMember.querySelector('.badge').textContent.trim();
+        const existingRoleIndex = roleOrder.indexOf(existingRole);
+        
+        if (memberRoleIndex < existingRoleIndex) {
+            membersGrid.insertBefore(memberCard, existingMember);
+            inserted = true;
+            break;
+        }
+    }
+    
+    // Si no se insertó en ninguna posición, añadir al final
+    if (!inserted) {
+        membersGrid.appendChild(memberCard);
+    }
+    
+    // Animar entrada
+    setTimeout(() => {
+        memberCard.style.transition = 'all 0.3s ease';
+        memberCard.style.opacity = '1';
+        memberCard.style.transform = 'scale(1)';
+    }, 50);
+    
+    // Actualizar contador
+    updateMembersCount();
+}
 
 // Limpiar modal al cerrarse
 document.getElementById('addMemberModal').addEventListener('hidden.bs.modal', function() {
@@ -840,4 +1053,88 @@ document.getElementById('addMemberModal').addEventListener('hidden.bs.modal', fu
 });
 </script>
 @endpush
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #4e73df;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-title {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.avatar-sm .avatar-title {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+}
+
+.feature-icon {
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    min-width: 50px;
+    min-height: 50px;
+}
+
+.feature-icon.primary {
+    background: linear-gradient(45deg, #4e73df, #224abe);
+}
+
+.feature-icon.secondary {
+    background: linear-gradient(45deg, #858796, #60616f);
+}
+
+.feature-icon.success {
+    background: linear-gradient(45deg, #1cc88a, #17a673);
+}
+
+.card {
+    border: 1px solid #e3e6f0;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.feature-card {
+    transition: all 0.3s;
+}
+
+.feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 2rem 0 rgba(58, 59, 69, 0.2);
+}
+
+.user-result:hover {
+    background-color: #f8f9fc;
+}
+
+.user-result.border-primary {
+    background-color: #e3f2fd;
+}
+</style>
 @endsection

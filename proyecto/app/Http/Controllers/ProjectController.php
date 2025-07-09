@@ -138,8 +138,11 @@ class ProjectController extends Controller
             'end_date' => 'nullable|date|after:start_date',
             'additional_members' => 'nullable|array',
             'additional_members.*' => 'exists:users,id',
+            'member_roles' => 'nullable|array',
+            'member_roles.*' => 'in:LEAD,SENIOR_DEV,DEVELOPER,JUNIOR_DEV,DESIGNER,TESTER,ANALYST,OBSERVER',
             'additional_teams' => 'nullable|array',
-            'additional_teams.*' => 'string|max:255',
+            'additional_teams.*.name' => 'nullable|string|max:255',
+            'additional_teams.*.description' => 'nullable|string|max:1000',
         ]);
 
         if ($validator->fails()) {
@@ -176,27 +179,45 @@ class ProjectController extends Controller
 
             // Añadir miembros adicionales al equipo general si se especificaron
             if ($request->has('additional_members') && is_array($request->additional_members)) {
-                foreach ($request->additional_members as $userId) {
-                    if ($userId != $user->id) { // Evitar duplicar al creador
-                        $generalTeam->users()->attach($userId, [
-                            'is_active' => true,
-                            'role' => self::TEAM_ROLE_DEVELOPER, // Rol por defecto para miembros adicionales
-                            'joined_at' => now(),
-                        ]);
+                foreach ($request->additional_members as $memberData) {
+                    if (!empty(trim($memberData))) {
+                        // Separar userId y rol
+                        $parts = explode('|', $memberData, 2);
+                        $userId = intval(trim($parts[0]));
+                        $role = isset($parts[1]) && !empty(trim($parts[1])) 
+                            ? trim($parts[1]) 
+                            : self::TEAM_ROLE_DEVELOPER; // Rol por defecto
+
+                        if ($userId && $userId != $user->id) { // Evitar duplicar al creador
+                            $generalTeam->users()->attach($userId, [
+                                'is_active' => true,
+                                'role' => $role,
+                                'joined_at' => now(),
+                            ]);
+                        }
                     }
                 }
             }
 
             // Crear equipos adicionales si se especificaron
             if ($request->has('additional_teams') && is_array($request->additional_teams)) {
-                foreach ($request->additional_teams as $teamName) {
-                    if (!empty(trim($teamName))) {
-                        Team::create([
-                            'name' => trim($teamName),
-                            'description' => 'Equipo especializado para el proyecto ' . $project->title,
-                            'project_id' => $project->id,
-                            'is_general' => false,
-                        ]);
+                foreach ($request->additional_teams as $teamData) {
+                    if (!empty(trim($teamData))) {
+                        // Separar nombre y descripción si están combinados con "|"
+                        $parts = explode('|', $teamData, 2);
+                        $teamName = trim($parts[0]);
+                        $teamDescription = isset($parts[1]) && !empty(trim($parts[1])) 
+                            ? trim($parts[1]) 
+                            : 'Equipo especializado para el proyecto ' . $project->title;
+
+                        if (!empty($teamName)) {
+                            Team::create([
+                                'name' => $teamName,
+                                'description' => $teamDescription,
+                                'project_id' => $project->id,
+                                'is_general' => false,
+                            ]);
+                        }
                     }
                 }
             }
@@ -373,7 +394,7 @@ class ProjectController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
-            'role' => 'required|in:LEAD,SENIOR_DEV,DEVELOPER,JUNIOR_DEV,DESIGNER,TESTER,ANALYST,OBSERVER',
+            'role' => 'required|in:SENIOR_DEV,DEVELOPER,JUNIOR_DEV,DESIGNER,TESTER,ANALYST,OBSERVER',
         ]);
 
         if ($validator->fails()) {
@@ -385,7 +406,7 @@ class ProjectController extends Controller
             ->where('project_id', $project->id)
             ->whereHas('users', function($query) {
                 $query->where('users.id', Auth::id())
-                      ->where('team_user.is_active', true);
+                    ->where('team_user.is_active', true);
             })
             ->exists();
 
@@ -407,7 +428,18 @@ class ProjectController extends Controller
             'joined_at' => now(),
         ]);
 
-        return response()->json(['success' => 'Miembro añadido al proyecto exitosamente']);
+        // Obtener datos del usuario para retornar al frontend
+        $user = User::find($request->user_id);
+
+        return response()->json([
+            'success' => 'Miembro añadido al proyecto exitosamente',
+            'member' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $request->role
+            ]
+        ]);
     }
 
     /**
@@ -445,4 +477,5 @@ class ProjectController extends Controller
 
         return response()->json(['success' => 'Miembro removido del proyecto exitosamente']);
     }
+    
 }
