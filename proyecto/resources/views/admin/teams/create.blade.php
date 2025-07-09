@@ -51,7 +51,42 @@
                                         @error('name')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                        <div class="form-text">El nombre debe ser único y descriptivo</div>
+                                        <div class="form-text">El nombre debe ser único dentro del proyecto</div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="project_id" class="form-label fw-bold">
+                                            <i class="bi bi-folder me-1"></i>Proyecto <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select @error('project_id') is-invalid @enderror" id="project_id" name="project_id" required onchange="updateProjectInfo()">
+                                            <option value="">Seleccionar proyecto...</option>
+                                            @foreach($projects as $project)
+                                            <option value="{{ $project->id }}"
+                                                data-title="{{ $project->title }}"
+                                                data-status="{{ $project->status }}"
+                                                data-description="{{ $project->description }}"
+                                                {{ old('project_id') == $project->id ? 'selected' : '' }}>
+                                                {{ $project->title }} ({{ $project->status }})
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        @error('project_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <div class="form-text">El equipo pertenecerá a este proyecto</div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label for="description" class="form-label fw-bold">
+                                            <i class="bi bi-text-paragraph me-1"></i>Descripción
+                                        </label>
+                                        <textarea class="form-control @error('description') is-invalid @enderror"
+                                            id="description" name="description" rows="4"
+                                            placeholder="Describe el propósito, objetivos y responsabilidades del equipo...">{{ old('description') }}</textarea>
+                                        @error('description')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <div class="form-text">Una buena descripción ayuda a los miembros a entender su rol</div>
                                     </div>
 
                                     <div class="col-md-6">
@@ -72,17 +107,22 @@
                                         <div class="form-text">El líder será agregado automáticamente con rol LEAD</div>
                                     </div>
 
-                                    <div class="col-12">
-                                        <label for="description" class="form-label fw-bold">
-                                            <i class="bi bi-text-paragraph me-1"></i>Descripción
-                                        </label>
-                                        <textarea class="form-control @error('description') is-invalid @enderror"
-                                            id="description" name="description" rows="4"
-                                            placeholder="Describe el propósito, objetivos y responsabilidades del equipo...">{{ old('description') }}</textarea>
-                                        @error('description')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                        <div class="form-text">Una buena descripción ayuda a los miembros a entender su rol</div>
+                                    <!-- Información del proyecto seleccionado -->
+                                    <div class="col-md-6">
+                                        <div id="project-info" class="d-none">
+                                            <h6 class="fw-bold text-info mb-2">
+                                                <i class="bi bi-info-circle me-1"></i>Información del Proyecto
+                                            </h6>
+                                            <div class="card bg-light border-info">
+                                                <div class="card-body p-3">
+                                                    <div class="small">
+                                                        <div><strong>Título:</strong> <span id="project-title">-</span></div>
+                                                        <div><strong>Estado:</strong> <span id="project-status" class="badge">-</span></div>
+                                                        <div><strong>Descripción:</strong> <span id="project-description" class="text-muted">-</span></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -97,6 +137,7 @@
                                         <div class="alert alert-info">
                                             <i class="bi bi-info-circle me-2"></i>
                                             Puedes agregar miembros ahora o hacerlo después desde la página de edición del equipo.
+                                            <strong>Nota:</strong> Los miembros también serán agregados automáticamente al equipo general del proyecto.
                                         </div>
 
                                         <div id="team-members">
@@ -166,16 +207,25 @@
                         <div class="card-body">
                             <div class="mb-4">
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-1-circle me-2"></i>Nombre del Equipo
+                                    <i class="bi bi-1-circle me-2"></i>Seleccionar Proyecto
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Elige un nombre claro y descriptivo que refleje la función o especialidad del equipo.
+                                    <strong>Requerido:</strong> Cada equipo debe pertenecer a un proyecto específico. Selecciona el proyecto al que estará asociado este equipo.
                                 </p>
                             </div>
 
                             <div class="mb-4">
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-2-circle me-2"></i>Líder del Equipo
+                                    <i class="bi bi-2-circle me-2"></i>Nombre del Equipo
+                                </h6>
+                                <p class="small text-muted mb-0">
+                                    Elige un nombre claro y descriptivo. Debe ser único dentro del proyecto seleccionado.
+                                </p>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-info">
+                                    <i class="bi bi-3-circle me-2"></i>Líder del Equipo
                                 </h6>
                                 <p class="small text-muted mb-0">
                                     El líder coordinará las actividades y será responsable de la comunicación del equipo.
@@ -184,19 +234,43 @@
 
                             <div class="mb-4">
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-3-circle me-2"></i>Descripción
+                                    <i class="bi bi-4-circle me-2"></i>Descripción
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Explica claramente el propósito, objetivos y responsabilidades del equipo.
+                                    Explica claramente el propósito, objetivos y responsabilidades del equipo dentro del proyecto.
                                 </p>
                             </div>
 
                             <div>
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-4-circle me-2"></i>Miembros
+                                    <i class="bi bi-5-circle me-2"></i>Miembros
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Puedes agregar miembros ahora o hacerlo después. Cada miembro debe tener un rol específico.
+                                    Los miembros del equipo serán agregados automáticamente al equipo general del proyecto.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tipos de equipos -->
+                    <div class="card shadow-sm mt-4">
+                        <div class="card-header bg-warning text-dark py-3">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Tipos de Equipos
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <span class="badge bg-info mb-2">Equipo General</span>
+                                <p class="small text-muted mb-0">
+                                    Se crea automáticamente con cada proyecto. Incluye todos los miembros del proyecto.
+                                </p>
+                            </div>
+                            <div>
+                                <span class="badge bg-warning mb-2">Equipo Personalizado</span>
+                                <p class="small text-muted mb-0">
+                                    Como el que estás creando. Permite organizar miembros por especialidad o función específica.
                                 </p>
                             </div>
                         </div>
@@ -321,6 +395,45 @@
     const availableUsers = @json($availableUsers);
     const teamRoles = @json($teamRoles);
 
+    function updateProjectInfo() {
+        const select = document.getElementById('project_id');
+        const projectInfo = document.getElementById('project-info');
+        const option = select.options[select.selectedIndex];
+
+        if (select.value && option.dataset.title) {
+            // Mostrar información del proyecto
+            projectInfo.classList.remove('d-none');
+
+            document.getElementById('project-title').textContent = option.dataset.title;
+            document.getElementById('project-description').textContent = option.dataset.description || 'Sin descripción';
+
+            // Actualizar badge de estado
+            const statusBadge = document.getElementById('project-status');
+            statusBadge.textContent = option.dataset.status;
+            statusBadge.className = 'badge ' + getStatusBadgeClass(option.dataset.status);
+        } else {
+            // Ocultar información
+            projectInfo.classList.add('d-none');
+        }
+    }
+
+    function getStatusBadgeClass(status) {
+        switch (status) {
+            case 'ACTIVE':
+                return 'bg-success';
+            case 'PENDING':
+                return 'bg-warning';
+            case 'DONE':
+                return 'bg-primary';
+            case 'PAUSED':
+                return 'bg-secondary';
+            case 'CANCELLED':
+                return 'bg-danger';
+            default:
+                return 'bg-secondary';
+        }
+    }
+
     function addMember() {
         const container = document.getElementById('team-members');
 
@@ -377,6 +490,9 @@
                 bsToast.hide();
             }, 5000);
         });
+
+        // Actualizar información del proyecto si hay uno preseleccionado
+        updateProjectInfo();
     });
 </script>
 @endpush

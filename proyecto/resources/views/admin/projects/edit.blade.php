@@ -3,6 +3,8 @@
 @section('title', 'Editar Proyecto - Admin')
 
 @section('content')
+{{-- Código PHP eliminado ya que no se necesita asignar equipos --}}
+
 <div class="container py-5">
     <div class="row">
         <div class="col-12">
@@ -54,6 +56,15 @@
                                     <div class="col-md-4">
                                         <label for="status" class="form-label fw-bold">Estado</label>
                                         <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
+                                            @php
+                                            $projectStatuses = [
+                                            'PENDING' => 'Pendiente',
+                                            'ACTIVE' => 'Activo',
+                                            'DONE' => 'Completado',
+                                            'PAUSED' => 'Pausado',
+                                            'CANCELLED' => 'Cancelado'
+                                            ];
+                                            @endphp
                                             @foreach($projectStatuses as $value => $label)
                                             <option value="{{ $value }}" {{ old('status', $project->status) === $value ? 'selected' : '' }}>
                                                 {{ $label }}
@@ -181,11 +192,6 @@
                                         Equipos Asignados ({{ $project->teams->count() }})
                                     </h5>
                                 </div>
-                                <div class="col-auto">
-                                    <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#assignTeamModal">
-                                        <i class="bi bi-plus-circle me-1"></i>Asignar Equipo
-                                    </button>
-                                </div>
                             </div>
                         </div>
                         <div class="card-body">
@@ -209,20 +215,25 @@
                                                     </div>
                                                     <small class="text-muted">
                                                         <i class="bi bi-calendar me-1"></i>
-                                                        Asignado: {{ \Carbon\Carbon::parse($team->pivot->assigned_at)->format('d/m/Y') }}
+                                                        Asignado: {{ isset($team->pivot->assigned_at) ? \Carbon\Carbon::parse($team->pivot->assigned_at)->format('d/m/Y') : 'N/A' }}
                                                     </small>
                                                 </div>
+                                                @if(!$team->is_general)
                                                 <button class="btn btn-sm btn-outline-danger"
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#unassignTeamModal{{ $team->id }}">
                                                     <i class="bi bi-x-lg"></i>
                                                 </button>
+                                                @else
+                                                <span class="badge bg-info">General</span>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Modal para desasignar equipo -->
+                                <!-- Modal para desasignar equipo (solo para equipos no generales) -->
+                                @if(!$team->is_general)
                                 <div class="modal fade" id="unassignTeamModal{{ $team->id }}" tabindex="-1">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
@@ -235,7 +246,7 @@
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                <form method="POST" action="{{ route('admin.projects.unassign-team', [$project, $team]) }}" class="d-inline">
+                                                <form method="POST" action="{{ route('admin.teams.unassign-project', [$team, $project]) }}" class="d-inline">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-danger">Desasignar</button>
@@ -244,6 +255,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endif
                                 @endforeach
                             </div>
                             @else
@@ -315,7 +327,7 @@
 
                                             <div class="small text-muted">
                                                 <div>{{ $module->tasks->count() }} tareas</div>
-                                                @if($module->depends_on)
+                                                @if($module->depends_on && $module->dependency)
                                                 <div>Depende de: {{ $module->dependency->name }}</div>
                                                 @endif
                                             </div>
@@ -339,47 +351,7 @@
     </div>
 </div>
 
-<!-- Modal para asignar equipo -->
-<div class="modal fade" id="assignTeamModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Asignar Equipo al Proyecto</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="{{ route('admin.projects.assign-team', $project) }}">
-                @csrf
-                <div class="modal-body">
-                    @if($availableTeams->count() > 0)
-                    <div class="mb-3">
-                        <label for="team_id" class="form-label">Equipo</label>
-                        <select class="form-select" name="team_id" required>
-                            <option value="">Seleccionar equipo...</option>
-                            @foreach($availableTeams as $team)
-                            <option value="{{ $team->id }}">
-                                {{ $team->name }}
-                                <small>({{ $team->users->where('pivot.is_active', true)->count() }} miembros)</small>
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @else
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        No hay equipos disponibles para asignar a este proyecto.
-                    </div>
-                    @endif
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    @if($availableTeams->count() > 0)
-                    <button type="submit" class="btn btn-primary">Asignar Equipo</button>
-                    @endif
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+
 
 <!-- Toast notifications -->
 @if(session('success'))

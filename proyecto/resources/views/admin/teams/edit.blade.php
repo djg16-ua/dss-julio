@@ -14,6 +14,11 @@
                     </h1>
                     <p class="lead text-muted">
                         Gestiona la información y miembros del equipo <strong>{{ $team->name }}</strong>
+                        @if($team->is_general)
+                        <span class="badge bg-info ms-2">Equipo General</span>
+                        @else
+                        <span class="badge bg-warning ms-2">Personalizado</span>
+                        @endif
                     </p>
                 </div>
                 <div class="col-lg-4 text-lg-end">
@@ -37,6 +42,7 @@
                             </h5>
                         </div>
                         <div class="card-body">
+                            @if(!$team->is_general)
                             <form method="POST" action="{{ route('admin.teams.update', $team) }}">
                                 @csrf
                                 @method('PATCH')
@@ -52,8 +58,14 @@
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label for="created_date" class="form-label fw-bold">Fecha de Creación</label>
-                                        <input type="text" class="form-control" value="{{ $team->created_at->format('d/m/Y H:i') }}" disabled>
+                                        <label for="project_info" class="form-label fw-bold">Proyecto</label>
+                                        <input type="text" class="form-control"
+                                            value="{{ $team->project ? $team->project->title : 'Sin proyecto asignado' }}" disabled>
+                                        <div class="form-text">
+                                            @if($team->project)
+                                            Estado: <span class="badge bg-{{ $team->project->status === 'ACTIVE' ? 'success' : 'secondary' }}">{{ $team->project->status }}</span>
+                                            @endif
+                                        </div>
                                     </div>
 
                                     <div class="col-12">
@@ -75,6 +87,27 @@
                                     </div>
                                 </div>
                             </form>
+                            @else
+                            <div class="alert alert-info">
+                                <i class="bi bi-shield-check me-2"></i>
+                                <strong>Equipo General Protegido:</strong> Este es el equipo general del proyecto y no se puede modificar su información básica.
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Nombre del Equipo</label>
+                                    <input type="text" class="form-control" value="{{ $team->name }}" disabled>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Proyecto</label>
+                                    <input type="text" class="form-control"
+                                        value="{{ $team->project ? $team->project->title : 'Sin proyecto asignado' }}" disabled>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Descripción</label>
+                                    <textarea class="form-control" rows="3" disabled>{{ $team->description ?: 'Equipo general del proyecto - incluye todos los miembros' }}</textarea>
+                                </div>
+                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -92,25 +125,25 @@
                             <div class="row g-3">
                                 <div class="col-6">
                                     <div class="text-center">
-                                        <div class="fw-bold h4 text-primary">{{ $team->users->count() }}</div>
+                                        <div class="fw-bold h4 text-primary">{{ $team->users ? $team->users->count() : 0 }}</div>
                                         <small class="text-muted">Miembros Totales</small>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="text-center">
-                                        <div class="fw-bold h4 text-success">{{ $team->users->where('pivot.is_active', true)->count() }}</div>
-                                        <small class="text-muted">Miembros Activos</small>
+                                        <div class="fw-bold h4 text-success">{{ $team->users ? $team->users->count() : 0 }}</div>
+                                        <small class="text-muted">Miembros</small>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="text-center">
-                                        <div class="fw-bold h4 text-warning">{{ $team->projects->count() }}</div>
-                                        <small class="text-muted">Proyectos</small>
+                                        <div class="fw-bold h4 text-warning">{{ $team->project ? 1 : 0 }}</div>
+                                        <small class="text-muted">Proyecto</small>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="text-center">
-                                        <div class="fw-bold h4 text-info">{{ $team->modules->count() }}</div>
+                                        <div class="fw-bold h4 text-info">{{ $team->modules ? $team->modules->count() : 0 }}</div>
                                         <small class="text-muted">Módulos</small>
                                     </div>
                                 </div>
@@ -120,6 +153,10 @@
 
                             <div class="small text-muted">
                                 <div><strong>ID Equipo:</strong> {{ $team->id }}</div>
+                                <div><strong>Tipo:</strong> {{ $team->is_general ? 'General' : 'Personalizado' }}</div>
+                                @if($team->project)
+                                <div><strong>Proyecto:</strong> {{ $team->project->title }}</div>
+                                @endif
                                 <div><strong>Creado:</strong> {{ $team->created_at->format('d/m/Y H:i') }}</div>
                                 <div><strong>Actualizado:</strong> {{ $team->updated_at->format('d/m/Y H:i') }}</div>
                                 <div><strong>Días activo:</strong> {{ $team->created_at->diffInDays() }}</div>
@@ -138,18 +175,22 @@
                                 <div class="col">
                                     <h5 class="card-title mb-0">
                                         <i class="bi bi-people-fill me-2"></i>
-                                        Miembros del Equipo ({{ $team->users->count() }})
+                                        Miembros del Equipo ({{ $team->users ? $team->users->count() : 0 }})
                                     </h5>
                                 </div>
                                 <div class="col-auto">
+                                    @if($availableUsers && $availableUsers->count() > 0)
                                     <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addMemberModal">
                                         <i class="bi bi-person-plus me-1"></i>Agregar Miembro
                                     </button>
+                                    @else
+                                    <span class="text-light small">No hay usuarios disponibles</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
                         <div class="card-body">
-                            @if($team->users->count() > 0)
+                            @if($team->users && $team->users->count() > 0)
                             <div class="row g-3">
                                 @foreach($team->users as $user)
                                 <div class="col-lg-6">
@@ -163,20 +204,19 @@
                                                     <h6 class="fw-bold">{{ $user->name }}</h6>
                                                     <p class="text-muted small mb-2">{{ $user->email }}</p>
                                                     <div class="d-flex gap-2 mb-2">
-                                                        @if($user->pivot->role)
+                                                        @if(isset($user->pivot->role))
                                                         <span class="badge bg-primary">{{ $user->pivot->role }}</span>
                                                         @endif
-                                                        <span class="badge bg-{{ $user->pivot->is_active ? 'success' : 'secondary' }}">
-                                                            {{ $user->pivot->is_active ? 'Activo' : 'Inactivo' }}
-                                                        </span>
                                                         <span class="badge bg-{{ $user->role === 'ADMIN' ? 'danger' : 'light text-dark' }}">
                                                             {{ $user->role }}
                                                         </span>
                                                     </div>
+                                                    @if(isset($user->pivot->joined_at))
                                                     <small class="text-muted">
                                                         <i class="bi bi-calendar me-1"></i>
-                                                        Unido: {{ $user->pivot->joined_at ? \Carbon\Carbon::parse($user->pivot->joined_at)->format('d/m/Y') : 'N/A' }}
+                                                        Unido: {{ \Carbon\Carbon::parse($user->pivot->joined_at)->format('d/m/Y') }}
                                                     </small>
+                                                    @endif
                                                 </div>
                                                 <div class="dropdown">
                                                     <button class="btn btn-sm btn-outline-primary dropdown-toggle"
@@ -191,17 +231,7 @@
                                                                 <i class="bi bi-person-badge me-2"></i>Cambiar Rol
                                                             </button>
                                                         </li>
-                                                        <li>
-                                                            <form method="POST" action="{{ route('admin.users.update-team-role', [$user, $team]) }}" class="d-inline">
-                                                                @csrf
-                                                                @method('PATCH')
-                                                                <input type="hidden" name="action" value="toggle_status">
-                                                                <button type="submit" class="dropdown-item">
-                                                                    <i class="bi bi-toggle-{{ $user->pivot->is_active ? 'on' : 'off' }} me-2"></i>
-                                                                    {{ $user->pivot->is_active ? 'Desactivar' : 'Activar' }}
-                                                                </button>
-                                                            </form>
-                                                        </li>
+                                                        @if(!$team->is_general)
                                                         <li>
                                                             <hr class="dropdown-divider">
                                                         </li>
@@ -212,6 +242,7 @@
                                                                 <i class="bi bi-person-dash me-2"></i>Remover del Equipo
                                                             </button>
                                                         </li>
+                                                        @endif
                                                     </ul>
                                                 </div>
                                             </div>
@@ -234,11 +265,31 @@
                                                     <div class="mb-3">
                                                         <label for="role{{ $user->id }}" class="form-label">Nuevo Rol</label>
                                                         <select class="form-select" name="role" required>
+                                                            @if(isset($teamRoles))
                                                             @foreach($teamRoles as $value => $label)
-                                                            <option value="{{ $value }}" {{ $user->pivot->role === $value ? 'selected' : '' }}>
+                                                            <option value="{{ $value }}" {{ (isset($user->pivot->role) && $user->pivot->role === $value) ? 'selected' : '' }}>
                                                                 {{ $label }}
                                                             </option>
                                                             @endforeach
+                                                            @else
+                                                            @php
+                                                            $defaultRoles = [
+                                                            'LEAD' => 'Líder de Equipo',
+                                                            'SENIOR_DEV' => 'Desarrollador Senior',
+                                                            'DEVELOPER' => 'Desarrollador',
+                                                            'JUNIOR_DEV' => 'Desarrollador Junior',
+                                                            'DESIGNER' => 'Diseñador',
+                                                            'TESTER' => 'Tester',
+                                                            'ANALYST' => 'Analista',
+                                                            'OBSERVER' => 'Observador'
+                                                            ];
+                                                            @endphp
+                                                            @foreach($defaultRoles as $value => $label)
+                                                            <option value="{{ $value }}" {{ (isset($user->pivot->role) && $user->pivot->role === $value) ? 'selected' : '' }}>
+                                                                {{ $label }}
+                                                            </option>
+                                                            @endforeach
+                                                            @endif
                                                         </select>
                                                     </div>
                                                 </div>
@@ -251,7 +302,8 @@
                                     </div>
                                 </div>
 
-                                <!-- Modal para remover miembro -->
+                                <!-- Modal para remover miembro (solo para equipos personalizados) -->
+                                @if(!$team->is_general)
                                 <div class="modal fade" id="removeMemberModal{{ $user->id }}" tabindex="-1">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
@@ -268,7 +320,7 @@
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                <form method="POST" action="{{ route('admin.teams.remove-member', [$team, $user]) }}" class="d-inline">
+                                                <form method="POST" action="{{ route('admin.users.remove-from-team', [$user, $team]) }}" class="d-inline">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-danger">Remover</button>
@@ -277,6 +329,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endif
                                 @endforeach
                             </div>
                             @else
@@ -300,18 +353,22 @@
                                 <div class="col">
                                     <h5 class="card-title mb-0">
                                         <i class="bi bi-grid-3x3-gap-fill me-2"></i>
-                                        Módulos Asignados ({{ $team->modules->count() }})
+                                        Módulos Asignados ({{ $team->modules ? $team->modules->count() : 0 }})
                                     </h5>
                                 </div>
                                 <div class="col-auto">
+                                    @if(isset($availableModules) && $availableModules->count() > 0)
                                     <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#assignModuleModal">
                                         <i class="bi bi-plus-circle me-1"></i>Asignar Módulo
                                     </button>
+                                    @else
+                                    <span class="text-light small">No hay módulos disponibles</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
                         <div class="card-body">
-                            @if($team->modules->count() > 0)
+                            @if($team->modules && $team->modules->count() > 0)
                             <div class="row g-3">
                                 @foreach($team->modules as $module)
                                 <div class="col-lg-6 col-xl-4">
@@ -348,18 +405,24 @@
                                             </div>
 
                                             <div class="small text-muted">
+                                                @if($module->project)
                                                 <div><strong>Proyecto:</strong> {{ $module->project->title }}</div>
+                                                @endif
+                                                @if($module->tasks)
                                                 <div><strong>Tareas:</strong> {{ $module->tasks->count() }} total</div>
                                                 <div><strong>Completadas:</strong> {{ $module->tasks->where('status', 'DONE')->count() }}</div>
-                                                @if($module->depends_on)
+                                                @endif
+                                                @if($module->depends_on && $module->dependency)
                                                 <div><strong>Depende de:</strong> {{ $module->dependency->name }}</div>
                                                 @endif
+                                                @if(isset($module->pivot->assigned_at))
                                                 <div class="mt-1">
                                                     <small class="text-muted">
                                                         <i class="bi bi-calendar me-1"></i>
-                                                        Asignado: {{ $module->pivot ? \Carbon\Carbon::parse($module->pivot->assigned_at)->format('d/m/Y') : 'N/A' }}
+                                                        Asignado: {{ \Carbon\Carbon::parse($module->pivot->assigned_at)->format('d/m/Y') }}
                                                     </small>
                                                 </div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -379,7 +442,7 @@
                                                     <i class="bi bi-exclamation-triangle me-2"></i>
                                                     El equipo ya no tendrá acceso a las tareas de este módulo.
                                                 </div>
-                                                @if($module->tasks->count() > 0)
+                                                @if($module->tasks && $module->tasks->count() > 0)
                                                 <div class="alert alert-info">
                                                     <i class="bi bi-info-circle me-2"></i>
                                                     Este módulo tiene <strong>{{ $module->tasks->count() }} tarea(s)</strong> asociada(s).
@@ -416,6 +479,7 @@
 </div>
 
 <!-- Modal para agregar miembro -->
+@if(isset($availableUsers) && $availableUsers->count() > 0)
 <div class="modal fade" id="addMemberModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -426,7 +490,6 @@
             <form method="POST" action="{{ route('admin.teams.add-member', $team) }}">
                 @csrf
                 <div class="modal-body">
-                    @if($availableUsers->count() > 0)
                     <div class="row g-3">
                         <div class="col-12">
                             <label for="user_id" class="form-label">Usuario</label>
@@ -442,33 +505,47 @@
                         <div class="col-12">
                             <label for="role" class="form-label">Rol en el equipo</label>
                             <select class="form-select" name="role" required>
+                                @if(isset($teamRoles))
                                 @foreach($teamRoles as $value => $label)
                                 <option value="{{ $value }}" {{ $value === 'DEVELOPER' ? 'selected' : '' }}>
                                     {{ $label }}
                                 </option>
                                 @endforeach
+                                @else
+                                @php
+                                $defaultRoles = [
+                                'LEAD' => 'Líder de Equipo',
+                                'SENIOR_DEV' => 'Desarrollador Senior',
+                                'DEVELOPER' => 'Desarrollador',
+                                'JUNIOR_DEV' => 'Desarrollador Junior',
+                                'DESIGNER' => 'Diseñador',
+                                'TESTER' => 'Tester',
+                                'ANALYST' => 'Analista',
+                                'OBSERVER' => 'Observador'
+                                ];
+                                @endphp
+                                @foreach($defaultRoles as $value => $label)
+                                <option value="{{ $value }}" {{ $value === 'DEVELOPER' ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                                @endforeach
+                                @endif
                             </select>
                         </div>
                     </div>
-                    @else
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        No hay usuarios disponibles para agregar a este equipo.
-                    </div>
-                    @endif
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    @if($availableUsers->count() > 0)
                     <button type="submit" class="btn btn-primary">Agregar Miembro</button>
-                    @endif
                 </div>
             </form>
         </div>
     </div>
 </div>
+@endif
 
 <!-- Modal para asignar módulo -->
+@if(isset($availableModules) && $availableModules->count() > 0)
 <div class="modal fade" id="assignModuleModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -479,7 +556,6 @@
             <form method="POST" action="{{ route('admin.teams.assign-module', $team) }}">
                 @csrf
                 <div class="modal-body">
-                    @if($availableModules->count() > 0)
                     <div class="mb-3">
                         <label for="module_id" class="form-label">Módulo</label>
                         <select class="form-select" name="module_id" required>
@@ -487,7 +563,9 @@
                             @foreach($availableModules as $module)
                             <option value="{{ $module->id }}">
                                 {{ $module->name }}
+                                @if($module->project)
                                 <small>({{ $module->project->title }} - {{ $module->category }})</small>
+                                @endif
                                 @if($module->is_core) - CORE @endif
                             </option>
                             @endforeach
@@ -497,23 +575,16 @@
                         <i class="bi bi-info-circle me-2"></i>
                         <small>Solo se muestran módulos que no están asignados a este equipo.</small>
                     </div>
-                    @else
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        No hay módulos disponibles para asignar a este equipo.
-                    </div>
-                    @endif
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    @if($availableModules->count() > 0)
                     <button type="submit" class="btn btn-success">Asignar Módulo</button>
-                    @endif
                 </div>
             </form>
         </div>
     </div>
 </div>
+@endif
 
 <!-- Toast notifications -->
 @if(session('success'))
