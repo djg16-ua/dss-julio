@@ -7,6 +7,8 @@ use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\DashboardController;
 
@@ -137,6 +139,7 @@ Route::middleware('auth')->group(function () {
     // Rutas adicionales para gestión de miembros del proyecto
     Route::post('/project/{project}/members', [ProjectController::class, 'addMember'])->name('project.add-member');
     Route::delete('/project/{project}/members/{user}', [ProjectController::class, 'removeMember'])->name('project.remove-member');
+    Route::get('/project/{project}/tasks/filter', [ProjectController::class, 'getFilteredTasks'])->name('project.filter-tasks');
 });
 
 // ============================================
@@ -144,23 +147,87 @@ Route::middleware('auth')->group(function () {
 // ============================================
 Route::middleware('auth')->group(function () {
     // Rutas anidadas para equipos dentro de proyectos
-    Route::get('/project/{project}/teams', [TeamController::class, 'index'])->name('team.index');
-    Route::get('/project/{project}/teams/create', [TeamController::class, 'create'])->name('team.create');
-    Route::post('/project/{project}/teams', [TeamController::class, 'store'])->name('team.store');
-    Route::get('/project/{project}/teams/{team}', [TeamController::class, 'show'])->name('team.show');
-    Route::get('/project/{project}/teams/{team}/edit', [TeamController::class, 'edit'])->name('team.edit');
-    Route::put('/project/{project}/teams/{team}', [TeamController::class, 'update'])->name('team.update');
-    Route::delete('/project/{project}/teams/{team}', [TeamController::class, 'destroy'])->name('team.destroy');
+    Route::get('/project/{project}/team', [TeamController::class, 'index'])->name('team.index');
+    Route::get('/project/{project}/team/create', [TeamController::class, 'create'])->name('team.create');
+    Route::post('/project/{project}/team', [TeamController::class, 'store'])->name('team.store');
+    Route::get('/project/{project}/team/{team}', [TeamController::class, 'show'])->name('team.show');
+    Route::get('/project/{project}/team/{team}/edit', [TeamController::class, 'edit'])->name('team.edit');
+    Route::put('/project/{project}/team/{team}', [TeamController::class, 'update'])->name('team.update');
+    Route::delete('/project/{project}/team/{team}', [TeamController::class, 'destroy'])->name('team.destroy');
     
     // Rutas para gestión de miembros de equipos específicos
-    Route::post('/project/{project}/teams/{team}/members', [TeamController::class, 'addMember'])->name('team.add-member');
-    Route::delete('/project/{project}/teams/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('team.remove-member');
-    Route::patch('/project/{project}/teams/{team}/members/{user}/role', [TeamController::class, 'updateMemberRole'])->name('team.update-member-role');
+    Route::post('/project/{project}/team/{team}/members', [TeamController::class, 'addMember'])->name('team.add-member');
+    Route::delete('/project/{project}/team/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('team.remove-member');
+    Route::patch('/project/{project}/team/{team}/members/{user}/role', [TeamController::class, 'updateMemberRole'])->name('team.update-member-role');
     
     // Rutas API para AJAX
-    Route::get('/project/{project}/teams/{team}/available-members', [TeamController::class, 'getAvailableMembers'])->name('team.available-members');
+    Route::get('/project/{project}/team/{team}/available-members', [TeamController::class, 'getAvailableMembers'])->name('team.available-members');
+
+    // Gestión de módulos en equipos
+    Route::post('/project/{project}/team/{team}/modules', [TeamController::class, 'assignModule'])->name('team.assign-module');
+    Route::delete('/project/{project}/team/{team}/modules/{module}', [TeamController::class, 'removeModule'])->name('team.remove-module');
+    Route::patch('/project/{project}/team/{team}/modules/{module}/status', [TeamController::class, 'updateModuleStatus'])->name('team.update-module-status');
 });
 
+// ============================================
+// RUTAS DE MÓDULOS - DENTRO DE PROYECTOS
+// ============================================
+Route::middleware('auth')->group(function () {
+    // Rutas anidadas para módulos dentro de proyectos
+    Route::get('/project/{project}/modules', [ModuleController::class, 'index'])->name('module.index');
+    Route::get('/project/{project}/modules/create', [ModuleController::class, 'create'])->name('module.create');
+    Route::post('/project/{project}/modules', [ModuleController::class, 'store'])->name('module.store');
+    Route::get('/project/{project}/modules/{module}', [ModuleController::class, 'show'])->name('module.show');
+    Route::get('/project/{project}/modules/{module}/edit', [ModuleController::class, 'edit'])->name('module.edit');
+    Route::put('/project/{project}/modules/{module}', [ModuleController::class, 'update'])->name('module.update');
+    Route::delete('/project/{project}/modules/{module}', [ModuleController::class, 'destroy'])->name('module.destroy');
+    
+    // Rutas para gestión de equipos asignados a módulos
+    Route::post('/project/{project}/modules/{module}/teams', [ModuleController::class, 'assignTeam'])->name('module.assign-team');
+    Route::delete('/project/{project}/modules/{module}/teams/{team}', [ModuleController::class, 'removeTeam'])->name('module.remove-team');
+    Route::get('/project/{project}/modules/{module}/available-teams', [ModuleController::class, 'getAvailableTeams'])->name('module.available-teams');
+    
+    // Rutas para gestión de tareas en módulos
+    Route::post('/project/{project}/modules/{module}/tasks', [ModuleController::class, 'createTask'])->name('module.create-task');
+    Route::delete('/project/{project}/modules/{module}/tasks/{task}', [ModuleController::class, 'removeTask'])->name('module.remove-task');
+    Route::patch('/project/{project}/modules/{module}/tasks/{task}/status', [ModuleController::class, 'updateTaskStatus'])->name('module.update-task-status');
+    Route::patch('/project/{project}/modules/{module}/tasks/{task}/priority', [ModuleController::class, 'updateTaskPriority'])->name('module.update-task-priority');
+    Route::patch('/project/{project}/modules/{module}/tasks/{task}/assign', [ModuleController::class, 'assignTaskToUser'])->name('module.assign-task-user');
+    Route::get('/project/{project}/modules/{module}/team-members', [ModuleController::class, 'getModuleTeamMembers'])->name('module.team-members');
+});
+
+// ============================================
+// RUTAS DE TAREAS - DENTRO DE MÓDULOS/PROYECTOS
+// ============================================
+Route::middleware('auth')->group(function () {
+    // Rutas anidadas para tareas dentro de proyectos
+    Route::get('/project/{project}/tasks', [TaskController::class, 'index'])->name('task.index');
+    Route::get('/project/{project}/tasks/create', [TaskController::class, 'create'])->name('task.create');
+    Route::post('/project/{project}/tasks', [TaskController::class, 'store'])->name('task.store');
+    Route::get('/project/{project}/tasks/{task}', [TaskController::class, 'show'])->name('task.show');
+    Route::get('/project/{project}/tasks/{task}/edit', [TaskController::class, 'edit'])->name('task.edit');
+    Route::put('/project/{project}/tasks/{task}', [TaskController::class, 'update'])->name('task.update');
+    Route::delete('/project/{project}/tasks/{task}', [TaskController::class, 'destroy'])->name('task.destroy');
+    
+    // Rutas para gestión de usuarios asignados a tareas
+    Route::post('/project/{project}/tasks/{task}/users', [TaskController::class, 'assignUser'])->name('task.assign-user');
+    Route::delete('/project/{project}/tasks/{task}/users/{user}', [TaskController::class, 'removeUser'])->name('task.remove-user');
+    Route::get('/project/{project}/tasks/{task}/available-users', [TaskController::class, 'getAvailableUsers'])->name('task.available-users');
+    
+    // Rutas para comentarios en tareas
+    Route::post('/project/{project}/tasks/{task}/comments', [TaskController::class, 'addComment'])->name('task.add-comment');
+    Route::delete('/project/{project}/tasks/{task}/comments/{comment}', [TaskController::class, 'deleteComment'])->name('task.delete-comment');
+    Route::patch('/project/{project}/tasks/{task}/comments/{comment}', [TaskController::class, 'updateComment'])->name('task.update-comment');
+    
+    // Rutas adicionales para gestión avanzada de tareas
+    Route::patch('/project/{project}/tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('task.update-status');
+    Route::patch('/project/{project}/tasks/{task}/priority', [TaskController::class, 'updatePriority'])->name('task.update-priority');
+    
+    // Ruta para obtener miembros de equipos del módulo (para asignación)
+    Route::get('/project/{project}/tasks/{task}/module-team-members', [TaskController::class, 'getModuleTeamMembersAPI'])->name('task.module-team-members');
+});
+
+// ============================================
 // RUTAS DE ADMINISTRACIÓN
 // ============================================
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {

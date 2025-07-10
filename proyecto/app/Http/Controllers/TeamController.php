@@ -25,19 +25,46 @@ class TeamController extends Controller
     /**
      * Mostrar equipos de un proyecto específico
      */
-    public function index(Project $project)
+    public function index(Request $request, Project $project)
     {
         // Verificar que el usuario tiene acceso al proyecto
         $this->checkProjectAccess($project);
 
         // Obtener solo equipos personalizados (no el general)
-        $teams = $project->teams()
+        $query = $project->teams()
             ->where('is_general', false)
-            ->with(['users' => function($query) {
-                $query->where('team_user.is_active', true);
-            }])
-            ->orderBy('created_at', 'asc')
-            ->get();
+            ->with(['users' => function($userQuery) {
+                $userQuery->where('team_user.is_active', true);
+            }, 'modules'])
+            ->orderBy('created_at', 'asc');
+
+        // Filtro por búsqueda (nombre o descripción)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtro por módulo asignado
+        if ($request->filled('module')) {
+            $query->whereHas('modules', function($q) use ($request) {
+                $q->where('modules.id', $request->module);
+            });
+        }
+
+        // Filtro por cantidad de miembros (se aplicará en la vista con JavaScript)
+        $teams = $query->get();
+
+        // Si es una petición AJAX, devolver solo el HTML
+        if ($request->ajax()) {
+            $html = view('team.partials.teams-list', compact('teams', 'project'))->render();
+            return response()->json([
+                'html' => $html,
+                'count' => $teams->count()
+            ]);
+        }
 
         return view('team.index', compact('project', 'teams'));
     }
@@ -386,37 +413,7 @@ class TeamController extends Controller
         return response()->json(['success' => 'Rol actualizado exitosamente']);
     }
 
-    /**
-     * Obtener miembros disponibles para agregar a un equipo
-     */
-    public function getAvailableMembers(Project $project, Team $team)
-    {
-        // Verificar que el usuario tiene acceso al proyecto
-        $this->checkProjectAccess($project);
-
-        // Verificar que el equipo pertenece al proyecto
-        if ($team->project_id !== $project->id) {
-            return response()->json(['error' => 'Equipo no encontrado en este proyecto'], 404);
-        }
-
-        // Obtener miembros del proyecto que no están en este equipo
-        $generalTeam = $project->getGeneralTeam();
-        if (!$generalTeam) {
-            return response()->json([]);
-        }
-
-        $projectMembers = $generalTeam->users()->where('team_user.is_active', true)->get();
-        $currentTeamMemberIds = $team->users()->pluck('users.id')->toArray();
-        $availableMembers = $projectMembers->whereNotIn('id', $currentTeamMemberIds);
-
-        return response()->json($availableMembers->map(function($user) {
-            return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ];
-        })->values());
-    }
+    
 
     /**
      * Verificar que el usuario tiene acceso al proyecto
@@ -434,5 +431,186 @@ class TeamController extends Controller
         if (!$userHasAccess) {
             abort(403, 'No tienes acceso a este proyecto.');
         }
+    }
+
+    /**
+     * Obtener miembros disponibles para agregar a un equipo (con búsqueda)
+     */
+    public function getAvailableMembers(Request $request, Project $project, Team $team)
+    {
+        // Verificar que el usuario tiene acceso al proyecto
+        $this->checkProjectAccess($project);
+
+        // Verificar que el equipo pertenece al proyecto
+        if ($team->project_id !== $project->id) {
+            return response()->json(['error' => 'Equipo no encontrado en este proyecto'], 404);
+        }
+
+        // Obtener miembros del proyecto que no están en este equipo
+        $generalTeam = $project->getGeneralTeam();
+        if (!$generalTeam) {
+            return response()->json([]);
+        }
+
+        $query = $generalTeam->users()->where('team_user.is_active', true);
+        
+        // Filtrar por búsqueda si se proporciona
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                ->orWhere('users.email', 'like', "%{$search}%");
+            });
+        }
+        
+        $projectMembers = $query->get();
+        $currentTeamMemberIds = $team->users()->pluck('users.id')->toArray();
+        $availableMembers = $projectMembers->whereNotIn('id', $currentTeamMemberIds);
+
+        return response()->json($availableMembers->map(function($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ];
+        })->values());
+    }
+
+    /**
+     * Asignar módulo al equipo
+     */
+    public function assignModule(Request $request, Project $project, Team $team)
+    {
+        // Verificar que el usuario tiene acceso al proyecto
+        $this->checkProjectAccess($project);
+
+        // Verificar que el equipo pertenece al proyecto
+        if ($team->project_id !== $project->id) {
+            return response()->json(['error' => 'Equipo no encontrado en este proyecto'], 404);
+        }
+
+        // Solo creador del proyecto o admin pueden asignar módulos
+        $currentUser = Auth::user();
+        $isProjectCreator = $project->created_by === $currentUser->id;
+        $isAdmin = $currentUser->role === 'ADMIN';
+        
+        if (!$isProjectCreator && !$isAdmin) {
+            return response()->json(['error' => 'No tienes permisos para asignar módulos'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'module_id' => 'required|exists:modules,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Datos inválidos'], 422);
+        }
+
+        // Verificar que el módulo pertenece al proyecto
+        $module = $project->modules()->find($request->module_id);
+        if (!$module) {
+            return response()->json(['error' => 'El módulo no pertenece a este proyecto'], 422);
+        }
+
+        // Verificar que el módulo no está ya asignado al equipo
+        if ($team->modules()->where('modules.id', $request->module_id)->exists()) {
+            return response()->json(['error' => 'El módulo ya está asignado a este equipo'], 422);
+        }
+
+        // Asignar el módulo al equipo
+        $team->modules()->attach($request->module_id, [
+            'assigned_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => 'Módulo asignado al equipo exitosamente',
+            'module' => [
+                'id' => $module->id,
+                'name' => $module->name,
+                'description' => $module->description,
+                'status' => $module->status
+            ]
+        ]);
+    }
+
+    /**
+     * Desasignar módulo del equipo
+     */
+    public function removeModule(Request $request, Project $project, Team $team, $moduleId)
+    {
+        // Verificar que el usuario tiene acceso al proyecto
+        $this->checkProjectAccess($project);
+
+        // Verificar que el equipo pertenece al proyecto
+        if ($team->project_id !== $project->id) {
+            return response()->json(['error' => 'Equipo no encontrado en este proyecto'], 404);
+        }
+
+        // Solo creador del proyecto o admin pueden desasignar módulos
+        $currentUser = Auth::user();
+        $isProjectCreator = $project->created_by === $currentUser->id;
+        $isAdmin = $currentUser->role === 'ADMIN';
+        
+        if (!$isProjectCreator && !$isAdmin) {
+            return response()->json(['error' => 'No tienes permisos para desasignar módulos'], 403);
+        }
+
+        // Verificar que el módulo está asignado al equipo
+        if (!$team->modules()->where('modules.id', $moduleId)->exists()) {
+            return response()->json(['error' => 'El módulo no está asignado a este equipo'], 422);
+        }
+
+        // Desasignar el módulo del equipo
+        $team->modules()->detach($moduleId);
+
+        return response()->json(['success' => 'Módulo desasignado del equipo exitosamente']);
+    }
+
+    /**
+     * Actualizar estado de módulo (opcional - si quieres permitir cambiar estados desde el equipo)
+     */
+    public function updateModuleStatus(Request $request, Project $project, Team $team, $moduleId)
+    {
+        // Verificar que el usuario tiene acceso al proyecto
+        $this->checkProjectAccess($project);
+
+        // Verificar que el equipo pertenece al proyecto
+        if ($team->project_id !== $project->id) {
+            return response()->json(['error' => 'Equipo no encontrado en este proyecto'], 404);
+        }
+
+        // Verificar permisos
+        $currentUser = Auth::user();
+        $isProjectCreator = $project->created_by === $currentUser->id;
+        $isAdmin = $currentUser->role === 'ADMIN';
+        $teamLead = $team->users->where('pivot.role', 'LEAD')->first();
+        $isTeamLead = $teamLead && $teamLead->id === $currentUser->id;
+        
+        if (!$isProjectCreator && !$isAdmin && !$isTeamLead) {
+            return response()->json(['error' => 'No tienes permisos para actualizar el estado del módulo'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:PENDING,ACTIVE,DONE,PAUSED,CANCELLED',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Estado inválido'], 422);
+        }
+
+        // Verificar que el módulo está asignado al equipo
+        if (!$team->modules()->where('modules.id', $moduleId)->exists()) {
+            return response()->json(['error' => 'El módulo no está asignado a este equipo'], 422);
+        }
+
+        // Buscar el módulo y actualizar su estado
+        $module = $project->modules()->find($moduleId);
+        if (!$module) {
+            return response()->json(['error' => 'Módulo no encontrado'], 404);
+        }
+
+        $module->update(['status' => $request->status]);
+
+        return response()->json(['success' => 'Estado del módulo actualizado exitosamente']);
     }
 }
