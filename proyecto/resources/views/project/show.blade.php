@@ -177,28 +177,15 @@
 
                     <!-- Descripción del proyecto -->
                     @if($project->description)
-                        <div class="card feature-card" style="max-height: 163px; overflow: hidden;">
+                        <div class="card feature-card" style="max-height: 140px; overflow: hidden;">
                             <div class="card-body py-2 px-3">
                                 <h6 class="fw-bold text-primary mb-1">
                                     <i class="bi bi-card-text me-2"></i>Descripción
                                 </h6>
                                 <div class="description-content">
-                                    <p class="text-muted mb-0" style="line-height: 1.4;" id="project-description">
-                                        {{ Str::limit($project->description, 120) }}
+                                    <p class="text-muted mb-0" style="line-height: 1.4;">
+                                        {{ Str::limit($project->description, 324) }}
                                     </p>
-                                    @if(strlen($project->description) > 120)
-                                        <button type="button" class="btn btn-link p-0 mt-1" id="toggle-description">
-                                            <small>Ver más <i class="bi bi-chevron-down"></i></small>
-                                        </button>
-                                        <div id="full-description" style="display: none;">
-                                            <p class="text-muted mb-0" style="line-height: 1.4;">
-                                                {{ $project->description }}
-                                            </p>
-                                            <button type="button" class="btn btn-link p-0 mt-1" id="toggle-description-less">
-                                                <small>Ver menos <i class="bi bi-chevron-up"></i></small>
-                                            </button>
-                                        </div>
-                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -316,7 +303,7 @@
                                         </h5>
                                         <div class="d-flex gap-2">
                                             <a href="{{ route('team.index', $project) }}" class="btn btn-outline-info btn-sm">
-                                                <i class="bi bi-eye me-1"></i>Ver Más
+                                                <i class="bi bi-list me-1"></i>Ver Todo
                                             </a>
                                             <a href="{{ route('team.create', $project) }}" class="btn btn-primary btn-sm">
                                                 <i class="bi bi-plus-circle me-1"></i>Crear Equipo
@@ -326,22 +313,19 @@
                                 </div>
                                 <div class="card-body">
                                     @if($project->teams->count() > 0)
-                                        <div class="row g-3">
+                                        <div class="row g-3" id="teams-container">
                                             @foreach($project->teams->take(4) as $team)
-                                            <div class="col-lg-6">
-                                                <div class="card border h-100">
+                                            <div class="col-lg-6 team-item">
+                                                <div class="card border h-100 clickable-card" 
+                                                    onclick="window.location.href='{{ route('team.show', [$project, $team]) }}'"
+                                                    style="cursor: pointer;">
                                                     <div class="card-body p-3">
                                                         <div class="d-flex align-items-start">
-                                                            <div class="feature-icon secondary me-3" style="width: 40px; height: 40px; font-size: 1rem;">
-                                                                <i class="bi bi-people-fill"></i>
+                                                            <div class="me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                                <i class="bi bi-people-fill text-secondary" style="font-size: 1.5rem;"></i>
                                                             </div>
                                                             <div class="flex-grow-1">
-                                                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                                                    <h6 class="fw-bold mb-0">{{ $team->name }}</h6>
-                                                                    <a href="{{ route('team.show', [$project, $team]) }}" class="btn btn-outline-primary btn-sm">
-                                                                        <i class="bi bi-eye"></i>
-                                                                    </a>
-                                                                </div>
+                                                                <h6 class="fw-bold mb-0">{{ $team->name }}</h6>
                                                                 @if($team->description)
                                                                     <p class="text-muted small mb-2">{{ Str::limit($team->description, 80) }}</p>
                                                                 @endif
@@ -362,9 +346,52 @@
                                             </div>
                                             @endforeach
                                         </div>
+                                        
                                         @if($project->teams->count() > 4)
-                                            <div class="mt-3 text-center">
-                                                <small class="text-muted">Mostrando 4 de {{ $project->teams->count() }} equipos</small>
+                                            <div class="text-center mt-3">
+                                                <button type="button" class="btn btn-link" id="show-more-teams">
+                                                    Ver más <i class="bi bi-chevron-down"></i>
+                                                </button>
+                                                <div id="hidden-teams" style="display: none;">
+                                                    <div class="row g-3 mt-2">
+                                                        @foreach($project->teams->skip(4) as $team)
+                                                        <div class="col-lg-6 team-item">
+                                                            <div class="card border h-100 clickable-card" 
+                                                                onclick="window.location.href='{{ route('team.show', [$project, $team]) }}'"
+                                                                style="cursor: pointer;">
+                                                                <div class="card-body p-3">
+                                                                    <div class="d-flex align-items-start">
+                                                                        <div class="me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                                            <i class="bi bi-people-fill text-secondary" style="font-size: 1.5rem;"></i>
+                                                                        </div>
+                                                                        <div class="flex-grow-1">
+                                                                            <h6 class="fw-bold mb-0">{{ $team->name }}</h6>
+                                                                            @if($team->description)
+                                                                                <p class="text-muted small mb-2">{{ Str::limit($team->description, 80) }}</p>
+                                                                            @endif
+                                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                                <small class="text-muted">
+                                                                                    <i class="bi bi-person-check me-1"></i>
+                                                                                    {{ $team->users->where('pivot.is_active', true)->count() }} miembros
+                                                                                </small>
+                                                                                <small class="text-muted">
+                                                                                    <i class="bi bi-calendar-plus me-1"></i>
+                                                                                    {{ $team->created_at->format('d/m/Y') }}
+                                                                                </small>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        @endforeach
+                                                    </div>
+                                                    <div class="text-center mt-3">
+                                                        <button type="button" class="btn btn-link" id="show-less-teams">
+                                                            Ver menos <i class="bi bi-chevron-up"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         @endif
                                     @else
@@ -391,21 +418,23 @@
                                             Módulos del Proyecto ({{ $project->modules->count() }})
                                         </h5>
                                         <div class="d-flex gap-2">
-                                            <button class="btn btn-outline-info btn-sm">
-                                                <i class="bi bi-eye me-1"></i>Ver Más
-                                            </button>
-                                            <button class="btn btn-primary btn-sm">
+                                            <a href="{{ route('module.index', $project) }}" class="btn btn-outline-info btn-sm">
+                                                <i class="bi bi-list me-1"></i>Ver Todo
+                                            </a>
+                                            <a href="{{ route('module.create', $project) }}" class="btn btn-primary btn-sm">
                                                 <i class="bi bi-plus-circle me-1"></i>Crear Módulo
-                                            </button>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="card-body">
                                     @if($project->modules->count() > 0)
-                                        <div class="row g-3">
+                                        <div class="row g-3" id="modules-container">
                                             @foreach($project->modules->take(4) as $module)
-                                            <div class="col-lg-6">
-                                                <div class="card border">
+                                            <div class="col-lg-6 module-item">
+                                                <div class="card border clickable-card" 
+                                                    onclick="window.location.href='{{ route('module.show', [$project, $module]) }}'"
+                                                    style="cursor: pointer;">
                                                     <div class="card-body p-3">
                                                         <div class="d-flex justify-content-between align-items-start mb-2">
                                                             <h6 class="fw-bold mb-0">{{ $module->name }}</h6>
@@ -461,9 +490,80 @@
                                             </div>
                                             @endforeach
                                         </div>
+                                        
                                         @if($project->modules->count() > 4)
-                                            <div class="mt-3 text-center">
-                                                <small class="text-muted">Mostrando 4 de {{ $project->modules->count() }} módulos</small>
+                                            <div class="text-center mt-3">
+                                                <button type="button" class="btn btn-link" id="show-more-modules">
+                                                    Ver más <i class="bi bi-chevron-down"></i>
+                                                </button>
+                                                <div id="hidden-modules" style="display: none;">
+                                                    <div class="row g-3 mt-2">
+                                                        @foreach($project->modules->skip(4) as $module)
+                                                        <div class="col-lg-6 module-item">
+                                                            <div class="card border clickable-card" 
+                                                                onclick="window.location.href='{{ route('module.show', [$project, $module]) }}'"
+                                                                style="cursor: pointer;">
+                                                                <div class="card-body p-3">
+                                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                                                        <h6 class="fw-bold mb-0">{{ $module->name }}</h6>
+                                                                        <div class="d-flex flex-column align-items-end gap-1">
+                                                                            @switch($module->status)
+                                                                                @case('ACTIVE')
+                                                                                    <span class="badge bg-success">Activo</span>
+                                                                                    @break
+                                                                                @case('PENDING')
+                                                                                    <span class="badge bg-warning">Pendiente</span>
+                                                                                    @break
+                                                                                @case('DONE')
+                                                                                    <span class="badge bg-info">Completado</span>
+                                                                                    @break
+                                                                                @default
+                                                                                    <span class="badge bg-secondary">{{ $module->status }}</span>
+                                                                            @endswitch
+                                                                            
+                                                                            @switch($module->priority)
+                                                                                @case('URGENT')
+                                                                                    <span class="badge bg-danger">Urgente</span>
+                                                                                    @break
+                                                                                @case('HIGH')
+                                                                                    <span class="badge bg-warning">Alta</span>
+                                                                                    @break
+                                                                                @case('MEDIUM')
+                                                                                    <span class="badge bg-info">Media</span>
+                                                                                    @break
+                                                                                @case('LOW')
+                                                                                    <span class="badge bg-secondary">Baja</span>
+                                                                                    @break
+                                                                            @endswitch
+                                                                        </div>
+                                                                    </div>
+                                                                    @if($module->description)
+                                                                        <p class="text-muted small mb-2">{{ Str::limit($module->description, 100) }}</p>
+                                                                    @endif
+                                                                    <div class="d-flex justify-content-between align-items-center">
+                                                                        <small class="text-muted">
+                                                                            <i class="bi bi-list-task me-1"></i>
+                                                                            {{ $module->tasks->count() }} tareas
+                                                                        </small>
+                                                                        <small class="text-muted">
+                                                                            @if($module->is_core)
+                                                                                <i class="bi bi-star-fill text-warning me-1"></i>Módulo core
+                                                                            @else
+                                                                                <i class="bi bi-circle me-1"></i>Módulo estándar
+                                                                            @endif
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        @endforeach
+                                                    </div>
+                                                    <div class="text-center mt-3">
+                                                        <button type="button" class="btn btn-link" id="show-less-modules">
+                                                            Ver menos <i class="bi bi-chevron-up"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         @endif
                                     @else
@@ -481,83 +581,75 @@
                         <div class="tab-pane fade" id="tasks" role="tabpanel">
                             <div class="card">
                                 <div class="card-header bg-white py-3">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="card-title mb-0">
-                                            <i class="bi bi-check2-square text-primary me-2"></i>
-                                            Tareas Recientes ({{ $projectStats['total_tasks'] ?? 0 }} total)
-                                        </h5>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-outline-info btn-sm">
-                                                <i class="bi bi-eye me-1"></i>Ver Más
-                                            </button>
-                                            <button class="btn btn-primary btn-sm">
-                                                <i class="bi bi-plus-circle me-1"></i>Crear Tarea
-                                            </button>
+                                    <div class="card-header bg-white py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="card-title mb-0">
+                                                <i class="bi bi-check2-square text-primary me-2"></i>
+                                                Tareas del Proyecto (<span id="tasks-count">{{ $projectStats['total_tasks'] ?? 0 }}</span> total)
+                                            </h5>
+                                            <div class="d-flex gap-2">
+                                                <a href="{{ route('task.index', $project) }}" class="btn btn-outline-info btn-sm">
+                                                    <i class="bi bi-list me-1"></i>Ver Todo
+                                                </a>
+                                                <a href="{{ route('task.create', $project) }}" class="btn btn-primary btn-sm">
+                                                    <i class="bi bi-plus-circle me-1"></i>Crear Tarea
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="card-body">
+                                    <!-- Filtro por módulo -->
+                                    <div class="mb-3">
+                                        <select class="form-select form-select-sm" id="module-filter" style="max-width: 300px;">
+                                            <option value="">Todos los módulos</option>
+                                            @foreach($project->modules as $module)
+                                                <option value="{{ $module->id }}">{{ $module->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <!-- Loading spinner -->
+                                    <div id="tasks-loading" style="display: none;">
+                                        <div class="text-center py-4">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Cargando tareas...</span>
+                                            </div>
+                                            <p class="text-muted mt-2">Filtrando tareas...</p>
+                                        </div>
+                                    </div>
+
                                     @php
                                         $allTasks = $project->modules->flatMap(function($module) {
-                                            return $module->tasks;
-                                        })->sortByDesc('created_at');
-                                    @endphp
-                                    
-                                    @if($allTasks->count() > 0)
-                                        <div class="list-group list-group-flush">
-                                            @foreach($allTasks->take(6) as $task)
-                                            <div class="list-group-item border-0 px-0">
-                                                <div class="d-flex align-items-start">
-                                                    <div class="me-3">
-                                                        <i class="bi bi-{{ $task->status === 'DONE' ? 'check-circle-fill text-success' : ($task->status === 'ACTIVE' ? 'play-circle-fill text-primary' : 'circle text-muted') }}"></i>
-                                                    </div>
-                                                    <div class="flex-grow-1">
-                                                        <div class="d-flex justify-content-between align-items-start">
-                                                            <div>
-                                                                <h6 class="fw-bold mb-1">{{ $task->title }}</h6>
-                                                                @if($task->description)
-                                                                    <p class="text-muted small mb-2">{{ Str::limit($task->description, 100) }}</p>
-                                                                @endif
-                                                                <div class="d-flex gap-2 align-items-center">
-                                                                    <span class="badge bg-{{ $task->priority === 'URGENT' ? 'danger' : ($task->priority === 'HIGH' ? 'warning' : ($task->priority === 'MEDIUM' ? 'info' : 'secondary')) }}">
-                                                                        {{ $task->priority }}
-                                                                    </span>
-                                                                    <small class="text-muted">
-                                                                        <i class="bi bi-folder me-1"></i>
-                                                                        {{ $task->module->name ?? 'Sin módulo' }}
-                                                                    </small>
-                                                                </div>
-                                                            </div>
-                                                            <div class="text-end">
-                                                                <span class="badge bg-{{ $task->status === 'DONE' ? 'success' : ($task->status === 'ACTIVE' ? 'primary' : 'secondary') }}">
-                                                                    {{ $task->status }}
-                                                                </span>
-                                                                @if($task->end_date)
-                                                                <small class="text-muted d-block mt-1">
-                                                                    <i class="bi bi-calendar me-1"></i>
-                                                                    {{ \Carbon\Carbon::parse($task->end_date)->format('d/m/Y') }}
-                                                                </small>
-                                                                @endif
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @endforeach
+                                            return $module->tasks->map(function($task) use ($module) {
+                                                $task->module = $module; // Asegurar relación
+                                                return $task;
+                                            });
+                                        });
+                                        
+                                        // Ordenación inicial
+                                        $statusOrder = ['ACTIVE' => 1, 'PENDING' => 2];
+                                        $priorityOrder = ['URGENT' => 1, 'HIGH' => 2, 'MEDIUM' => 3, 'LOW' => 4];
+                                        
+                                        $allTasks = $allTasks->sort(function($a, $b) use ($statusOrder, $priorityOrder) {
+                                            $statusA = $statusOrder[$a->status] ?? 3;
+                                            $statusB = $statusOrder[$b->status] ?? 3;
                                             
-                                            @if($allTasks->count() > 6)
-                                                <div class="text-center mt-3">
-                                                    <small class="text-muted">Mostrando las 6 tareas más recientes de {{ $allTasks->count() }} total</small>
-                                                </div>
-                                            @endif
-                                        </div>
-                                    @else
-                                        <div class="text-center py-4">
-                                            <i class="bi bi-check2-all display-4 text-success mb-3"></i>
-                                            <h6 class="text-muted">No hay tareas creadas</h6>
-                                            <p class="text-muted mb-0">Este proyecto aún no tiene tareas asignadas</p>
-                                        </div>
-                                    @endif
+                                            if ($statusA !== $statusB) {
+                                                return $statusA <=> $statusB;
+                                            }
+                                            
+                                            $priorityA = $priorityOrder[$a->priority] ?? 5;
+                                            $priorityB = $priorityOrder[$b->priority] ?? 5;
+                                            
+                                            return $priorityA <=> $priorityB;
+                                        });
+                                    @endphp
+
+                                    <!-- Container de tareas -->
+                                    <div id="tasks-container">
+                                        @include('project.partials.tasks-list', ['tasks' => $allTasks])
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1050,6 +1142,195 @@ document.getElementById('addMemberModal').addEventListener('hidden.bs.modal', fu
     document.getElementById('selected-user').style.display = 'none';
     document.getElementById('confirmAddMember').disabled = true;
     selectedUserId = null;
+});
+
+// Filtro de tareas por módulo con AJAX
+document.getElementById('module-filter').addEventListener('change', function() {
+    const selectedModuleId = this.value;
+    const loadingDiv = document.getElementById('tasks-loading');
+    const tasksContainer = document.getElementById('tasks-container');
+    
+    // Mostrar loading
+    loadingDiv.style.display = 'block';
+    tasksContainer.style.display = 'none';
+    
+    // Construir URL con parámetros
+    const url = new URL(`{{ route('project.filter-tasks', $project) }}`);
+    if (selectedModuleId) {
+        url.searchParams.append('module_id', selectedModuleId);
+    }
+    
+    // Realizar petición AJAX
+    fetch(url, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Actualizar contenido
+        tasksContainer.innerHTML = data.html;
+    
+        // Actualizar contador solo si el elemento existe
+        const tasksCountElement = document.getElementById('tasks-count');
+        if (tasksCountElement) {
+            tasksCountElement.textContent = data.count;
+        }
+        
+        // Re-aplicar event listeners para los nuevos botones
+        attachTaskEventListeners();
+        
+        // Ocultar loading y mostrar contenido
+        loadingDiv.style.display = 'none';
+        tasksContainer.style.display = 'block'
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Mostrar error
+        tasksContainer.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-exclamation-triangle display-4 text-danger mb-3"></i>
+                <h6 class="text-danger">Error al cargar tareas</h6>
+                <p class="text-muted mb-2">Detalle: ${error.message}</p>
+                <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Recargar página
+                </button>
+            </div>
+        `;
+        
+        loadingDiv.style.display = 'none';
+        tasksContainer.style.display = 'block';
+    });
+});
+
+// Función para aplicar event listeners a los botones de tareas
+function attachTaskEventListeners() {
+    // Botón "Ver más"
+    const showMoreBtn = document.getElementById('show-more-tasks');
+    if (showMoreBtn) {
+        showMoreBtn.addEventListener('click', function() {
+            // Mostrar todas las tareas ocultas
+            document.querySelectorAll('.hidden-task').forEach(task => {
+                task.style.display = 'block';
+            });
+            // Intercambiar botones
+            this.style.display = 'none';
+            const showLessBtn = document.getElementById('show-less-tasks');
+            if (showLessBtn) {
+                showLessBtn.style.display = 'inline-block';
+            }
+        });
+    }
+    
+    // Botón "Ver menos"
+    const showLessBtn = document.getElementById('show-less-tasks');
+    if (showLessBtn) {
+        showLessBtn.addEventListener('click', function() {
+            // Ocultar tareas adicionales
+            document.querySelectorAll('.hidden-task').forEach(task => {
+                task.style.display = 'none';
+            });
+            // Intercambiar botones
+            this.style.display = 'none';
+            const showMoreBtn = document.getElementById('show-more-tasks');
+            if (showMoreBtn) {
+                showMoreBtn.style.display = 'inline-block';
+            }
+        });
+    }
+} 
+
+// Aplicar event listeners inicial
+document.addEventListener('DOMContentLoaded', function() {
+    attachTaskEventListeners();
+    
+    // Efectos hover para tareas clickables
+    const style = document.createElement('style');
+    style.textContent = `
+        .clickable-task:hover {
+            background-color: #f8f9fc !important;
+            transform: translateX(3px);
+        }
+        
+        .clickable-task {
+            transition: all 0.2s ease-in-out;
+        }
+    `;
+    document.head.appendChild(style);
+});
+
+// Funcionalidad "Ver más" para equipos
+document.getElementById('show-more-teams')?.addEventListener('click', function() {
+    document.getElementById('hidden-teams').style.display = 'block';
+    this.style.display = 'none';
+});
+
+document.getElementById('show-less-teams')?.addEventListener('click', function() {
+    document.getElementById('hidden-teams').style.display = 'none';
+    document.getElementById('show-more-teams').style.display = 'inline-block';
+});
+
+// Funcionalidad "Ver más" para módulos
+document.getElementById('show-more-modules')?.addEventListener('click', function() {
+    document.getElementById('hidden-modules').style.display = 'block';
+    this.style.display = 'none';
+});
+
+document.getElementById('show-less-modules')?.addEventListener('click', function() {
+    document.getElementById('hidden-modules').style.display = 'none';
+    document.getElementById('show-more-modules').style.display = 'inline-block';
+});
+
+// Efectos hover para cards clickables
+document.addEventListener('DOMContentLoaded', function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .clickable-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0.375rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        .clickable-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+    `;
+    document.head.appendChild(style);
+});
+
+// Funcionalidad "Ver más" para tareas (simplificado)
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'show-more-tasks' || e.target.closest('#show-more-tasks')) {
+        // Mostrar todas las tareas ocultas
+        document.querySelectorAll('.hidden-task').forEach(task => {
+            task.style.display = 'block';
+        });
+        // Ocultar el botón "Ver más"
+        e.target.closest('button').style.display = 'none';
+    }
+});
+
+// Efectos hover para tareas clickables
+document.addEventListener('DOMContentLoaded', function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .clickable-task:hover {
+            background-color: #f8f9fc !important;
+            transform: translateX(3px);
+        }
+        
+        .clickable-task {
+            transition: all 0.2s ease-in-out;
+        }
+    `;
+    document.head.appendChild(style);
 });
 </script>
 @endpush

@@ -477,5 +477,65 @@ class ProjectController extends Controller
 
         return response()->json(['success' => 'Miembro removido del proyecto exitosamente']);
     }
+
+    /**
+     * Obtener tareas filtradas por módulo (AJAX)
+     */
+    public function getFilteredTasks(Request $request, Project $project)
+    {
+        // Verificar acceso al proyecto
+        $userHasAccess = Auth::user()->teams()
+            ->where('project_id', $project->id)
+            ->whereHas('users', function($query) {
+                $query->where('users.id', Auth::id())
+                    ->where('team_user.is_active', true);
+            })
+            ->exists();
+
+        if (!$userHasAccess) {
+            return response()->json(['error' => 'No tienes acceso a este proyecto'], 403);
+        }
+
+        // Obtener tareas del proyecto
+        $allTasks = $project->modules->flatMap(function($module) {
+            return $module->tasks->map(function($task) use ($module) {
+                $task->module = $module; // Asegurar que tiene la relación
+                return $task;
+            });
+        });
+
+        // Filtrar por módulo si se especifica
+        if ($request->filled('module_id')) {
+            $allTasks = $allTasks->where('module_id', $request->module_id);
+        }
+
+        // Ordenación: 1) Estado (ACTIVE, PENDING, otros), 2) Prioridad (URGENT, HIGH, MEDIUM, LOW)
+        $statusOrder = ['ACTIVE' => 1, 'PENDING' => 2];
+        $priorityOrder = ['URGENT' => 1, 'HIGH' => 2, 'MEDIUM' => 3, 'LOW' => 4];
+        
+        $tasks = $allTasks->sort(function($a, $b) use ($statusOrder, $priorityOrder) {
+            // Ordenar por estado
+            $statusA = $statusOrder[$a->status] ?? 3;
+            $statusB = $statusOrder[$b->status] ?? 3;
+            
+            if ($statusA !== $statusB) {
+                return $statusA <=> $statusB;
+            }
+            
+            // Si el estado es igual, ordenar por prioridad
+            $priorityA = $priorityOrder[$a->priority] ?? 5;
+            $priorityB = $priorityOrder[$b->priority] ?? 5;
+            
+            return $priorityA <=> $priorityB;
+        });
+
+        // Renderizar vista parcial
+        $html = view('project.partials.tasks-list', compact('tasks'))->render();
+        
+        return response()->json([
+            'html' => $html,
+            'count' => $tasks->count()
+        ]);
+    }
     
 }
