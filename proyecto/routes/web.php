@@ -212,10 +212,19 @@ Route::middleware('auth')->group(function () {
     // Rutas para gestión de usuarios asignados a tareas
     Route::post('/project/{project}/tasks/{task}/users', [TaskController::class, 'assignUser'])->name('task.assign-user');
     Route::delete('/project/{project}/tasks/{task}/users/{user}', [TaskController::class, 'removeUser'])->name('task.remove-user');
+    Route::get('/project/{project}/tasks/{task}/available-users', [TaskController::class, 'getAvailableUsers'])->name('task.available-users');
     
     // Rutas para comentarios en tareas
     Route::post('/project/{project}/tasks/{task}/comments', [TaskController::class, 'addComment'])->name('task.add-comment');
     Route::delete('/project/{project}/tasks/{task}/comments/{comment}', [TaskController::class, 'deleteComment'])->name('task.delete-comment');
+    Route::patch('/project/{project}/tasks/{task}/comments/{comment}', [TaskController::class, 'updateComment'])->name('task.update-comment');
+    
+    // Rutas adicionales para gestión avanzada de tareas
+    Route::patch('/project/{project}/tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('task.update-status');
+    Route::patch('/project/{project}/tasks/{task}/priority', [TaskController::class, 'updatePriority'])->name('task.update-priority');
+    
+    // Ruta para obtener miembros de equipos del módulo (para asignación)
+    Route::get('/project/{project}/tasks/{task}/module-team-members', [TaskController::class, 'getModuleTeamMembersAPI'])->name('task.module-team-members');
 });
 
 // ============================================

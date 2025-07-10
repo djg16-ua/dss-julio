@@ -47,7 +47,9 @@ class ModuleController extends Controller
         $this->checkProjectAccess($project);
 
         $query = $project->modules()
-            ->with(['teams', 'tasks'])
+            ->with(['teams', 'tasks' => function($taskQuery) {
+                $taskQuery->select('id', 'module_id', 'status', 'priority');
+            }])
             ->orderBy('created_at', 'desc');
 
         // Filtro por búsqueda (nombre o descripción)
