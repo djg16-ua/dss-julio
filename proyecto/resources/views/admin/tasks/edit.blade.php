@@ -268,7 +268,11 @@
                                     <div class="fw-bold">{{ $user->name }}</div>
                                     <small class="text-muted">{{ $user->email }}</small>
                                     <div class="small text-muted">
-                                        Asignado: {{ $user->pivot->assigned_at->format('d/m/Y H:i') }}
+                                        @if($user->pivot->assigned_at)
+                                            Asignado: {{ \Carbon\Carbon::parse($user->pivot->assigned_at)->format('d/m/Y H:i') }}
+                                        @else
+                                            Asignado: N/A
+                                        @endif
                                     </div>
                                 </div>
                             </div>

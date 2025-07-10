@@ -17,6 +17,11 @@
                     </p>
                 </div>
                 <div class="col-lg-4 text-lg-end">
+                    @if(isset($module))
+                        <a href="{{ route('admin.modules.edit', $module) }}" class="btn btn-outline-success me-2">
+                            <i class="bi bi-arrow-left me-2"></i>Volver al Módulo
+                        </a>
+                    @endif
                     <a href="{{ route('admin.tasks') }}" class="btn btn-outline-secondary me-2">
                         <i class="bi bi-arrow-left me-2"></i>Volver a Tareas
                     </a>
@@ -25,6 +30,37 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Información del módulo preseleccionado -->
+            @if(isset($module))
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert alert-success">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <i class="bi bi-info-circle-fill fs-4"></i>
+                            </div>
+                            <div class="col">
+                                <div class="fw-bold">Creando tarea para el módulo: {{ $module->name }}</div>
+                                <small>
+                                    Proyecto: {{ $module->project->title ?? 'Sin proyecto' }} | 
+                                    Categoría: {{ $module->category }} | 
+                                    Prioridad: {{ $module->priority }}
+                                    @if($module->is_core)
+                                        | <span class="badge bg-danger">CORE</span>
+                                    @endif
+                                </small>
+                            </div>
+                            <div class="col-auto">
+                                <a href="{{ route('admin.modules.edit', $module) }}" class="btn btn-outline-success btn-sm">
+                                    <i class="bi bi-arrow-left me-1"></i>Volver al Módulo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             <!-- Formulario principal -->
             <div class="row mb-5">
@@ -86,21 +122,31 @@
 
                                     <div class="col-md-6">
                                         <label for="module_id" class="form-label fw-bold">
-                                            <i class="bi bi-grid me-1"></i>Módulo (Opcional)
+                                            <i class="bi bi-grid me-1"></i>Módulo
                                         </label>
-                                        <select class="form-select @error('module_id') is-invalid @enderror" id="module_id" name="module_id">
-                                            <option value="">Sin módulo específico</option>
-                                            @foreach($modules as $module)
-                                            <option value="{{ $module->id }}" {{ old('module_id') == $module->id ? 'selected' : '' }}>
-                                                {{ $module->name }}
-                                                <small>({{ $module->project->title }})</small>
+                                        <select class="form-select @error('module_id') is-invalid @enderror" id="module_id" name="module_id" required>
+                                            <option value="">Seleccionar módulo...</option>
+                                            @foreach($modules as $moduleOption)
+                                            <option value="{{ $moduleOption->id }}" 
+                                                    {{ (old('module_id', $module->id ?? '') == $moduleOption->id) ? 'selected' : '' }}>
+                                                {{ $moduleOption->name }} 
+                                                <small>({{ $moduleOption->project->title ?? 'Sin proyecto' }})</small>
                                             </option>
                                             @endforeach
                                         </select>
                                         @error('module_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                        <div class="form-text">Módulo al que pertenece esta tarea</div>
+                                        <div class="form-text">
+                                            @if(isset($module))
+                                                <strong class="text-success">
+                                                    <i class="bi bi-check-circle me-1"></i>
+                                                    Módulo preseleccionado: {{ $module->name }}
+                                                </strong>
+                                            @else
+                                                Selecciona el módulo al que pertenecerá esta tarea
+                                            @endif
+                                        </div>
                                     </div>
 
                                     <div class="col-md-6">
@@ -108,7 +154,7 @@
                                             <i class="bi bi-people me-1"></i>Asignar a (Opcional)
                                         </label>
                                         <select class="form-select @error('assigned_users') is-invalid @enderror" id="assigned_users" name="assigned_users[]" multiple>
-                                            @foreach($users as $user)
+                                            @foreach($availableUsers as $user)
                                             <option value="{{ $user->id }}" {{ in_array($user->id, old('assigned_users', [])) ? 'selected' : '' }}>
                                                 {{ $user->name }} ({{ $user->email }})
                                             </option>
@@ -117,7 +163,13 @@
                                         @error('assigned_users')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                        <div class="form-text">Usuarios responsables de completar la tarea (mantén Ctrl para seleccionar múltiples)</div>
+                                        <div class="form-text">
+                                            @if(isset($module))
+                                                Usuarios disponibles del proyecto: <strong>{{ $module->project->title }}</strong>
+                                            @else
+                                                Usuarios responsables de completar la tarea (mantén Ctrl para seleccionar múltiples)
+                                            @endif
+                                        </div>
                                     </div>
 
                                     <div class="col-md-4">
@@ -156,14 +208,16 @@
                                         </label>
                                         <select class="form-select @error('depends_on') is-invalid @enderror" id="depends_on" name="depends_on">
                                             <option value="">Sin dependencias</option>
-                                            @foreach($tasks as $task)
-                                            <option value="{{ $task->id }}" {{ old('depends_on') == $task->id ? 'selected' : '' }}>
-                                                {{ Str::limit($task->title, 40) }}
-                                                @if($task->assignedUsers->count() > 0)
-                                                <small>({{ $task->assignedUsers->pluck('name')->join(', ') }})</small>
-                                                @endif
-                                            </option>
-                                            @endforeach
+                                            @if($tasks && count($tasks) > 0)
+                                                @foreach($tasks as $task)
+                                                <option value="{{ $task->id }}" {{ old('depends_on') == $task->id ? 'selected' : '' }}>
+                                                    {{ Str::limit($task->title, 40) }}
+                                                    @if($task->assignedUsers && $task->assignedUsers->count() > 0)
+                                                    <small>({{ $task->assignedUsers->pluck('name')->join(', ') }})</small>
+                                                    @endif
+                                                </option>
+                                                @endforeach
+                                            @endif
                                         </select>
                                         @error('depends_on')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -178,9 +232,15 @@
                                             <button type="submit" class="btn btn-dark">
                                                 <i class="bi bi-check-lg me-2"></i>Crear Tarea
                                             </button>
-                                            <a href="{{ route('admin.tasks') }}" class="btn btn-secondary">
-                                                <i class="bi bi-x-lg me-2"></i>Cancelar
-                                            </a>
+                                            @if(isset($module))
+                                                <a href="{{ route('admin.modules.edit', $module) }}" class="btn btn-success">
+                                                    <i class="bi bi-arrow-left me-2"></i>Volver al Módulo
+                                                </a>
+                                            @else
+                                                <a href="{{ route('admin.tasks') }}" class="btn btn-secondary">
+                                                    <i class="bi bi-x-lg me-2"></i>Cancelar
+                                                </a>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -189,9 +249,39 @@
                     </div>
                 </div>
 
-                <!-- Sidebar con información -->
+                <!-- Sidebar con información completa -->
                 <div class="col-lg-4">
+                    @if(isset($module))
+                    <!-- Información del módulo preseleccionado -->
                     <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white py-3">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-grid-3x3-gap me-2"></i>
+                                Información del Módulo
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6 class="fw-bold text-success">{{ $module->name }}</h6>
+                                <p class="text-muted small mb-2">{{ $module->description ?: 'Sin descripción' }}</p>
+                            </div>
+                            <div class="small">
+                                <div><strong>Proyecto:</strong> {{ $module->project->title ?? 'Sin proyecto' }}</div>
+                                <div><strong>Categoría:</strong> {{ $module->category }}</div>
+                                <div><strong>Prioridad:</strong> 
+                                    <span class="badge bg-{{ $module->priority === 'URGENT' ? 'danger' : ($module->priority === 'HIGH' ? 'warning' : ($module->priority === 'MEDIUM' ? 'info' : 'secondary')) }}">
+                                        {{ $module->priority }}
+                                    </span>
+                                </div>
+                                @if($module->is_core)
+                                <div><strong>Tipo:</strong> <span class="badge bg-danger">CORE</span></div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    <div class="card shadow-sm {{ isset($module) ? 'mt-4' : '' }}">
                         <div class="card-header bg-info text-white py-3">
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-lightbulb me-2"></i>
@@ -217,14 +307,25 @@
                                 </p>
                             </div>
 
+                            @if(isset($module))
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-info">
+                                    <i class="bi bi-3-circle me-2"></i>Usuarios del Proyecto
+                                </h6>
+                                <p class="small text-muted mb-0">
+                                    Solo se muestran usuarios que pertenecen al proyecto <strong>{{ $module->project->title }}</strong>.
+                                </p>
+                            </div>
+                            @else
                             <div class="mb-4">
                                 <h6 class="fw-bold text-info">
                                     <i class="bi bi-3-circle me-2"></i>Módulo y Proyecto
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Si la tarea pertenece a un módulo específico, selecciónalo para mejor organización.
+                                    Selecciona el módulo al que pertenece la tarea para mejor organización.
                                 </p>
                             </div>
+                            @endif
 
                             <div>
                                 <h6 class="fw-bold text-info">
@@ -390,8 +491,12 @@
         const toasts = document.querySelectorAll('.toast');
         toasts.forEach(function(toast) {
             setTimeout(function() {
-                const bsToast = new bootstrap.Toast(toast);
-                bsToast.hide();
+                try {
+                    const bsToast = new bootstrap.Toast(toast);
+                    bsToast.hide();
+                } catch (e) {
+                    console.log('Error hiding toast:', e);
+                }
             }, 5000);
         });
 
@@ -418,6 +523,34 @@
                     this.title = 'Mantén Ctrl presionado para seleccionar múltiples usuarios';
                     this.setAttribute('data-tooltip-shown', 'true');
                 }
+            });
+        }
+
+        // Prevenir envío múltiple del formulario
+        const form = document.querySelector('form');
+        if (form) {
+            let isSubmitting = false;
+            form.addEventListener('submit', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                isSubmitting = true;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Creando...';
+                }
+                
+                // Re-habilitar después de 10 segundos para evitar bloqueo permanente
+                setTimeout(() => {
+                    isSubmitting = false;
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Crear Tarea';
+                    }
+                }, 10000);
             });
         }
     });

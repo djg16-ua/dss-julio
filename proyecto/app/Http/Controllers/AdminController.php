@@ -198,14 +198,21 @@ class AdminController extends Controller
      */
     public function projects(Request $request)
     {
-        $query = Project::with(['creator', 'teams', 'modules']);
+        // Cargar relaciones de manera eficiente
+        $query = Project::with([
+            'creator', 
+            'teams', 
+            'modules' => function($query) {
+                $query->withCount('tasks'); // Esto evita el problema N+1
+            }
+        ]);
 
         // Filtros similares para proyectos
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -1540,11 +1547,11 @@ class AdminController extends Controller
         ));
     }
 
-    /**
-     * Crear nuevo módulo
-     */
     public function storeModule(Request $request)
     {
+        // Log para debugging
+        \Log::info('Iniciando creación de módulo', $request->all());
+        
         $request->validate([
             'name' => 'required|string|max:255',
             'project_id' => 'required|exists:projects,id',
@@ -1558,110 +1565,180 @@ class AdminController extends Controller
             'teams.*.team_id' => 'nullable|exists:teams,id',
         ]);
 
-        // Verificar que el módulo de dependencia pertenece al mismo proyecto
-        if ($request->depends_on) {
-            $dependencyModule = Module::find($request->depends_on);
-            if ($dependencyModule && $dependencyModule->project_id != $request->project_id) {
-                return back()->with('error', 'El módulo de dependencia debe pertenecer al mismo proyecto.');
+        try {
+            // Verificar que el módulo de dependencia pertenece al mismo proyecto
+            if ($request->depends_on) {
+                $dependencyModule = Module::find($request->depends_on);
+                if ($dependencyModule && $dependencyModule->project_id != $request->project_id) {
+                    return back()
+                        ->withInput()
+                        ->with('error', 'El módulo de dependencia debe pertenecer al mismo proyecto.');
+                }
             }
-        }
 
-        // Verificar que el nombre es único dentro del proyecto
-        $existingModule = Module::where('project_id', $request->project_id)
-            ->where('name', $request->name)
-            ->first();
+            // Verificar que el nombre es único dentro del proyecto
+            $existingModule = Module::where('project_id', $request->project_id)
+                ->where('name', $request->name)
+                ->first();
 
-        if ($existingModule) {
-            return back()->with('error', 'Ya existe un módulo con ese nombre en el proyecto seleccionado.');
-        }
+            if ($existingModule) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Ya existe un módulo con ese nombre en el proyecto seleccionado.');
+            }
 
-        // Crear el módulo
-        $module = Module::create([
-            'name' => $request->name,
-            'project_id' => $request->project_id,
-            'description' => $request->description,
-            'category' => $request->category,
-            'priority' => $request->priority,
-            'status' => $request->status,
-            'depends_on' => $request->depends_on,
-            'is_core' => $request->is_core,
-        ]);
+            \Log::info('Creando módulo...');
 
-        // Asignar equipos si se especificaron
-        if ($request->teams) {
-            foreach ($request->teams as $team) {
-                if (!empty($team['team_id'])) {
-                    $teamModel = Team::find($team['team_id']);
+            // Crear el módulo (sin transacción para simplificar el debugging)
+            $module = Module::create([
+                'name' => $request->name,
+                'project_id' => $request->project_id,
+                'description' => $request->description,
+                'category' => $request->category,
+                'priority' => $request->priority,
+                'status' => $request->status,
+                'depends_on' => $request->depends_on,
+                'is_core' => $request->is_core,
+            ]);
 
-                    // Verificar que el equipo pertenece al mismo proyecto
-                    if ($teamModel && $teamModel->project_id === $module->project_id) {
-                        $module->teams()->attach($team['team_id'], [
-                            'assigned_at' => now(),
-                        ]);
+            \Log::info('Módulo creado exitosamente', ['module_id' => $module->id]);
+
+            // Asignar equipos si se especificaron (de forma segura)
+            if ($request->teams && is_array($request->teams)) {
+                foreach ($request->teams as $teamData) {
+                    if (!empty($teamData['team_id']) && is_numeric($teamData['team_id'])) {
+                        try {
+                            $teamModel = Team::find($teamData['team_id']);
+
+                            // Verificar que el equipo pertenece al mismo proyecto
+                            if ($teamModel && $teamModel->project_id == $module->project_id) {
+                                // Verificar que no esté ya asignado
+                                if (!$module->teams()->where('team_id', $teamModel->id)->exists()) {
+                                    $module->teams()->attach($teamModel->id, [
+                                        'assigned_at' => now(),
+                                    ]);
+                                    \Log::info('Equipo asignado', ['team_id' => $teamModel->id]);
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            \Log::error('Error asignando equipo', ['error' => $e->getMessage()]);
+                            // Continuar con otros equipos
+                        }
                     }
                 }
             }
-        }
 
-        return redirect()->route('admin.modules.edit', $module)
-            ->with('success', "Módulo '{$module->name}' creado correctamente.");
+            \Log::info('Redirigiendo a edición del módulo');
+
+            // Redirección simple y directa
+            return redirect()
+                ->route('admin.modules.edit', $module)
+                ->with('success', "Módulo '{$module->name}' creado correctamente.");
+
+        } catch (\Exception $e) {
+            \Log::error('Error creando módulo', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Error al crear el módulo: ' . $e->getMessage());
+        }
     }
 
-    /**
-     * Mostrar formulario de edición del módulo
-     */
     public function editModule(Module $module)
     {
-        $module->load(['project', 'teams', 'tasks.assignedUser', 'dependency', 'dependents']);
+        // Log para debugging
+        \Log::info('Cargando vista de edición de módulo', ['module_id' => $module->id]);
 
-        $projects = Project::orderBy('title')->get();
+        try {
+            // Cargar relaciones de forma optimizada
+            $module->load([
+                'project',
+                'teams' => function($query) {
+                    $query->withCount(['users as active_users_count' => function($q) {
+                        $q->where('is_active', true);
+                    }]);
+                },
+                'tasks' => function($query) {
+                    $query->with(['assignedUsers:id,name'])
+                        ->select('id', 'title', 'description', 'status', 'priority', 'module_id', 'end_date');
+                },
+                'dependency:id,name',
+                'dependents:id,name'
+            ]);
 
-        // Solo módulos del mismo proyecto para dependencias
-        $projectModules = Module::where('project_id', $module->project_id)
-            ->where('id', '!=', $module->id)
-            ->get();
+            \Log::info('Relaciones cargadas correctamente');
 
-        // Solo equipos del mismo proyecto que no estén ya asignados
-        $availableTeams = Team::where('project_id', $module->project_id)
-            ->whereDoesntHave('modules', function ($query) use ($module) {
-                $query->where('module_id', $module->id);
-            })
-            ->orderBy('name')
-            ->get();
+            // Cargar datos adicionales de forma eficiente
+            $projects = Project::select('id', 'title', 'status')->orderBy('title')->get();
+            
+            // Solo módulos del mismo proyecto para dependencias
+            $projectModules = Module::where('project_id', $module->project_id)
+                ->where('id', '!=', $module->id)
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get();
 
-        // Tareas disponibles para asignar (sin módulo o con módulo diferente)
-        $availableTasks = Task::where(function ($query) use ($module) {
-            $query->whereNull('module_id')
-                ->orWhere('module_id', '!=', $module->id);
-        })->with('assignedUser')->orderBy('title')->get();
+            // Solo equipos disponibles del mismo proyecto
+            $availableTeams = Team::where('project_id', $module->project_id)
+                ->whereDoesntHave('modules', function ($query) use ($module) {
+                    $query->where('module_id', $module->id);
+                })
+                ->withCount(['users as active_users_count' => function($query) {
+                    $query->where('is_active', true);
+                }])
+                ->select('id', 'name', 'is_general', 'project_id')
+                ->orderBy('name')
+                ->get();
 
-        $moduleCategories = [
-            'DEVELOPMENT' => 'Desarrollo',
-            'DESIGN' => 'Diseño',
-            'TESTING' => 'Pruebas',
-            'DOCUMENTATION' => 'Documentación',
-            'RESEARCH' => 'Investigación',
-            'DEPLOYMENT' => 'Despliegue',
-            'MAINTENANCE' => 'Mantenimiento',
-            'INTEGRATION' => 'Integración'
-        ];
+            \Log::info('Datos adicionales cargados', [
+                'projects_count' => $projects->count(),
+                'project_modules_count' => $projectModules->count(),
+                'available_teams_count' => $availableTeams->count()
+            ]);
 
-        $priorities = [
-            'LOW' => 'Baja',
-            'MEDIUM' => 'Media',
-            'HIGH' => 'Alta',
-            'URGENT' => 'Urgente'
-        ];
+            $moduleCategories = [
+                'DEVELOPMENT' => 'Desarrollo',
+                'DESIGN' => 'Diseño',
+                'TESTING' => 'Pruebas',
+                'DOCUMENTATION' => 'Documentación',
+                'RESEARCH' => 'Investigación',
+                'DEPLOYMENT' => 'Despliegue',
+                'MAINTENANCE' => 'Mantenimiento',
+                'INTEGRATION' => 'Integración'
+            ];
 
-        return view('admin.modules.edit', compact(
-            'module',
-            'projects',
-            'projectModules',
-            'availableTeams',
-            'availableTasks',
-            'moduleCategories',
-            'priorities'
-        ));
+            $priorities = [
+                'LOW' => 'Baja',
+                'MEDIUM' => 'Media',
+                'HIGH' => 'Alta',
+                'URGENT' => 'Urgente'
+            ];
+
+            \Log::info('Renderizando vista de edición');
+
+            return view('admin.modules.edit', compact(
+                'module',
+                'projects',
+                'projectModules',
+                'availableTeams',
+                'moduleCategories',
+                'priorities'
+            ));
+
+        } catch (\Exception $e) {
+            \Log::error('Error cargando vista de edición de módulo', [
+                'module_id' => $module->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()
+                ->route('admin.modules')
+                ->with('error', 'Error cargando el módulo para edición: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -2011,35 +2088,52 @@ class AdminController extends Controller
     /**
      * Mostrar formulario para crear tarea
      */
-    public function createTask()
+    public function createTask(Module $module = null)
     {
-        $modules = Module::with('project')->orderBy('name')->get();
-        $users = User::orderBy('name')->get();
-        $tasks = Task::where('status', '!=', 'CANCELLED')->orderBy('title')->get();
+        try {
+            $modules = Module::with('project')->orderBy('name')->get();
+            $users = User::orderBy('name')->get();
+            $tasks = Task::where('status', '!=', 'CANCELLED')->orderBy('title')->get();
 
-        $priorities = [
-            'LOW' => 'Baja',
-            'MEDIUM' => 'Media',
-            'HIGH' => 'Alta',
-            'URGENT' => 'Urgente'
-        ];
+            $priorities = [
+                'LOW' => 'Baja',
+                'MEDIUM' => 'Media',
+                'HIGH' => 'Alta',
+                'URGENT' => 'Urgente'
+            ];
 
-        $stats = [
-            'total_tasks' => Task::count(),
-            'pending_tasks' => Task::where('status', 'PENDING')->count(),
-            'completed_tasks' => Task::where('status', 'DONE')->count(),
-            'overdue_tasks' => Task::where('end_date', '<', now())
-                ->whereNotIn('status', ['DONE', 'CANCELLED'])
-                ->count(),
-        ];
+            $stats = [
+                'total_tasks' => Task::count(),
+                'pending_tasks' => Task::where('status', 'PENDING')->count(),
+                'completed_tasks' => Task::where('status', 'DONE')->count(),
+                'overdue_tasks' => Task::where('end_date', '<', now())
+                    ->whereNotIn('status', ['DONE', 'CANCELLED'])
+                    ->count(),
+            ];
 
-        return view('admin.tasks.create', compact(
-            'modules',
-            'users',
-            'tasks',
-            'priorities',
-            'stats'
-        ));
+            // Si viene de un módulo específico, filtrar usuarios del proyecto
+            $availableUsers = $users;
+            if ($module) {
+                $availableUsers = User::whereHas('teams', function($query) use ($module) {
+                    $query->where('project_id', $module->project_id)
+                        ->where('is_active', true);
+                })->orderBy('name')->get();
+            }
+
+            return view('admin.tasks.create', compact(
+                'modules',
+                'availableUsers',
+                'tasks',
+                'priorities',
+                'stats',
+                'module'
+            ));
+
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('admin.tasks')
+                ->with('error', 'Error cargando formulario: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -2052,7 +2146,7 @@ class AdminController extends Controller
             'description' => 'nullable|string|max:2000',
             'priority' => 'required|in:LOW,MEDIUM,HIGH,URGENT',
             'status' => 'required|in:PENDING,ACTIVE,DONE,PAUSED,CANCELLED',
-            'module_id' => 'nullable|exists:modules,id',
+            'module_id' => 'required|exists:modules,id',
             'assigned_users' => 'nullable|array',
             'assigned_users.*' => 'nullable|exists:users,id',
             'end_date' => 'nullable|date|after_or_equal:today',
@@ -2067,7 +2161,7 @@ class AdminController extends Controller
             }
         }
 
-        // Si se asigna un módulo y usuarios, verificar que los usuarios pertenezcan al proyecto
+        // CORRECCIÓN: Verificar que si hay módulo Y usuarios asignados, los usuarios pertenezcan al proyecto
         if ($request->module_id && $request->assigned_users) {
             $module = Module::find($request->module_id);
             foreach ($request->assigned_users as $userId) {
@@ -2083,13 +2177,24 @@ class AdminController extends Controller
             }
         }
 
+        // CORRECCIÓN: Verificar el título único solo si hay módulo
+        if ($request->module_id) {
+            $existingTask = Task::where('module_id', $request->module_id)
+                ->where('title', $request->title)
+                ->first();
+                
+            if ($existingTask) {
+                return back()->with('error', 'Ya existe una tarea con ese título en el módulo seleccionado.');
+            }
+        }
+
         // Crear la tarea
         $task = Task::create([
             'title' => $request->title,
             'description' => $request->description,
             'priority' => $request->priority,
             'status' => $request->status,
-            'module_id' => $request->module_id,
+            'module_id' => $request->module_id, // Puede ser null - está bien
             'end_date' => $request->end_date,
             'depends_on' => $request->depends_on,
             'created_by' => auth()->id(),
@@ -2112,40 +2217,49 @@ class AdminController extends Controller
     /**
      * Mostrar formulario de edición de la tarea
      */
+
     public function editTask(Task $task)
     {
-        $task->load(['assignedUsers', 'creator', 'module.project', 'dependency', 'dependents', 'comments.user']);
+        try {
+            $task->load(['assignedUsers', 'creator', 'module.project', 'dependency', 'dependents', 'comments.user']);
 
-        $modules = Module::with('project')->orderBy('name')->get();
+            $modules = Module::with('project')->orderBy('name')->get();
 
-        // Solo usuarios que pertenezcan al proyecto (si la tarea tiene módulo)
-        $availableUsers = User::orderBy('name')->get();
-        if ($task->module_id) {
-            $availableUsers = User::whereHas('teams', function ($query) use ($task) {
-                $query->where('project_id', $task->module->project_id)
-                    ->where('is_active', true);
-            })->orderBy('name')->get();
+            // Solo usuarios que pertenezcan al proyecto (si la tarea tiene módulo)
+            $availableUsers = User::orderBy('name')->get();
+            
+            if ($task->module_id) {
+                $availableUsers = User::whereHas('teams', function ($query) use ($task) {
+                    $query->where('project_id', $task->module->project_id)
+                        ->where('is_active', true);
+                })->orderBy('name')->get();
+            }
+
+            $availableTasks = Task::where('id', '!=', $task->id)
+                ->where('status', '!=', 'CANCELLED')
+                ->orderBy('title')
+                ->get();
+
+            $priorities = [
+                'LOW' => 'Baja',
+                'MEDIUM' => 'Media',
+                'HIGH' => 'Alta',
+                'URGENT' => 'Urgente'
+            ];
+
+            return view('admin.tasks.edit', compact(
+                'task',
+                'modules',
+                'availableUsers',
+                'availableTasks',
+                'priorities'
+            ));
+
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('admin.tasks')
+                ->with('error', 'Error cargando la tarea para edición: ' . $e->getMessage());
         }
-
-        $availableTasks = Task::where('id', '!=', $task->id)
-            ->where('status', '!=', 'CANCELLED')
-            ->orderBy('title')
-            ->get();
-
-        $priorities = [
-            'LOW' => 'Baja',
-            'MEDIUM' => 'Media',
-            'HIGH' => 'Alta',
-            'URGENT' => 'Urgente'
-        ];
-
-        return view('admin.tasks.edit', compact(
-            'task',
-            'modules',
-            'availableUsers',
-            'availableTasks',
-            'priorities'
-        ));
     }
 
     /**

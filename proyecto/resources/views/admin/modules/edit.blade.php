@@ -54,12 +54,8 @@
                                     <div class="col-md-6">
                                         <label for="project_id" class="form-label fw-bold">Proyecto</label>
                                         <select class="form-select @error('project_id') is-invalid @enderror" id="project_id" name="project_id" required>
-                                            @php
-                                                // Cargar todos los proyectos disponibles
-                                                $allProjects = \App\Models\Project::orderBy('title')->get();
-                                            @endphp
-                                            @if($allProjects->count() > 0)
-                                                @foreach($allProjects as $project)
+                                            @if($projects->count() > 0)
+                                                @foreach($projects as $project)
                                                 <option value="{{ $project->id }}" {{ old('project_id', $module->project_id) == $project->id ? 'selected' : '' }}>
                                                     {{ $project->title }} ({{ $project->status }})
                                                 </option>
@@ -86,14 +82,9 @@
                                     <div class="col-md-3">
                                         <label for="category" class="form-label fw-bold">Categoría</label>
                                         <select class="form-select @error('category') is-invalid @enderror" id="category" name="category" required>
-                                            <option value="DEVELOPMENT" {{ old('category', $module->category) === 'DEVELOPMENT' ? 'selected' : '' }}>Desarrollo</option>
-                                            <option value="DESIGN" {{ old('category', $module->category) === 'DESIGN' ? 'selected' : '' }}>Diseño</option>
-                                            <option value="TESTING" {{ old('category', $module->category) === 'TESTING' ? 'selected' : '' }}>Pruebas</option>
-                                            <option value="DOCUMENTATION" {{ old('category', $module->category) === 'DOCUMENTATION' ? 'selected' : '' }}>Documentación</option>
-                                            <option value="RESEARCH" {{ old('category', $module->category) === 'RESEARCH' ? 'selected' : '' }}>Investigación</option>
-                                            <option value="DEPLOYMENT" {{ old('category', $module->category) === 'DEPLOYMENT' ? 'selected' : '' }}>Despliegue</option>
-                                            <option value="MAINTENANCE" {{ old('category', $module->category) === 'MAINTENANCE' ? 'selected' : '' }}>Mantenimiento</option>
-                                            <option value="INTEGRATION" {{ old('category', $module->category) === 'INTEGRATION' ? 'selected' : '' }}>Integración</option>
+                                            @foreach($moduleCategories as $value => $label)
+                                            <option value="{{ $value }}" {{ old('category', $module->category) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                            @endforeach
                                         </select>
                                         @error('category')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -103,10 +94,9 @@
                                     <div class="col-md-3">
                                         <label for="priority" class="form-label fw-bold">Prioridad</label>
                                         <select class="form-select @error('priority') is-invalid @enderror" id="priority" name="priority" required>
-                                            <option value="LOW" {{ old('priority', $module->priority) === 'LOW' ? 'selected' : '' }}>Baja</option>
-                                            <option value="MEDIUM" {{ old('priority', $module->priority) === 'MEDIUM' ? 'selected' : '' }}>Media</option>
-                                            <option value="HIGH" {{ old('priority', $module->priority) === 'HIGH' ? 'selected' : '' }}>Alta</option>
-                                            <option value="URGENT" {{ old('priority', $module->priority) === 'URGENT' ? 'selected' : '' }}>Urgente</option>
+                                            @foreach($priorities as $value => $label)
+                                            <option value="{{ $value }}" {{ old('priority', $module->priority) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                            @endforeach
                                         </select>
                                         @error('priority')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -131,13 +121,6 @@
                                         <label for="depends_on" class="form-label fw-bold">Depende de</label>
                                         <select class="form-select @error('depends_on') is-invalid @enderror" id="depends_on" name="depends_on">
                                             <option value="">Sin dependencias</option>
-                                            @php
-                                                // Cargar módulos del mismo proyecto
-                                                $projectModules = \App\Models\Module::where('project_id', $module->project_id)
-                                                    ->where('id', '!=', $module->id)
-                                                    ->orderBy('name')
-                                                    ->get();
-                                            @endphp
                                             @foreach($projectModules as $otherModule)
                                             <option value="{{ $otherModule->id }}" {{ old('depends_on', $module->depends_on) == $otherModule->id ? 'selected' : '' }}>
                                                 {{ $otherModule->name }}
@@ -183,12 +166,10 @@
                         </div>
                         <div class="card-body">
                             @php
-                                // Cargar datos de forma segura
-                                $moduleTasks = $module->tasks ?? collect();
-                                $totalTasks = $moduleTasks->count();
-                                $completedTasks = $moduleTasks->where('status', 'DONE')->count();
-                                $totalTeams = $module->teams ? $module->teams->count() : 0;
-                                $totalDependents = $module->dependents ? $module->dependents->count() : 0;
+                                $totalTasks = $module->tasks->count();
+                                $completedTasks = $module->tasks->where('status', 'DONE')->count();
+                                $totalTeams = $module->teams->count();
+                                $totalDependents = $module->dependents->count();
                                 $progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
                             @endphp
                             
@@ -280,7 +261,7 @@
                                                     <p class="text-muted small mb-2">{{ Str::limit($team->description ?? '', 80) }}</p>
                                                     <div class="d-flex gap-2 mb-2">
                                                         <span class="badge bg-light text-dark">
-                                                            {{ $team->users ? $team->users->where('pivot.is_active', true)->count() : 0 }} miembros
+                                                            {{ $team->active_users_count ?? 0 }} miembros
                                                         </span>
                                                         @if($team->is_general)
                                                         <span class="badge bg-warning text-dark">General</span>
@@ -357,7 +338,7 @@
                                     </h5>
                                 </div>
                                 <div class="col-auto">
-                                    <a href="{{ route('admin.tasks.create') }}" class="btn btn-success btn-sm">
+                                    <a href="{{ route('admin.tasks.create', $module) }}" class="btn btn-success btn-sm">
                                         <i class="bi bi-plus-lg me-1"></i>Nueva Tarea
                                     </a>
                                 </div>
@@ -378,7 +359,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($moduleTasks as $task)
+                                        @foreach($module->tasks as $task)
                                         <tr>
                                             <td>
                                                 <div class="fw-bold">{{ Str::limit($task->title, 40) }}</div>
@@ -387,11 +368,11 @@
                                             <td>
                                                 @php
                                                 $statusColors = [
-                                                'PENDING' => 'secondary',
-                                                'ACTIVE' => 'warning',
-                                                'DONE' => 'success',
-                                                'PAUSED' => 'info',
-                                                'CANCELLED' => 'danger'
+                                                    'PENDING' => 'secondary',
+                                                    'ACTIVE' => 'warning',
+                                                    'DONE' => 'success',
+                                                    'PAUSED' => 'info',
+                                                    'CANCELLED' => 'danger'
                                                 ];
                                                 @endphp
                                                 <span class="badge bg-{{ $statusColors[$task->status] ?? 'secondary' }}">
@@ -401,10 +382,10 @@
                                             <td>
                                                 @php
                                                 $priorityColors = [
-                                                'LOW' => 'secondary',
-                                                'MEDIUM' => 'info',
-                                                'HIGH' => 'warning',
-                                                'URGENT' => 'danger'
+                                                    'LOW' => 'secondary',
+                                                    'MEDIUM' => 'info',
+                                                    'HIGH' => 'warning',
+                                                    'URGENT' => 'danger'
                                                 ];
                                                 @endphp
                                                 <span class="badge bg-{{ $priorityColors[$task->priority] ?? 'secondary' }}">
@@ -445,7 +426,7 @@
                                 <i class="bi bi-check-square display-1 text-muted"></i>
                                 <h5 class="text-muted">No hay tareas creadas</h5>
                                 <p class="text-muted">Crea tareas para este módulo para organizar el trabajo</p>
-                                <a href="{{ route('admin.tasks.create') }}" class="btn btn-success">
+                                <a href="{{ route('admin.tasks.create', $module) }}" class="btn btn-success">
                                     <i class="bi bi-plus-lg me-2"></i>Crear Primera Tarea
                                 </a>
                             </div>
@@ -466,18 +447,6 @@
                 <h5 class="modal-title">Asignar Equipo al Módulo</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            @php
-                // Obtener equipos disponibles del mismo proyecto que no estén ya asignados
-                $availableTeams = \App\Models\Team::where('project_id', $module->project_id)
-                    ->whereDoesntHave('modules', function ($query) use ($module) {
-                        $query->where('module_id', $module->id);
-                    })
-                    ->with(['users' => function($query) {
-                        $query->where('is_active', true);
-                    }])
-                    ->orderBy('name')
-                    ->get();
-            @endphp
             
             <form method="POST" action="#" id="assignTeamForm">
                 @csrf
@@ -491,7 +460,7 @@
                             @foreach($availableTeams as $team)
                             <option value="{{ $team->id }}" data-route="{{ route('admin.teams.assign-module', $team) }}">
                                 {{ $team->name }}
-                                <small>({{ $team->users->count() }} miembros{{ $team->is_general ? ' - General' : '' }})</small>
+                                <small>({{ $team->active_users_count ?? 0 }} miembros{{ $team->is_general ? ' - General' : '' }})</small>
                             </option>
                             @endforeach
                         </select>
@@ -598,8 +567,12 @@
         const toasts = document.querySelectorAll('.toast');
         toasts.forEach(function(toast) {
             setTimeout(function() {
-                const bsToast = new bootstrap.Toast(toast);
-                bsToast.hide();
+                try {
+                    const bsToast = new bootstrap.Toast(toast);
+                    bsToast.hide();
+                } catch (e) {
+                    console.log('Error hiding toast:', e);
+                }
             }, 5000);
         });
     });

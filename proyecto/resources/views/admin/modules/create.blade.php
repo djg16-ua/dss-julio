@@ -404,72 +404,81 @@
 <script>
     let teamIndex = 1;
     
-    // Datos para JavaScript - cargar todos los equipos del sistema
-    const allProjects = @json($projects);
-    const allTeams = @json(\App\Models\Team::with(['users' => function($query) { $query->where('is_active', true); }])->orderBy('name')->get());
+    // OPTIMIZACIÓN: Solo cargar datos básicos inicialmente
+    const allProjects = @json($projects->map(function($project) {
+        return [
+            'id' => $project->id,
+            'title' => $project->title,
+            'status' => $project->status
+        ];
+    }));
 
-    // Cargar módulos del proyecto seleccionado para dependencias
-    function loadProjectModules(projectId) {
-        const dependsOnSelect = document.getElementById('depends_on');
-        dependsOnSelect.innerHTML = '<option value="">Sin dependencias</option>';
+    // NO cargar todos los equipos de una vez - usar AJAX cuando sea necesario
+    let projectTeamsCache = {};
 
-        if (projectId) {
-            // Buscar proyecto específico y simular módulos vacíos (ya que es creación)
-            const project = allProjects.find(p => p.id == projectId);
-            if (project) {
-                // En creación, no hay módulos previos para mostrar como dependencias
-                // El select queda solo con "Sin dependencias"
-                console.log(`Proyecto seleccionado: ${project.title}`);
-            }
-        }
-    }
-
-    // Cargar equipos del proyecto seleccionado
+    // Función optimizada para cargar equipos por proyecto via AJAX
     function loadProjectTeams(projectId) {
-        const teamsSection = document.getElementById('teams-section');
-        const noTeamsMessage = document.getElementById('no-teams-message');
-        const infoAlert = document.querySelector('.alert-info');
-        
         if (!projectId) {
-            // No hay proyecto seleccionado
-            teamsSection.style.display = 'none';
-            noTeamsMessage.style.display = 'none';
-            if (infoAlert) {
-                infoAlert.style.display = 'block';
-                infoAlert.innerHTML = '<i class="bi bi-info-circle me-2"></i><strong>Selecciona primero un proyecto</strong> para ver los equipos disponibles.';
-            }
+            clearTeamSelects();
             return;
         }
 
-        // Mostrar loading temporal
+        // Mostrar loading
+        showTeamsLoading();
+
+        // Verificar cache
+        if (projectTeamsCache[projectId]) {
+            updateTeamSelects(projectTeamsCache[projectId]);
+            return;
+        }
+
+        // Hacer petición AJAX optimizada
+        fetch(`/admin/projects/${projectId}/teams`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error cargando equipos');
+                }
+                return response.json();
+            })
+            .then(teams => {
+                // Guardar en cache
+                projectTeamsCache[projectId] = teams;
+                updateTeamSelects(teams);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showTeamsError();
+            });
+    }
+
+    function showTeamsLoading() {
+        const infoAlert = document.querySelector('.alert-info');
         if (infoAlert) {
             infoAlert.style.display = 'block';
             infoAlert.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Cargando equipos del proyecto...';
         }
-
-        // Filtrar equipos por proyecto (sin AJAX)
-        setTimeout(() => {
-            const projectTeams = allTeams.filter(team => team.project_id == projectId);
-            updateTeamsInterface(projectTeams);
-        }, 300); // Pequeño delay para mostrar el loading
     }
 
-    function updateTeamsInterface(teams) {
-        const teamsSection = document.getElementById('teams-section');
-        const noTeamsMessage = document.getElementById('no-teams-message');
+    function showTeamsError() {
         const infoAlert = document.querySelector('.alert-info');
+        if (infoAlert) {
+            infoAlert.style.display = 'block';
+            infoAlert.className = 'alert alert-danger';
+            infoAlert.innerHTML = '<i class="bi bi-exclamation-circle me-2"></i>Error cargando equipos. Intenta recargar la página.';
+        }
+    }
+
+    function clearTeamSelects() {
+        const teamSelects = document.querySelectorAll('.team-select');
+        teamSelects.forEach(select => {
+            select.innerHTML = '<option value="">Seleccionar equipo...</option>';
+        });
         
-        if (teams.length > 0) {
-            // Hay equipos disponibles
-            updateTeamSelects(teams);
-            teamsSection.style.display = 'block';
-            noTeamsMessage.style.display = 'none';
-            if (infoAlert) infoAlert.style.display = 'none';
-        } else {
-            // No hay equipos disponibles
-            teamsSection.style.display = 'none';
-            noTeamsMessage.style.display = 'block';
-            if (infoAlert) infoAlert.style.display = 'none';
+        const infoAlert = document.querySelector('.alert-info');
+        if (infoAlert) {
+            infoAlert.style.display = 'block';
+            infoAlert.className = 'alert alert-info';
+            infoAlert.innerHTML = '<i class="bi bi-info-circle me-2"></i><strong>Selecciona primero un proyecto</strong> para ver los equipos disponibles.';
         }
     }
 
@@ -480,19 +489,45 @@
             const currentValue = select.value;
             select.innerHTML = '<option value="">Seleccionar equipo...</option>';
             
-            teams.forEach(team => {
-                const option = document.createElement('option');
-                option.value = team.id;
-                const activeUsersCount = team.users ? team.users.filter(user => user.pivot?.is_active !== false).length : 0;
-                option.textContent = `${team.name} (${activeUsersCount} miembros${team.is_general ? ' - General' : ''})`;
-                select.appendChild(option);
-            });
-            
-            // Restaurar valor si existía
-            if (currentValue) {
-                select.value = currentValue;
+            if (teams && teams.length > 0) {
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    const activeUsersCount = team.active_users_count || 0;
+                    option.textContent = `${team.name} (${activeUsersCount} miembros${team.is_general ? ' - General' : ''})`;
+                    select.appendChild(option);
+                });
+                
+                // Restaurar valor si existía
+                if (currentValue) {
+                    select.value = currentValue;
+                }
+                
+                // Ocultar mensaje de info
+                const infoAlert = document.querySelector('.alert-info');
+                if (infoAlert) infoAlert.style.display = 'none';
+            } else {
+                // No hay equipos
+                const infoAlert = document.querySelector('.alert-info');
+                if (infoAlert) {
+                    infoAlert.style.display = 'block';
+                    infoAlert.className = 'alert alert-warning';
+                    infoAlert.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Este proyecto no tiene equipos disponibles.';
+                }
             }
         });
+    }
+
+    // Cargar módulos del proyecto seleccionado para dependencias (simplificado)
+    function loadProjectModules(projectId) {
+        const dependsOnSelect = document.getElementById('depends_on');
+        dependsOnSelect.innerHTML = '<option value="">Sin dependencias</option>';
+
+        if (projectId) {
+            // Para crear un módulo nuevo, no hay módulos previos del mismo proyecto
+            // El select queda solo con "Sin dependencias"
+            console.log(`Proyecto seleccionado: ${projectId}`);
+        }
     }
 
     function addTeam() {
@@ -512,22 +547,35 @@
                 </button>
             </div>
         </div>
-    `;
+        `;
 
         container.insertAdjacentHTML('beforeend', newTeamHtml);
         teamIndex++;
         
         // Cargar equipos para el nuevo select si hay proyecto seleccionado
         const projectId = document.getElementById('project_id').value;
-        if (projectId) {
-            const projectTeams = allTeams.filter(team => team.project_id == projectId);
-            updateTeamSelects(projectTeams);
+        if (projectId && projectTeamsCache[projectId]) {
+            // Solo actualizar el nuevo select
+            const newSelect = container.querySelector('.team-assignment-row:last-child .team-select');
+            const teams = projectTeamsCache[projectId];
+            
+            if (teams && teams.length > 0) {
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    const activeUsersCount = team.active_users_count || 0;
+                    option.textContent = `${team.name} (${activeUsersCount} miembros${team.is_general ? ' - General' : ''})`;
+                    newSelect.appendChild(option);
+                });
+            }
         }
     }
 
     function removeTeam(button) {
         const teamRow = button.closest('.team-assignment-row');
-        teamRow.remove();
+        if (teamRow) {
+            teamRow.remove();
+        }
     }
 
     // Auto-hide toasts after 5 seconds
@@ -535,17 +583,59 @@
         const toasts = document.querySelectorAll('.toast');
         toasts.forEach(function(toast) {
             setTimeout(function() {
-                const bsToast = new bootstrap.Toast(toast);
-                bsToast.hide();
+                try {
+                    const bsToast = new bootstrap.Toast(toast);
+                    bsToast.hide();
+                } catch (e) {
+                    console.log('Error hiding toast:', e);
+                }
             }, 5000);
         });
 
-        // Listener para cambios en el proyecto
+        // Listener para cambios en el proyecto (con debounce para evitar múltiples llamadas)
+        let projectChangeTimeout;
         document.getElementById('project_id').addEventListener('change', function() {
             const projectId = this.value;
-            loadProjectModules(projectId);
-            loadProjectTeams(projectId);
+            
+            // Clear previous timeout
+            if (projectChangeTimeout) {
+                clearTimeout(projectChangeTimeout);
+            }
+            
+            // Set new timeout
+            projectChangeTimeout = setTimeout(() => {
+                loadProjectModules(projectId);
+                loadProjectTeams(projectId);
+            }, 300);
         });
+
+        // Prevenir envío múltiple del formulario
+        const form = document.querySelector('form');
+        if (form) {
+            let isSubmitting = false;
+            form.addEventListener('submit', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                isSubmitting = true;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Creando...';
+                }
+                
+                // Re-habilitar después de 10 segundos para evitar bloqueo permanente
+                setTimeout(() => {
+                    isSubmitting = false;
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Crear Módulo';
+                    }
+                }, 10000);
+            });
+        }
     });
 </script>
 @endpush
