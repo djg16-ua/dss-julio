@@ -7,6 +7,8 @@ use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\DashboardController;
 
@@ -183,6 +185,15 @@ Route::middleware('auth')->group(function () {
     // Rutas para gestión de equipos asignados a módulos
     Route::post('/project/{project}/modules/{module}/teams', [ModuleController::class, 'assignTeam'])->name('module.assign-team');
     Route::delete('/project/{project}/modules/{module}/teams/{team}', [ModuleController::class, 'removeTeam'])->name('module.remove-team');
+    Route::get('/project/{project}/modules/{module}/available-teams', [ModuleController::class, 'getAvailableTeams'])->name('module.available-teams');
+    
+    // Rutas para gestión de tareas en módulos
+    Route::post('/project/{project}/modules/{module}/tasks', [ModuleController::class, 'createTask'])->name('module.create-task');
+    Route::delete('/project/{project}/modules/{module}/tasks/{task}', [ModuleController::class, 'removeTask'])->name('module.remove-task');
+    Route::patch('/project/{project}/modules/{module}/tasks/{task}/status', [ModuleController::class, 'updateTaskStatus'])->name('module.update-task-status');
+    Route::patch('/project/{project}/modules/{module}/tasks/{task}/priority', [ModuleController::class, 'updateTaskPriority'])->name('module.update-task-priority');
+    Route::patch('/project/{project}/modules/{module}/tasks/{task}/assign', [ModuleController::class, 'assignTaskToUser'])->name('module.assign-task-user');
+    Route::get('/project/{project}/modules/{module}/team-members', [ModuleController::class, 'getModuleTeamMembers'])->name('module.team-members');
 });
 
 // ============================================
