@@ -264,7 +264,10 @@ class ProjectController extends Controller
         ]);
 
         // Estadísticas del proyecto
+        // Estadísticas del proyecto
         $generalTeam = $project->getGeneralTeam();
+        $projectMembers = $generalTeam ? $generalTeam->users()->where('team_user.is_active', true)->get() : collect();
+
         $projectStats = [
             'total_modules' => $project->modules->count(),
             'total_tasks' => $project->modules->sum(function($module) {
@@ -276,8 +279,10 @@ class ProjectController extends Controller
             'active_tasks' => $project->modules->sum(function($module) {
                 return $module->tasks->where('status', 'ACTIVE')->count();
             }),
-            'team_members' => $generalTeam ? $generalTeam->users->where('pivot.is_active', true)->count() : 0,
+            'team_members' => $projectMembers->count(),
         ];
+
+return view('project.show', compact('project', 'projectStats', 'projectMembers'));
 
         return view('project.show', compact('project', 'projectStats'));
     }

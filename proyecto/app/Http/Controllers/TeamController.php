@@ -613,4 +613,43 @@ class TeamController extends Controller
 
         return response()->json(['success' => 'Estado del módulo actualizado exitosamente']);
     }
+    /**
+     * Obtener módulos disponibles para asignar a un equipo
+     */
+    public function getAvailableModules(Request $request, Project $project, Team $team)
+    {
+        // Verificar que el usuario tiene acceso al proyecto
+        $this->checkProjectAccess($project);
+
+        // Verificar que el equipo pertenece al proyecto
+        if ($team->project_id !== $project->id) {
+            return response()->json(['error' => 'Equipo no encontrado en este proyecto'], 404);
+        }
+
+        // Obtener módulos del proyecto que no están asignados a este equipo
+        $query = $project->modules();
+        
+        // Filtrar por búsqueda si se proporciona
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('modules.name', 'like', "%{$search}%")
+                ->orWhere('modules.description', 'like', "%{$search}%");
+            });
+        }
+        
+        $projectModules = $query->get();
+        $assignedModuleIds = $team->modules()->pluck('modules.id')->toArray();
+        $availableModules = $projectModules->whereNotIn('id', $assignedModuleIds);
+
+        return response()->json($availableModules->map(function($module) {
+            return [
+                'id' => $module->id,
+                'name' => $module->name,
+                'description' => $module->description,
+                'status' => $module->status,
+                'priority' => $module->priority,
+            ];
+        })->values());
+    }
 }

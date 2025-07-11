@@ -162,6 +162,7 @@ Route::middleware('auth')->group(function () {
     
     // Rutas API para AJAX
     Route::get('/project/{project}/team/{team}/available-members', [TeamController::class, 'getAvailableMembers'])->name('team.available-members');
+    Route::get('/project/{project}/team/{team}/available-modules', [TeamController::class, 'getAvailableModules'])->name('team.available-modules');
 
     // Gestión de módulos en equipos
     Route::post('/project/{project}/team/{team}/modules', [TeamController::class, 'assignModule'])->name('team.assign-module');

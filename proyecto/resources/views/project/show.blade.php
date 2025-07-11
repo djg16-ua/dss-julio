@@ -201,7 +201,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">
                                     <i class="bi bi-people-fill text-primary me-2"></i>
-                                    Miembros del Proyecto (<span id="members-count">{{ $projectStats['team_members'] ?? 0 }}</span>)
+                                    Miembros del Proyecto (<span id="members-count">{{ $projectMembers->count() }}</span>)
                                 </h5>
                                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMemberModal">
                                     <i class="bi bi-person-plus me-1"></i>Añadir Miembro
@@ -211,10 +211,6 @@
                         <div class="card-body">
                             <div id="members-container">
                                 @php
-                                    $generalTeam = $project->getGeneralTeam();
-                                    $projectMembers = $generalTeam ? $generalTeam->users()->where('team_user.is_active', true)->get() : collect();
-                                    
-                                    // Orden jerárquico de roles
                                     $roleOrder = ['LEAD', 'SENIOR_DEV', 'DEVELOPER', 'JUNIOR_DEV', 'DESIGNER', 'TESTER', 'ANALYST', 'OBSERVER'];
                                     $sortedMembers = $projectMembers->sortBy(function($member) use ($roleOrder) {
                                         return array_search($member->pivot->role, $roleOrder);

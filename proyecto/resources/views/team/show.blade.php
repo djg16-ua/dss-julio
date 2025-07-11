@@ -63,12 +63,12 @@
                             @php
                                 $teamLead = $team->users->where('pivot.role', 'LEAD')->first();
                             @endphp
-                            @if($teamLead)
-                                <div class="mb-3">
-                                    <h6 class="fw-bold text-primary">
-                                        <i class="bi bi-star me-2"></i>Líder del Equipo
-                                    </h6>
-                                    <div class="d-flex align-items-center">
+                            <div class="mb-3">
+                                <h6 class="fw-bold text-primary">
+                                    <i class="bi bi-star me-2"></i>Líder del Equipo
+                                </h6>
+                                <div class="d-flex align-items-center">
+                                    @if($teamLead)
                                         <div class="avatar-circle me-2">
                                             {{ strtoupper(substr($teamLead->name, 0, 1)) }}
                                         </div>
@@ -80,9 +80,16 @@
                                             <br>
                                             <small class="text-muted">{{ $teamLead->email }}</small>
                                         </div>
-                                    </div>
+                                    @else
+                                        <div class="avatar-circle-empty me-2">
+                                            <div class="diagonal-line"></div>
+                                        </div>
+                                        <div>
+                                            <strong class="fst-italic">NO TEAM LEAD</strong>
+                                        </div>
+                                    @endif
                                 </div>
-                            @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -182,23 +189,37 @@
                                                                 $canEditRole = $isProjectCreator || $isAdmin || $isTeamLead;
                                                             @endphp
                                                             
-                                                            @if($canEditRole && $member->pivot->role !== 'LEAD')
-                                                                <select class="form-select form-select-sm role-select" 
-                                                                        data-member-id="{{ $member->id }}" 
-                                                                        style="max-width: 150px;">
-                                                                    <option value="SENIOR_DEV" {{ $member->pivot->role === 'SENIOR_DEV' ? 'selected' : '' }}>Senior Dev</option>
-                                                                    <option value="DEVELOPER" {{ $member->pivot->role === 'DEVELOPER' ? 'selected' : '' }}>Desarrollador</option>
-                                                                    <option value="JUNIOR_DEV" {{ $member->pivot->role === 'JUNIOR_DEV' ? 'selected' : '' }}>Junior Dev</option>
-                                                                    <option value="DESIGNER" {{ $member->pivot->role === 'DESIGNER' ? 'selected' : '' }}>Diseñador</option>
-                                                                    <option value="TESTER" {{ $member->pivot->role === 'TESTER' ? 'selected' : '' }}>Tester</option>
-                                                                    <option value="ANALYST" {{ $member->pivot->role === 'ANALYST' ? 'selected' : '' }}>Analista</option>
-                                                                    <option value="OBSERVER" {{ $member->pivot->role === 'OBSERVER' ? 'selected' : '' }}>Observador</option>
-                                                                </select>
-                                                            @else
-                                                                <span class="badge bg-{{ $member->pivot->role === 'LEAD' ? 'warning' : 'info' }}">
-                                                                    {{ $member->pivot->role }}
-                                                                </span>
-                                                            @endif
+                                                            <span class="badge bg-{{ $member->pivot->role === 'LEAD' ? 'warning' : 'info' }}">
+                                                                @switch($member->pivot->role)
+                                                                    @case('LEAD')
+                                                                        ⭐ Líder
+                                                                        @break
+                                                                    @case('SENIOR_DEV')
+                                                                        🚀 Senior Dev
+                                                                        @break
+                                                                    @case('DEVELOPER')
+                                                                        💻 Desarrollador
+                                                                        @break
+                                                                    @case('JUNIOR_DEV')
+                                                                        🌱 Junior Dev
+                                                                        @break
+                                                                    @case('DESIGNER')
+                                                                        🎨 Diseñador
+                                                                        @break
+                                                                    @case('TESTER')
+                                                                        🧪 Tester
+                                                                        @break
+                                                                    @case('ANALYST')
+                                                                        📊 Analista
+                                                                        @break
+                                                                    @case('OBSERVER')
+                                                                        👀 Observador
+                                                                        @break
+                                                                    @default
+                                                                        {{ $member->pivot->role }}
+                                                                @endswitch
+                                                            </span>
+
                                                             
                                                             @if($member->id === auth()->id())
                                                                 <span class="badge bg-success">Tú</span>
@@ -206,7 +227,19 @@
                                                         </div>
                                                     </div>
                                                     @if($canManageMembers && $member->pivot->role !== 'LEAD')
-                                                        <button type="button" class="btn btn-outline-danger btn-sm ms-2" 
+                                                        @php
+                                                            $teamLead = $team->users->where('pivot.role', 'LEAD')->first();
+                                                            $isTeamLead = $teamLead && $teamLead->id === $currentUser->id;
+                                                            $canEditRole = $isProjectCreator || $isAdmin || $isTeamLead;
+                                                        @endphp
+                                                        @if($canEditRole)
+                                                            <button type="button" class="btn btn-outline-primary btn-sm ms-1" 
+                                                                    onclick="editMemberRole({{ $member->id }}, '{{ $member->pivot->role }}')"
+                                                                    title="Cambiar rol">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                        @endif
+                                                        <button type="button" class="btn btn-outline-danger btn-sm ms-1" 
                                                                 onclick="removeMember({{ $member->id }}, '{{ $member->name }}')"
                                                                 title="Desasignar del equipo">
                                                             <i class="bi bi-x"></i>
@@ -251,16 +284,19 @@
                                     <div class="row g-3">
                                         @foreach($team->modules as $module)
                                             <div class="col-lg-4 col-md-6" data-module-id="{{ $module->id }}">
-                                                <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+                                                <div class="d-flex align-items-center justify-content-between p-3 border rounded clickable-module" 
+                                                    onclick="window.location.href='{{ route('module.show', [$project, $module]) }}'"
+                                                    style="cursor: pointer;">
                                                     <div class="d-flex align-items-center flex-grow-1">
-                                                        <div class="me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                        <div class="me-3" style="width: 40px; height: 40px;">
                                                             <i class="bi bi-collection text-secondary" style="font-size: 1.5rem;"></i>
                                                         </div>
                                                         <div class="flex-grow-1">
                                                             <h6 class="mb-0">{{ $module->name }}</h6>
                                                             @if($module->description)
-                                                                <small class="text-muted">{{ Str::limit($module->description, 50) }}</small>
-                                                                <br>
+                                                                <small class="text-muted">{{ $module->description }}</small>
+                                                            @else
+                                                                <small class="text-muted">&nbsp;</small> <!-- Espacio en blanco para mantener altura -->
                                                             @endif
                                                             
                                                             @php
@@ -269,42 +305,42 @@
                                                                 $canEditStatus = $isProjectCreator || $isAdmin || $isTeamLead;
                                                             @endphp
                                                             
-                                                            @if($canEditStatus)
-                                                                <select class="form-select form-select-sm status-select" 
-                                                                        data-module-id="{{ $module->id }}" 
-                                                                        style="max-width: 150px;">
-                                                                    <option value="PENDING" {{ $module->status === 'PENDING' ? 'selected' : '' }}>⏳ Pendiente</option>
-                                                                    <option value="ACTIVE" {{ $module->status === 'ACTIVE' ? 'selected' : '' }}>✅ Activo</option>
-                                                                    <option value="DONE" {{ $module->status === 'DONE' ? 'selected' : '' }}>🎉 Completado</option>
-                                                                    <option value="PAUSED" {{ $module->status === 'PAUSED' ? 'selected' : '' }}>⏸️ Pausado</option>
-                                                                    <option value="CANCELLED" {{ $module->status === 'CANCELLED' ? 'selected' : '' }}>❌ Cancelado</option>
-                                                                </select>
-                                                            @else
-                                                                @switch($module->status)
-                                                                    @case('ACTIVE')
-                                                                        <span class="badge bg-success">✅ Activo</span>
-                                                                        @break
-                                                                    @case('PENDING')
-                                                                        <span class="badge bg-warning">⏳ Pendiente</span>
-                                                                        @break
-                                                                    @case('DONE')
-                                                                        <span class="badge bg-info">🎉 Completado</span>
-                                                                        @break
-                                                                    @case('PAUSED')
-                                                                        <span class="badge bg-secondary">⏸️ Pausado</span>
-                                                                        @break
-                                                                    @case('CANCELLED')
-                                                                        <span class="badge bg-danger">❌ Cancelado</span>
-                                                                        @break
-                                                                    @default
-                                                                        <span class="badge bg-light text-dark">{{ $module->status }}</span>
-                                                                @endswitch
-                                                            @endif
+                                                            @switch($module->status)
+                                                                @case('ACTIVE')
+                                                                    <span class="badge bg-success">✅ Activo</span>
+                                                                    @break
+                                                                @case('PENDING')
+                                                                    <span class="badge bg-warning">⏳ Pendiente</span>
+                                                                    @break
+                                                                @case('DONE')
+                                                                    <span class="badge bg-info">🎉 Completado</span>
+                                                                    @break
+                                                                @case('PAUSED')
+                                                                    <span class="badge bg-secondary">⏸️ Pausado</span>
+                                                                    @break
+                                                                @case('CANCELLED')
+                                                                    <span class="badge bg-danger">❌ Cancelado</span>
+                                                                    @break
+                                                                @default
+                                                                    <span class="badge bg-light text-dark">{{ $module->status }}</span>
+                                                            @endswitch
                                                         </div>
                                                     </div>
                                                     @if($canManageMembers)
-                                                        <button type="button" class="btn btn-outline-danger btn-sm ms-2" 
-                                                                onclick="removeModule({{ $module->id }}, '{{ $module->name }}')"
+                                                        @php
+                                                            $teamLead = $team->users->where('pivot.role', 'LEAD')->first();
+                                                            $isTeamLead = $teamLead && $teamLead->id === $currentUser->id;
+                                                            $canEditStatus = $isProjectCreator || $isAdmin || $isTeamLead;
+                                                        @endphp
+                                                        @if($canEditStatus)
+                                                            <button type="button" class="btn btn-outline-primary btn-sm ms-1" 
+                                                                    onclick="event.stopPropagation(); editModuleStatus({{ $module->id }}, '{{ $module->status }}')"
+                                                                    title="Cambiar estado">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                        @endif
+                                                        <button type="button" class="btn btn-outline-danger btn-sm ms-1" 
+                                                                onclick="event.stopPropagation(); removeModule({{ $module->id }}, '{{ $module->name }}')"
                                                                 title="Desasignar módulo">
                                                             <i class="bi bi-x"></i>
                                                         </button>
@@ -469,32 +505,21 @@
                     <div class="mb-3">
                         <label for="module-select" class="form-label">Seleccionar Módulo</label>
                         <select class="form-select" id="module-select">
-                            <option value="">Selecciona un módulo...</option>
-                            @php
-                                $availableModules = $project->modules->whereNotIn('id', $team->modules->pluck('id'));
-                            @endphp
-                            @foreach($availableModules as $module)
-                                <option value="{{ $module->id }}">
-                                    {{ $module->name }}
-                                    @if($module->description)
-                                        - {{ Str::limit($module->description, 60) }}
-                                    @endif
-                                </option>
-                            @endforeach
+                            <option value="">Cargando módulos...</option>
                         </select>
-                        @if($availableModules->count() === 0)
-                            <div class="form-text text-warning">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Todos los módulos del proyecto ya están asignados a este equipo
-                            </div>
-                        @endif
+                        <div id="modules-loading" class="form-text text-muted" style="display: none;">
+                            <i class="bi bi-arrow-repeat me-1"></i>Cargando módulos disponibles...
+                        </div>
+                        <div id="no-modules-available" class="form-text text-warning" style="display: none;">
+                            <i class="bi bi-info-circle me-1"></i>
+                            No hay módulos disponibles para asignar
+                        </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="confirmAssignModule" 
-                        {{ $availableModules->count() === 0 ? 'disabled' : '' }}>
+                <button type="button" class="btn btn-primary" id="confirmAssignModule" disabled>
                     <span class="spinner-border spinner-border-sm me-2" role="status" style="display: none;"></span>
                     Asignar Módulo
                 </button>
@@ -547,6 +572,28 @@ let selectedModuleId = null;
 // Variables de permisos desde PHP (CORREGIDAS)
 const canManageMembers = @json($canManageMembers ?? false);
 const canEditStatus = @json(($isProjectCreator ?? false) || ($isAdmin ?? false) || ($isTeamLead ?? false));
+
+// Manejo del modal de asignar módulo (carga y limpieza)
+const assignModuleModal = document.getElementById('assignModuleModal');
+if (assignModuleModal) {
+    // Cargar módulos cuando se abre el modal
+    assignModuleModal.addEventListener('show.bs.modal', function() {
+        loadAvailableModules();
+    });
+    
+    // Limpiar cuando se cierra el modal
+    assignModuleModal.addEventListener('hidden.bs.modal', function() {
+        const moduleSelect = document.getElementById('module-select');
+        const confirmButton = document.getElementById('confirmAssignModule');
+        
+        if (moduleSelect) {
+            moduleSelect.value = '';
+            moduleSelect.disabled = false;
+            moduleSelect.innerHTML = '<option value="">Cargando módulos...</option>';
+        }
+        if (confirmButton) confirmButton.disabled = true;
+    });
+}
 
 // Debug: verificar permisos
 console.log('Permisos:', {canManageMembers, canEditStatus});
@@ -719,12 +766,16 @@ function checkIfNoModules() {
 // Búsqueda de miembros para asignar
 let searchTimeout;
 const memberSearchInput = document.getElementById('member-search');
+console.log('Input de búsqueda encontrado:', memberSearchInput);
 if (memberSearchInput) {
+    console.log('Event listener añadido correctamente');
     memberSearchInput.addEventListener('input', function() {
+        console.log('Input event triggered, valor:', this.value);
         const searchTerm = this.value.trim();
         clearTimeout(searchTimeout);
         
         if (searchTerm.length < 2) {
+            console.log('Término muy corto, limpiando resultados');
             document.getElementById('search-results').innerHTML = '';
             document.getElementById('selected-user').style.display = 'none';
             document.getElementById('confirmAssignMember').disabled = true;
@@ -733,10 +784,13 @@ if (memberSearchInput) {
         }
         
         searchTimeout = setTimeout(() => {
+            console.log('Ejecutando búsqueda para:', searchTerm);
             searchMembers(searchTerm);
         }, 300);
     });
-}
+} else {
+    console.error('No se encontró el input de búsqueda con ID member-search');
+}const url = `{{ route('team.available-members', [$project, $team]) }}?search=${encodeURIComponent(term)}`;
 
 function searchMembers(term) {
     const resultsContainer = document.getElementById('search-results');
@@ -748,8 +802,10 @@ function searchMembers(term) {
             <span class="ms-2">Buscando miembros...</span>
         </div>
     `;
-    
+
     const url = `{{ route('team.available-members', [$project, $team]) }}?search=${encodeURIComponent(term)}`;
+    console.log('URL completa de búsqueda:', url);
+    console.log('Término de búsqueda:', term);
     console.log('URL búsqueda:', url);
     
     fetch(url, {
@@ -1079,17 +1135,6 @@ if (assignMemberModal) {
     });
 }
 
-const assignModuleModal = document.getElementById('assignModuleModal');
-if (assignModuleModal) {
-    assignModuleModal.addEventListener('hidden.bs.modal', function() {
-        const moduleSelect = document.getElementById('module-select');
-        const confirmButton = document.getElementById('confirmAssignModule');
-        
-        if (moduleSelect) moduleSelect.value = '';
-        if (confirmButton) confirmButton.disabled = false;
-    });
-}
-
 // Habilitar/deshabilitar botón de asignar módulo
 const moduleSelect = document.getElementById('module-select');
 if (moduleSelect) {
@@ -1099,6 +1144,201 @@ if (moduleSelect) {
             button.disabled = !this.value;
         }
     });
+}
+
+function editMemberRole(memberId, currentRole) {
+    const roles = {
+        'SENIOR_DEV': '🚀 Senior Dev',
+        'DEVELOPER': '💻 Desarrollador', 
+        'JUNIOR_DEV': '🌱 Junior Dev',
+        'DESIGNER': '🎨 Diseñador',
+        'TESTER': '🧪 Tester',
+        'ANALYST': '📊 Analista',
+        'OBSERVER': '👀 Observador'
+    };
+    
+    let options = '';
+    for (const [value, label] of Object.entries(roles)) {
+        const selected = value === currentRole ? 'selected' : '';
+        options += `<option value="${value}" ${selected}>${label}</option>`;
+    }
+    
+    const selectHtml = `
+        <select class="form-select form-select-sm" id="role-selector-${memberId}">
+            ${options}
+        </select>
+        <div class="mt-2">
+            <button class="btn btn-success btn-sm me-1" onclick="saveRole(${memberId})">
+                <i class="bi bi-check"></i>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="cancelEdit(${memberId}, 'role')">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+    `;
+    
+    const memberCard = document.querySelector(`[data-member-id="${memberId}"] .badge`);
+    const originalContent = memberCard.outerHTML;
+    memberCard.outerHTML = `<div class="temp-editor" data-original='${originalContent.replace(/'/g, "&apos;")}'>${selectHtml}</div>`;
+}
+
+function editModuleStatus(moduleId, currentStatus) {
+    const statuses = {
+        'PENDING': '⏳ Pendiente',
+        'ACTIVE': '✅ Activo',
+        'DONE': '🎉 Completado',
+        'PAUSED': '⏸️ Pausado',
+        'CANCELLED': '❌ Cancelado'
+    };
+    
+    let options = '';
+    for (const [value, label] of Object.entries(statuses)) {
+        const selected = value === currentStatus ? 'selected' : '';
+        options += `<option value="${value}" ${selected}>${label}</option>`;
+    }
+    
+    const selectHtml = `
+        <select class="form-select form-select-sm" id="status-selector-${moduleId}">
+            ${options}
+        </select>
+        <div class="mt-2">
+            <button class="btn btn-success btn-sm me-1" onclick="saveStatus(${moduleId})">
+                <i class="bi bi-check"></i>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="cancelEdit(${moduleId}, 'status')">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+    `;
+    
+    const moduleCard = document.querySelector(`[data-module-id="${moduleId}"] .badge`);
+    const originalContent = moduleCard.outerHTML;
+    moduleCard.outerHTML = `<div class="temp-editor" data-original='${originalContent.replace(/'/g, "&apos;")}'>${selectHtml}</div>`;
+}
+
+function saveRole(memberId) {
+    const selector = document.getElementById(`role-selector-${memberId}`);
+    const newRole = selector.value;
+    
+    const url = `{{ route('team.update-member-role', [$project, $team, ':memberId']) }}`.replace(':memberId', memberId);
+    
+    fetch(url, {
+        method: 'PATCH',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ role: newRole })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Error desconocido'));
+            cancelEdit(memberId, 'role');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al actualizar el rol');
+        cancelEdit(memberId, 'role');
+    });
+}
+
+function saveStatus(moduleId) {
+    const selector = document.getElementById(`status-selector-${moduleId}`);
+    const newStatus = selector.value;
+    
+    const url = `{{ route('team.update-module-status', [$project, $team, ':moduleId']) }}`.replace(':moduleId', moduleId);
+    
+    fetch(url, {
+        method: 'PATCH',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Error desconocido'));
+            cancelEdit(moduleId, 'status');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al actualizar el estado');
+        cancelEdit(moduleId, 'status');
+    });
+}
+
+function cancelEdit(id, type) {
+    const editor = document.querySelector('.temp-editor');
+    if (editor) {
+        const originalContent = editor.dataset.original.replace(/&apos;/g, "'");
+        editor.outerHTML = originalContent;
+    }
+}
+
+function loadAvailableModules() {
+    const moduleSelect = document.getElementById('module-select');
+    const loadingText = document.getElementById('modules-loading');
+    const noModulesText = document.getElementById('no-modules-available');
+    const confirmButton = document.getElementById('confirmAssignModule');
+    
+    if (!moduleSelect) return;
+    
+    // Mostrar estado de carga
+    moduleSelect.innerHTML = '<option value="">Cargando módulos...</option>';
+    moduleSelect.disabled = true;
+    if (loadingText) loadingText.style.display = 'block';
+    if (noModulesText) noModulesText.style.display = 'none';
+    if (confirmButton) confirmButton.disabled = true;
+    
+    // Obtener módulos disponibles
+    fetch(`{{ route('team.available-modules', [$project, $team]) }}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(modules => {
+            // Limpiar select
+            moduleSelect.innerHTML = '<option value="">Selecciona un módulo...</option>';
+            
+            if (modules.length > 0) {
+                modules.forEach(module => {
+                    const option = document.createElement('option');
+                    option.value = module.id;
+                    option.textContent = module.name;
+                    if (module.description) {
+                        option.textContent += ` - ${module.description.substring(0, 60)}`;
+                    }
+                    moduleSelect.appendChild(option);
+                });
+                
+                if (noModulesText) noModulesText.style.display = 'none';
+            } else {
+                if (noModulesText) noModulesText.style.display = 'block';
+            }
+            
+            moduleSelect.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error cargando módulos:', error);
+            moduleSelect.innerHTML = '<option value="">Error al cargar módulos</option>';
+            moduleSelect.disabled = false;
+        })
+        .finally(() => {
+            if (loadingText) loadingText.style.display = 'none';
+        });
 }
 </script>
 @endpush
@@ -1193,6 +1433,83 @@ if (moduleSelect) {
 .role-select:focus, .status-select:focus {
     border-color: #4e73df;
     box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.clickable-module:hover {
+    background-color: #f8f9fc !important;
+    transform: translateX(3px);
+}
+
+.clickable-module {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Hacer que las cards de módulos tengan altura uniforme manteniendo estructura original */
+[data-module-id] .d-flex {
+    min-height: 100px; /* Altura mínima uniforme */
+    align-items: flex-start !important; /* Todo alineado arriba */
+}
+
+/* Contenedor del contenido principal (título, descripción, badge) */
+[data-module-id] .flex-grow-1 {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* Título del módulo */
+[data-module-id] .flex-grow-1 h6 {
+    margin-bottom: 0.5rem !important;
+    font-weight: 600;
+}
+
+/* Limitar descripción a 2 líneas */
+[data-module-id] .text-muted {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+    max-height: 2.8em; /* 2 líneas × 1.4 line-height */
+    margin-bottom: 0.5rem !important;
+}
+
+/* Badge al final */
+[data-module-id] .badge {
+    margin-top: auto;
+    align-self: flex-start;
+}
+
+/* Avatar vacío para cuando no hay líder */
+.avatar-circle-empty {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #6c757d; /* Gris */
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Línea diagonal roja */
+.diagonal-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, 
+        transparent 46%, 
+        #dc3545 46%, 
+        #dc3545 54%, 
+        transparent 54%
+    );
 }
 </style>
 @endsection
