@@ -583,14 +583,6 @@
                                                 <i class="bi bi-check2-square text-primary me-2"></i>
                                                 Tareas del Proyecto (<span id="tasks-count">{{ $projectStats['total_tasks'] ?? 0 }}</span> total)
                                             </h5>
-                                            <div class="d-flex gap-2">
-                                                <a href="{{ route('task.index', $project) }}" class="btn btn-outline-info btn-sm">
-                                                    <i class="bi bi-list me-1"></i>Ver Todo
-                                                </a>
-                                                <a href="{{ route('task.create', $project) }}" class="btn btn-primary btn-sm">
-                                                    <i class="bi bi-plus-circle me-1"></i>Crear Tarea
-                                                </a>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
