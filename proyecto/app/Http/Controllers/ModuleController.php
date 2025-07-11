@@ -233,6 +233,18 @@ class ModuleController extends Controller
             abort(404, 'Módulo no encontrado en este proyecto.');
         }
 
+        // Solo el creador del proyecto o admin pueden editar módulos
+        $currentUser = Auth::user();
+        $isProjectCreator = $project->created_by === $currentUser->id;
+        $isAdmin = $currentUser->role === 'ADMIN';
+        
+        if (!$isProjectCreator && !$isAdmin) {
+            abort(403, 'No tienes permisos para editar este módulo.');
+        }
+
+        // Cargar relaciones necesarias
+        $module->load(['teams.users', 'tasks']);
+
         return view('module.edit', compact('project', 'module'));
     }
 
@@ -247,6 +259,15 @@ class ModuleController extends Controller
         // Verificar que el módulo pertenece al proyecto
         if ($module->project_id !== $project->id) {
             abort(404, 'Módulo no encontrado en este proyecto.');
+        }
+
+        // Solo el creador del proyecto o admin pueden editar módulos
+        $currentUser = Auth::user();
+        $isProjectCreator = $project->created_by === $currentUser->id;
+        $isAdmin = $currentUser->role === 'ADMIN';
+        
+        if (!$isProjectCreator && !$isAdmin) {
+            abort(403, 'No tienes permisos para editar este módulo.');
         }
 
         $validator = Validator::make($request->all(), [

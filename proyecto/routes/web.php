@@ -163,8 +163,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/project/{project}/team/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('team.remove-member');
     Route::patch('/project/{project}/team/{team}/members/{user}/role', [TeamController::class, 'updateMemberRole'])->name('team.update-member-role');
     
-    // Rutas API para AJAX (ORDEN IMPORTANTE: las rutas específicas van ANTES que las que usan parámetros)
-    Route::get('/project/{project}/team/available-members-create', [TeamController::class, 'getAvailableMembersForCreate'])->name('team.available-members-create');
+    // RUTAS API PARA AJAX - ORDEN CRÍTICO: las rutas específicas van ANTES que las que usan parámetros
+    // Rutas específicas para crear equipos
+    Route::get('/project/{project}/team/create/available-members', [TeamController::class, 'getAvailableMembersForCreate'])->name('team.available-members-create');
+    Route::get('/project/{project}/team/0/available-modules', [TeamController::class, 'getAvailableModules'])->name('team.available-modules-create');
+    
+    // Rutas específicas para editar equipos
+    Route::get('/project/{project}/team/{team}/edit/available-members', [TeamController::class, 'getAvailableMembersForEdit'])->name('team.available-members-edit');
+    Route::get('/project/{project}/team/{team}/edit/available-modules', [TeamController::class, 'getAvailableModulesForEdit'])->name('team.available-modules-edit');
+    
+    // Rutas generales para equipos existentes
     Route::get('/project/{project}/team/{team}/available-members', [TeamController::class, 'getAvailableMembers'])->name('team.available-members');
     Route::get('/project/{project}/team/{team}/available-modules', [TeamController::class, 'getAvailableModules'])->name('team.available-modules');
 

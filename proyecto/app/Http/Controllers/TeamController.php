@@ -218,6 +218,24 @@ class TeamController extends Controller
             abort(403, 'No se puede editar el equipo general del proyecto.');
         }
 
+        // Solo el creador del proyecto o admin pueden editar equipos
+        $currentUser = Auth::user();
+        $isProjectCreator = $project->created_by === $currentUser->id;
+        $isAdmin = $currentUser->role === 'ADMIN';
+        
+        if (!$isProjectCreator && !$isAdmin) {
+            abort(403, 'No tienes permisos para editar este equipo.');
+        }
+
+        // Cargar relaciones necesarias - FORMA CORRECTA
+        $team->load([
+            'users' => function($query) {
+                $query->withPivot('role', 'joined_at', 'is_active')
+                      ->where('team_user.is_active', true);
+            },
+            'modules'
+        ]);
+
         return view('team.edit', compact('project', 'team'));
     }
 
@@ -239,9 +257,24 @@ class TeamController extends Controller
             abort(403, 'No se puede editar el equipo general del proyecto.');
         }
 
+        // Solo el creador del proyecto o admin pueden editar equipos
+        $currentUser = Auth::user();
+        $isProjectCreator = $project->created_by === $currentUser->id;
+        $isAdmin = $currentUser->role === 'ADMIN';
+        
+        if (!$isProjectCreator && !$isAdmin) {
+            abort(403, 'No tienes permisos para editar este equipo.');
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
+            'members' => 'nullable|array',
+            'members.*' => 'exists:users,id',
+            'roles' => 'nullable|array',
+            'roles.*' => 'in:LEAD,SENIOR_DEV,DEVELOPER,JUNIOR_DEV,DESIGNER,TESTER,ANALYST,OBSERVER',
+            'modules' => 'nullable|array',
+            'modules.*' => 'exists:modules,id',
         ]);
 
         // Validar que el nombre no esté duplicado en el proyecto (excluyendo el equipo actual)
@@ -257,16 +290,66 @@ class TeamController extends Controller
                 ->withInput();
         }
 
+        DB::beginTransaction();
+
         try {
+            // Actualizar información básica del equipo
             $team->update([
                 'name' => $request->name,
                 'description' => $request->description,
             ]);
 
+            // Gestionar miembros del equipo
+            if ($request->has('members') && is_array($request->members)) {
+                // Obtener miembros del proyecto (equipo general)
+                $generalTeam = $project->getGeneralTeam();
+                $projectMemberIds = $generalTeam ? $generalTeam->users()->pluck('users.id')->toArray() : [];
+
+                // Desasociar todos los miembros actuales
+                $team->users()->detach();
+
+                // Añadir los nuevos miembros con sus roles
+                foreach ($request->members as $index => $userId) {
+                    // Solo permitir agregar usuarios que están en el proyecto
+                    if (in_array($userId, $projectMemberIds)) {
+                        $role = $request->roles[$index] ?? self::TEAM_ROLE_DEVELOPER;
+                        
+                        $team->users()->attach($userId, [
+                            'is_active' => true,
+                            'role' => $role,
+                            'joined_at' => now(),
+                        ]);
+                    }
+                }
+            } else {
+                // Si no se enviaron miembros, desasociar todos
+                $team->users()->detach();
+            }
+
+            // Gestionar módulos del equipo
+            if ($request->has('modules') && is_array($request->modules)) {
+                // Verificar que todos los módulos pertenecen al proyecto
+                $validModuleIds = [];
+                foreach ($request->modules as $moduleId) {
+                    if ($project->modules()->where('id', $moduleId)->exists()) {
+                        $validModuleIds[] = $moduleId;
+                    }
+                }
+
+                // Sincronizar módulos (esto reemplaza todos los módulos actuales)
+                $team->modules()->sync($validModuleIds);
+            } else {
+                // Si no se enviaron módulos, desasociar todos
+                $team->modules()->detach();
+            }
+
+            DB::commit();
+
             return redirect()->route('team.show', ['project' => $project, 'team' => $team])
                 ->with('success', 'Equipo actualizado exitosamente.');
 
         } catch (\Exception $e) {
+            DB::rollback();
             return redirect()->back()
                 ->withErrors(['error' => 'Error al actualizar el equipo: ' . $e->getMessage()])
                 ->withInput();
@@ -719,6 +802,85 @@ class TeamController extends Controller
         $projectModules = $query->get();
         $assignedModuleIds = $team->modules()->pluck('modules.id')->toArray();
         $availableModules = $projectModules->whereNotIn('id', $assignedModuleIds);
+
+        return response()->json($availableModules->map(function($module) {
+            return [
+                'id' => $module->id,
+                'name' => $module->name,
+                'description' => $module->description,
+                'status' => $module->status,
+                'priority' => $module->priority,
+            ];
+        })->values());
+    }
+
+    /**
+     * Obtener miembros disponibles para asignar a un equipo en edición
+     */
+    public function getAvailableMembersForEdit(Request $request, Project $project, Team $team)
+    {
+        // Verificar que el usuario tiene acceso al proyecto
+        $this->checkProjectAccess($project);
+
+        // Verificar que el equipo pertenece al proyecto
+        if ($team->project_id !== $project->id) {
+            return response()->json(['error' => 'Equipo no encontrado en este proyecto'], 404);
+        }
+
+        // Obtener todos los miembros del proyecto (equipo general)
+        $generalTeam = $project->getGeneralTeam();
+        if (!$generalTeam) {
+            return response()->json([]);
+        }
+
+        $query = $generalTeam->users()->where('team_user.is_active', true);
+        
+        // Filtrar por búsqueda si se proporciona
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                ->orWhere('users.email', 'like', "%{$search}%");
+            });
+        }
+        
+        $projectMembers = $query->get();
+
+        return response()->json($projectMembers->map(function($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ];
+        })->values());
+    }
+
+    /**
+     * Obtener módulos disponibles para asignar a un equipo en edición
+     */
+    public function getAvailableModulesForEdit(Request $request, Project $project, Team $team)
+    {
+        // Verificar que el usuario tiene acceso al proyecto
+        $this->checkProjectAccess($project);
+
+        // Verificar que el equipo pertenece al proyecto
+        if ($team->project_id !== $project->id) {
+            return response()->json(['error' => 'Equipo no encontrado en este proyecto'], 404);
+        }
+
+        // Obtener todos los módulos del proyecto
+        $query = $project->modules();
+        
+        // Filtrar por búsqueda si se proporciona
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('modules.name', 'like', "%{$search}%")
+                ->orWhere('modules.description', 'like', "%{$search}%");
+            });
+        }
+        
+        $availableModules = $query->get();
 
         return response()->json($availableModules->map(function($module) {
             return [
