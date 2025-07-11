@@ -219,7 +219,6 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     // Rutas anidadas para tareas dentro de proyectos
     Route::get('/project/{project}/tasks', [TaskController::class, 'index'])->name('task.index');
-    Route::get('/project/{project}/tasks/create', [TaskController::class, 'create'])->name('task.create');
     Route::post('/project/{project}/tasks', [TaskController::class, 'store'])->name('task.store');
     Route::get('/project/{project}/tasks/{task}', [TaskController::class, 'show'])->name('task.show');
     Route::get('/project/{project}/tasks/{task}/edit', [TaskController::class, 'edit'])->name('task.edit');

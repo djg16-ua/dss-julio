@@ -2,6 +2,10 @@
 
 @section('title', $task->title . ' - ' . $project->title . ' - TaskFlow')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div class="container py-5">
     <div class="row">
@@ -63,9 +67,9 @@
                 </div>
                 <div class="col-lg-4 text-lg-end">
                     <div class="d-flex gap-2 justify-content-lg-end flex-wrap">
-                        <a href="{{ route('task.edit', [$project, $task]) }}" class="btn btn-warning">
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editTaskModal">
                             <i class="bi bi-pencil me-2"></i>Editar
-                        </a>
+                        </button>
                         @php
                             $currentUser = auth()->user();
                             $isProjectCreator = $project->created_by === $currentUser->id;
@@ -556,6 +560,87 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para editar tarea -->
+<div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editTaskModalLabel">Editar Tarea</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editTaskForm">
+                    @csrf
+                    @method('PUT')
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="edit-task-title" class="form-label">Título de la tarea <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="edit-task-title" value="{{ $task->title }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="edit-task-status" class="form-label">Estado <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit-task-status" required>
+                                    <option value="PENDING" {{ $task->status === 'PENDING' ? 'selected' : '' }}>⏳ Pendiente</option>
+                                    <option value="ACTIVE" {{ $task->status === 'ACTIVE' ? 'selected' : '' }}>✅ Activa</option>
+                                    <option value="DONE" {{ $task->status === 'DONE' ? 'selected' : '' }}>🎉 Completada</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-task-priority" class="form-label">Prioridad <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit-task-priority" required>
+                                    <option value="URGENT" {{ $task->priority === 'URGENT' ? 'selected' : '' }}>🚨 Urgente</option>
+                                    <option value="HIGH" {{ $task->priority === 'HIGH' ? 'selected' : '' }}>⚡ Alta</option>
+                                    <option value="MEDIUM" {{ $task->priority === 'MEDIUM' ? 'selected' : '' }}>📋 Media</option>
+                                    <option value="LOW" {{ $task->priority === 'LOW' ? 'selected' : '' }}>📝 Baja</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-task-module" class="form-label">Módulo</label>
+                                <input type="text" class="form-control" value="{{ $task->module->name }}" disabled>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    El módulo no se puede cambiar una vez creada la tarea
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit-task-description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="edit-task-description" rows="4" placeholder="Describe los detalles de la tarea...">{{ $task->description }}</textarea>
+                        <div class="form-text">
+                            <span id="edit-char-count">{{ strlen($task->description ?? '') }}</span>/2000 caracteres
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Nota:</strong> Los usuarios asignados se gestionan desde las secciones correspondientes de esta página.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" id="confirmEditTask">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" style="display: none;"></span>
+                    Actualizar Tarea
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endif
 
 @push('scripts')
@@ -1070,6 +1155,179 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 });
+
+// MODAL DE EDITAR TAREA
+const editTaskModal = document.getElementById('editTaskModal');
+const editTaskTextarea = document.getElementById('edit-task-description');
+const editCharCountSpan = document.getElementById('edit-char-count');
+const confirmEditTaskButton = document.getElementById('confirmEditTask');
+
+// Contador de caracteres para descripción
+if (editTaskTextarea && editCharCountSpan) {
+    editTaskTextarea.addEventListener('input', function() {
+        const currentLength = this.value.length;
+        editCharCountSpan.textContent = currentLength;
+        
+        // Cambiar color según el límite
+        if (currentLength > 1800) {
+            editCharCountSpan.className = 'text-danger fw-bold';
+        } else if (currentLength > 1500) {
+            editCharCountSpan.className = 'text-warning fw-bold';
+        } else {
+            editCharCountSpan.className = 'text-muted';
+        }
+        
+        // Habilitar/deshabilitar botón si excede límite
+        if (confirmEditTaskButton) {
+            const titleValue = document.getElementById('edit-task-title')?.value.trim() || '';
+            confirmEditTaskButton.disabled = !titleValue || currentLength > 2000;
+        }
+    });
+}
+
+// Validar título
+const editTitleInput = document.getElementById('edit-task-title');
+if (editTitleInput) {
+    editTitleInput.addEventListener('input', function() {
+        const titleValue = this.value.trim();
+        const descLength = editTaskTextarea ? editTaskTextarea.value.length : 0;
+        
+        if (confirmEditTaskButton) {
+            confirmEditTaskButton.disabled = !titleValue || descLength > 2000;
+        }
+    });
+}
+
+// Confirmar editar tarea
+if (confirmEditTaskButton) {
+    confirmEditTaskButton.addEventListener('click', function() {
+        const titleInput = document.getElementById('edit-task-title');
+        const descriptionInput = document.getElementById('edit-task-description');
+        const statusSelect = document.getElementById('edit-task-status');
+        const prioritySelect = document.getElementById('edit-task-priority');
+        
+        const title = titleInput ? titleInput.value.trim() : '';
+        const description = descriptionInput ? descriptionInput.value.trim() : '';
+        const status = statusSelect ? statusSelect.value : '';
+        const priority = prioritySelect ? prioritySelect.value : '';
+        
+        if (!title) {
+            alert('Por favor ingresa un título para la tarea');
+            return;
+        }
+        
+        if (!status || !priority) {
+            alert('Por favor selecciona estado y prioridad');
+            return;
+        }
+        
+        if (description.length > 2000) {
+            alert('La descripción no puede exceder 2000 caracteres');
+            return;
+        }
+        
+        console.log('Editando tarea:', {title, description, status, priority});
+        
+        const button = this;
+        const spinner = button.querySelector('.spinner-border');
+        
+        // Mostrar loading
+        if (spinner) spinner.style.display = 'inline-block';
+        button.disabled = true;
+        
+        fetch(`{{ route('task.update', [$project, $task]) }}`, {
+            method: 'PUT',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: title,
+                description: description,
+                status: status,
+                priority: priority
+            })
+        })
+        .then(response => {
+            console.log('Respuesta editar tarea:', response);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Datos editar tarea:', data);
+            if (data.success) {
+                const modal = document.getElementById('editTaskModal');
+                if (modal) {
+                    bootstrap.Modal.getInstance(modal).hide();
+                }
+                
+                // Mostrar mensaje de éxito y recargar
+                showSuccessMessage('Tarea actualizada exitosamente');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                alert('Error: ' + (data.error || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error editar tarea:', error);
+            alert('Error al actualizar la tarea: ' + error.message);
+        })
+        .finally(() => {
+            if (spinner) spinner.style.display = 'none';
+            button.disabled = false;
+        });
+    });
+}
+
+// Limpiar modal de edición al cerrarse
+if (editTaskModal) {
+    editTaskModal.addEventListener('hidden.bs.modal', function() {
+        // Restaurar valores originales
+        const titleInput = document.getElementById('edit-task-title');
+        const descriptionInput = document.getElementById('edit-task-description');
+        const statusSelect = document.getElementById('edit-task-status');
+        const prioritySelect = document.getElementById('edit-task-priority');
+        
+        if (titleInput) titleInput.value = '{{ $task->title }}';
+        if (descriptionInput) descriptionInput.value = '{{ $task->description ?? '' }}';
+        if (statusSelect) statusSelect.value = '{{ $task->status }}';
+        if (prioritySelect) prioritySelect.value = '{{ $task->priority }}';
+        
+        // Resetear contador de caracteres
+        if (descriptionInput && editCharCountSpan) {
+            editCharCountSpan.textContent = descriptionInput.value.length;
+            editCharCountSpan.className = 'text-muted';
+        }
+        
+        if (confirmEditTaskButton) confirmEditTaskButton.disabled = false;
+    });
+}
+
+// Función para mostrar mensaje de éxito
+function showSuccessMessage(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+    alertDiv.innerHTML = `
+        <i class="bi bi-check-circle me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-dismiss después de 5 segundos
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
 </script>
 @endpush
 

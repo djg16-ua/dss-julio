@@ -159,11 +159,33 @@ class TaskController extends Controller
 
             DB::commit();
 
+                // Si es una petición AJAX, devolver JSON
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tarea creada exitosamente',
+                    'task' => [
+                        'id' => $task->id,
+                        'title' => $task->title,
+                        'status' => $task->status,
+                        'priority' => $task->priority,
+                        'module_name' => $task->module->name
+                    ]
+                ]);
+            }
+
             return redirect()->route('task.show', ['project' => $project, 'task' => $task])
                 ->with('success', 'Tarea creada exitosamente.');
 
         } catch (\Exception $e) {
             DB::rollback();
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'error' => 'Error al crear la tarea: ' . $e->getMessage()
+                ], 500);
+            }
+
             return redirect()->back()
                 ->withErrors(['error' => 'Error al crear la tarea: ' . $e->getMessage()])
                 ->withInput();
@@ -231,6 +253,9 @@ class TaskController extends Controller
 
         // Verificar que la tarea pertenece al proyecto
         if ($task->module->project_id !== $project->id) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Tarea no encontrada en este proyecto'], 404);
+            }
             abort(404, 'Tarea no encontrada en este proyecto.');
         }
 
@@ -242,6 +267,14 @@ class TaskController extends Controller
         ]);
 
         if ($validator->fails()) {
+            // Si es una petición AJAX, devolver JSON
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'error' => $validator->errors()->first(),
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
@@ -255,10 +288,32 @@ class TaskController extends Controller
                 'status' => $request->status,
             ]);
 
+            // Si es una petición AJAX, devolver JSON
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tarea actualizada exitosamente',
+                    'task' => [
+                        'id' => $task->id,
+                        'title' => $task->title,
+                        'status' => $task->status,
+                        'priority' => $task->priority,
+                        'description' => $task->description
+                    ]
+                ]);
+            }
+
             return redirect()->route('task.show', ['project' => $project, 'task' => $task])
                 ->with('success', 'Tarea actualizada exitosamente.');
 
         } catch (\Exception $e) {
+            // Si es una petición AJAX, devolver JSON
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'error' => 'Error al actualizar la tarea: ' . $e->getMessage()
+                ], 500);
+            }
+            
             return redirect()->back()
                 ->withErrors(['error' => 'Error al actualizar la tarea: ' . $e->getMessage()])
                 ->withInput();
