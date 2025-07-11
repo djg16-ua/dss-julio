@@ -35,7 +35,7 @@
                             </div>
                             <h4 class="fw-bold text-primary">{{ $user->name }}</h4>
                             <p class="text-muted mb-2">{{ $user->email }}</p>
-                            
+
                             <!-- Estado de verificación -->
                             @if($user->email_verified_at)
                             <span class="badge bg-success mb-2">
@@ -46,7 +46,7 @@
                                 <i class="bi bi-exclamation-circle me-1"></i>Email Pendiente
                             </span>
                             @endif
-                            
+
                             <!-- Rol -->
                             <div class="mb-3">
                                 <span class="badge bg-{{ $user->role === 'ADMIN' ? 'danger' : 'secondary' }} fs-6">
@@ -54,7 +54,7 @@
                                     {{ $user->role }}
                                 </span>
                             </div>
-                            
+
                             <p class="text-muted small">
                                 <i class="bi bi-calendar me-1"></i>
                                 Miembro desde {{ $user->created_at->format('d/m/Y') }}
@@ -141,16 +141,16 @@
                                     <form action="{{ route('admin.users.update', $user) }}" method="POST">
                                         @csrf
                                         @method('PATCH')
-                                        
+
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label for="name" class="form-label fw-medium">Nombre Completo</label>
-                                                <input type="text" 
-                                                       class="form-control form-control-lg @error('name') is-invalid @enderror" 
-                                                       id="name" 
-                                                       name="name" 
-                                                       value="{{ old('name', $user->name) }}" 
-                                                       required>
+                                                <input type="text"
+                                                    class="form-control form-control-lg @error('name') is-invalid @enderror"
+                                                    id="name"
+                                                    name="name"
+                                                    value="{{ old('name', $user->name) }}"
+                                                    required>
                                                 @error('name')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                                 @enderror
@@ -158,12 +158,12 @@
 
                                             <div class="col-md-6">
                                                 <label for="email" class="form-label fw-medium">Dirección de Email</label>
-                                                <input type="email" 
-                                                       class="form-control form-control-lg @error('email') is-invalid @enderror" 
-                                                       id="email" 
-                                                       name="email" 
-                                                       value="{{ old('email', $user->email) }}" 
-                                                       required>
+                                                <input type="email"
+                                                    class="form-control form-control-lg @error('email') is-invalid @enderror"
+                                                    id="email"
+                                                    name="email"
+                                                    value="{{ old('email', $user->email) }}"
+                                                    required>
                                                 @error('email')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                                 @enderror
@@ -171,10 +171,10 @@
 
                                             <div class="col-md-6">
                                                 <label for="role" class="form-label fw-medium">Rol del Usuario</label>
-                                                <select class="form-select form-select-lg @error('role') is-invalid @enderror" 
-                                                        id="role" 
-                                                        name="role"
-                                                        {{ $user->id === auth()->id() ? 'disabled' : '' }}>
+                                                <select class="form-select form-select-lg @error('role') is-invalid @enderror"
+                                                    id="role"
+                                                    name="role"
+                                                    {{ $user->id === auth()->id() ? 'disabled' : '' }}>
                                                     <option value="USER" {{ $user->role === 'USER' ? 'selected' : '' }}>Usuario Normal</option>
                                                     <option value="ADMIN" {{ $user->role === 'ADMIN' ? 'selected' : '' }}>Administrador</option>
                                                 </select>
@@ -222,24 +222,24 @@
                                     <div class="row g-2">
                                         @if(!$user->email_verified_at)
                                         <div class="col-md-4">
-                                            <button type="button" class="btn btn-outline-success w-100" 
-                                                    onclick="verifyUserEmail({{ $user->id }})">
+                                            <button type="button" class="btn btn-outline-success w-100"
+                                                onclick="verifyUserEmail({{ $user->id }})">
                                                 <i class="bi bi-check-circle me-2"></i>Verificar Email
                                             </button>
                                         </div>
                                         @endif
-                                        
+
                                         <div class="col-md-4">
                                             <button type="button" class="btn btn-outline-warning w-100"
-                                                    data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                                                data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
                                                 <i class="bi bi-key me-2"></i>Resetear Contraseña
                                             </button>
                                         </div>
-                                        
+
                                         @if($user->id !== auth()->id())
                                         <div class="col-md-4">
                                             <button type="button" class="btn btn-outline-danger w-100"
-                                                    data-bs-toggle="modal" data-bs-target="#deleteUserModal">
+                                                data-bs-toggle="modal" data-bs-target="#deleteUserModal">
                                                 <i class="bi bi-trash me-2"></i>Eliminar Usuario
                                             </button>
                                         </div>
@@ -263,7 +263,7 @@
                                     <form action="{{ route('admin.users.update-password', $user) }}" method="POST">
                                         @csrf
                                         @method('PATCH')
-                                        
+
                                         <div class="row g-3">
                                             <div class="col-12">
                                                 <div class="alert alert-info">
@@ -274,11 +274,11 @@
 
                                             <div class="col-md-6">
                                                 <label for="new_password" class="form-label fw-medium">Nueva Contraseña</label>
-                                                <input type="password" 
-                                                       class="form-control form-control-lg @error('new_password') is-invalid @enderror" 
-                                                       id="new_password" 
-                                                       name="new_password" 
-                                                       placeholder="Mínimo 8 caracteres">
+                                                <input type="password"
+                                                    class="form-control form-control-lg @error('new_password') is-invalid @enderror"
+                                                    id="new_password"
+                                                    name="new_password"
+                                                    placeholder="Mínimo 8 caracteres">
                                                 @error('new_password')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                                 @enderror
@@ -286,11 +286,11 @@
 
                                             <div class="col-md-6">
                                                 <label for="new_password_confirmation" class="form-label fw-medium">Confirmar Contraseña</label>
-                                                <input type="password" 
-                                                       class="form-control form-control-lg" 
-                                                       id="new_password_confirmation" 
-                                                       name="new_password_confirmation" 
-                                                       placeholder="Repetir contraseña">
+                                                <input type="password"
+                                                    class="form-control form-control-lg"
+                                                    id="new_password_confirmation"
+                                                    name="new_password_confirmation"
+                                                    placeholder="Repetir contraseña">
                                             </div>
                                         </div>
 
@@ -344,69 +344,42 @@
                                 </div>
                                 <div class="card-body">
                                     @if($user->teams->count() > 0)
-                                        <div class="row g-3">
-                                            @foreach($user->teams as $team)
-                                            <div class="col-md-6">
-                                                <div class="card border">
-                                                    <div class="card-body p-3">
-                                                        <div class="d-flex justify-content-between align-items-start">
-                                                            <div>
-                                                                <h6 class="fw-bold mb-1">{{ $team->name }}</h6>
-                                                                <p class="text-muted small mb-2">{{ $team->description }}</p>
-                                                                <span class="badge bg-primary">{{ $team->pivot->role }}</span>
-                                                                @if($team->pivot->is_active)
-                                                                    <span class="badge bg-success">Activo</span>
-                                                                @else
-                                                                    <span class="badge bg-secondary">Inactivo</span>
-                                                                @endif
-                                                            </div>
-                                                            <div class="dropdown">
-                                                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                                    <i class="bi bi-gear"></i>
-                                                                </button>
-                                                                <ul class="dropdown-menu">
-                                                                    <li>
-                                                                        <form action="{{ route('admin.users.update-team-role', [$user, $team]) }}" method="POST">
-                                                                            @csrf
-                                                                            @method('PATCH')
-                                                                            <button class="dropdown-item" type="submit" name="action" value="toggle_status">
-                                                                                @if($team->pivot->is_active)
-                                                                                    <i class="bi bi-pause me-2"></i>Desactivar
-                                                                                @else
-                                                                                    <i class="bi bi-play me-2"></i>Activar
-                                                                                @endif
-                                                                            </button>
-                                                                        </form>
-                                                                    </li>
-                                                                    <li>
-                                                                        <form action="{{ route('admin.users.remove-from-team', [$user, $team]) }}" method="POST">
-                                                                            @csrf
-                                                                            @method('DELETE')
-                                                                            <button class="dropdown-item text-danger" type="submit">
-                                                                                <i class="bi bi-trash me-2"></i>Remover
-                                                                            </button>
-                                                                        </form>
-                                                                    </li>
-                                                                </ul>
-                                                            </div>
+                                    <div class="row g-3">
+                                        @foreach($user->teams as $team)
+                                        <div class="col-md-6">
+                                            <div class="card border">
+                                                <div class="card-body p-3">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <h6 class="fw-bold mb-1">{{ $team->name }}</h6>
+                                                            <p class="text-muted small mb-2">{{ $team->description }}</p>
+                                                            <span class="badge bg-primary">{{ $team->pivot->role }}</span>
                                                         </div>
-                                                        <small class="text-muted">
-                                                            Unido {{ \Carbon\Carbon::parse($team->pivot->joined_at)->diffForHumans() }}
-                                                        </small>
+                                                        <form action="{{ route('admin.users.remove-from-team', [$user, $team]) }}" method="POST">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Remover del equipo">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </form>
                                                     </div>
+                                                    <small class="text-muted">
+                                                        Unido {{ \Carbon\Carbon::parse($team->pivot->joined_at)->diffForHumans() }}
+                                                    </small>
                                                 </div>
                                             </div>
-                                            @endforeach
                                         </div>
+                                        @endforeach
+                                    </div>
                                     @else
-                                        <div class="text-center py-4">
-                                            <i class="bi bi-people display-4 text-muted mb-3"></i>
-                                            <h6 class="text-muted">No pertenece a ningún equipo</h6>
-                                            <p class="text-muted">Puedes asignar este usuario a equipos existentes</p>
-                                            <button class="btn btn-primary">
-                                                <i class="bi bi-plus-circle me-2"></i>Asignar a Equipo
-                                            </button>
-                                        </div>
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-people display-4 text-muted mb-3"></i>
+                                        <h6 class="text-muted">No pertenece a ningún equipo</h6>
+                                        <p class="text-muted">Puedes asignar este usuario a equipos existentes</p>
+                                        <button class="btn btn-primary">
+                                            <i class="bi bi-plus-circle me-2"></i>Asignar a Equipo
+                                        </button>
+                                    </div>
                                     @endif
                                 </div>
                             </div>
@@ -425,46 +398,46 @@
                                     <!-- Proyectos creados -->
                                     <h6 class="fw-bold">Proyectos Creados ({{ $user->createdProjects->count() }})</h6>
                                     @if($user->createdProjects->count() > 0)
-                                        <div class="list-group list-group-flush mb-4">
-                                            @foreach($user->createdProjects->take(5) as $project)
-                                            <div class="list-group-item border-0 px-0">
-                                                <div class="d-flex justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-1">{{ $project->title }}</h6>
-                                                        <p class="mb-1 small text-muted">{{ Str::limit($project->description, 80) }}</p>
-                                                    </div>
-                                                    <small class="text-muted">{{ $project->created_at->diffForHumans() }}</small>
+                                    <div class="list-group list-group-flush mb-4">
+                                        @foreach($user->createdProjects->take(5) as $project)
+                                        <div class="list-group-item border-0 px-0">
+                                            <div class="d-flex justify-content-between">
+                                                <div>
+                                                    <h6 class="mb-1">{{ $project->title }}</h6>
+                                                    <p class="mb-1 small text-muted">{{ Str::limit($project->description, 80) }}</p>
                                                 </div>
+                                                <small class="text-muted">{{ $project->created_at->diffForHumans() }}</small>
                                             </div>
-                                            @endforeach
                                         </div>
+                                        @endforeach
+                                    </div>
                                     @else
-                                        <p class="text-muted">No ha creado proyectos</p>
+                                    <p class="text-muted">No ha creado proyectos</p>
                                     @endif
 
                                     <!-- Tareas asignadas -->
                                     <h6 class="fw-bold">Tareas Asignadas ({{ $user->assignedTasks->count() }})</h6>
                                     @if($user->assignedTasks->count() > 0)
-                                        <div class="list-group list-group-flush">
-                                            @foreach($user->assignedTasks->take(5) as $task)
-                                            <div class="list-group-item border-0 px-0">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <h6 class="mb-1">{{ $task->title }}</h6>
-                                                        <small class="text-muted">{{ $task->description }}</small>
-                                                    </div>
-                                                    <div class="text-end">
-                                                        <span class="badge bg-{{ $task->status === 'DONE' ? 'success' : ($task->status === 'ACTIVE' ? 'primary' : 'secondary') }}">
-                                                            {{ $task->status }}
-                                                        </span>
-                                                        <small class="text-muted d-block">{{ $task->created_at->diffForHumans() }}</small>
-                                                    </div>
+                                    <div class="list-group list-group-flush">
+                                        @foreach($user->assignedTasks->take(5) as $task)
+                                        <div class="list-group-item border-0 px-0">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1">{{ $task->title }}</h6>
+                                                    <small class="text-muted">{{ $task->description }}</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge bg-{{ $task->status === 'DONE' ? 'success' : ($task->status === 'ACTIVE' ? 'primary' : 'secondary') }}">
+                                                        {{ $task->status }}
+                                                    </span>
+                                                    <small class="text-muted d-block">{{ $task->created_at->diffForHumans() }}</small>
                                                 </div>
                                             </div>
-                                            @endforeach
                                         </div>
+                                        @endforeach
+                                    </div>
                                     @else
-                                        <p class="text-muted">No tiene tareas asignadas</p>
+                                    <p class="text-muted">No tiene tareas asignadas</p>
                                     @endif
                                 </div>
                             </div>

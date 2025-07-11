@@ -139,34 +139,96 @@
 
                                 <hr class="my-4">
 
-                                <!-- Asignación a equipos inicial (opcional) -->
+                                <!-- Asignación a proyectos (equipos generales) -->
                                 <div class="row">
                                     <div class="col-12">
                                         <h6 class="fw-bold text-primary mb-3">
-                                            <i class="bi bi-people me-2"></i>Asignación a Equipos (Opcional)
+                                            <i class="bi bi-folder me-2"></i>Asignación a Proyectos (Opcional)
                                         </h6>
                                         <div class="alert alert-info">
                                             <i class="bi bi-info-circle me-2"></i>
-                                            Puedes asignar el usuario a equipos ahora o hacerlo después desde la edición del usuario o del equipo.
+                                            Puedes asignar el usuario a proyectos ahora (se agregará al equipo general) o hacerlo después desde la edición del usuario.
                                         </div>
 
-                                        @if($availableTeams->count() > 0)
-                                        <div id="user-teams">
-                                            <!-- Equipo 1 -->
-                                            <div class="row g-3 mb-3 team-assignment-row">
-                                                <div class="col-md-5">
-                                                    <label class="form-label">Equipo</label>
-                                                    <select class="form-select" name="teams[0][team_id]">
-                                                        <option value="">Seleccionar equipo...</option>
-                                                        @foreach($availableTeams as $team)
-                                                        <option value="{{ $team->id }}">
-                                                            {{ $team->name }}
-                                                            <small>({{ $team->users->where('pivot.is_active', true)->count() }} miembros)</small>
+                                        @if($projects->count() > 0)
+                                        <div id="user-projects">
+                                            <!-- Proyecto 1 -->
+                                            <div class="row g-3 mb-3 project-assignment-row">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Proyecto</label>
+                                                    <select class="form-select" name="projects[0][project_id]">
+                                                        <option value="">Seleccionar proyecto...</option>
+                                                        @foreach($projects as $project)
+                                                        <option value="{{ $project->id }}">
+                                                            {{ $project->title }}
+                                                            @if($project->teams->count() > 0)
+                                                            <small>({{ $project->teams->first()->users->where('pivot.is_active', true)->count() }} miembros)</small>
+                                                            @endif
                                                         </option>
                                                         @endforeach
                                                     </select>
                                                 </div>
-                                                <div class="col-md-5">
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Rol en el proyecto</label>
+                                                    <select class="form-select" name="projects[0][role]">
+                                                        @foreach($teamRoles as $value => $label)
+                                                        <option value="{{ $value }}" {{ $value === 'DEVELOPER' ? 'selected' : '' }}>
+                                                            {{ $label }}
+                                                        </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-2 d-flex align-items-end">
+                                                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeProject(this)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button type="button" class="btn btn-outline-primary" onclick="addProject()">
+                                            <i class="bi bi-folder-plus me-2"></i>Agregar a Otro Proyecto
+                                        </button>
+                                        @else
+                                        <div class="alert alert-warning">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>
+                                            No hay proyectos disponibles. Puedes crear proyectos desde la sección de gestión de proyectos.
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <!-- Asignación a equipos personalizados (opcional) -->
+                                @if($projects->count() > 0 && $projects->sum(function($project) { return $project->teams->count(); }) > 0)
+                                <hr class="my-4">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6 class="fw-bold text-secondary mb-3">
+                                            <i class="bi bi-people me-2"></i>Asignación a Equipos Personalizados (Opcional)
+                                        </h6>
+                                        <div class="alert alert-secondary">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            También puedes asignar el usuario directamente a equipos personalizados específicos.
+                                        </div>
+
+                                        <div id="user-teams">
+                                            <!-- Equipo 1 -->
+                                            <div class="row g-3 mb-3 team-assignment-row">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Equipo Personalizado</label>
+                                                    <select class="form-select" name="teams[0][team_id]">
+                                                        <option value="">Seleccionar equipo...</option>
+                                                        @foreach($projects as $project)
+                                                        @foreach($project->teams->where('is_general', false) as $team)
+                                                        <option value="{{ $team->id }}">
+                                                            {{ $project->title }} - {{ $team->name }}
+                                                            <small>({{ $team->users->where('pivot.is_active', true)->count() }} miembros)</small>
+                                                        </option>
+                                                        @endforeach
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
                                                     <label class="form-label">Rol en el equipo</label>
                                                     <select class="form-select" name="teams[0][role]">
                                                         @foreach($teamRoles as $value => $label)
@@ -184,17 +246,12 @@
                                             </div>
                                         </div>
 
-                                        <button type="button" class="btn btn-outline-primary" onclick="addTeam()">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="addTeam()">
                                             <i class="bi bi-people-plus me-2"></i>Agregar a Otro Equipo
                                         </button>
-                                        @else
-                                        <div class="alert alert-warning">
-                                            <i class="bi bi-exclamation-triangle me-2"></i>
-                                            No hay equipos disponibles. Puedes crear equipos desde la sección de gestión de equipos.
-                                        </div>
-                                        @endif
                                     </div>
                                 </div>
+                                @endif
 
                                 <div class="row mt-4">
                                     <div class="col-12">
@@ -243,10 +300,10 @@
 
                             <div class="mb-4">
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-3-circle me-2"></i>Rol y Permisos
+                                    <i class="bi bi-3-circle me-2"></i>Proyectos y Equipos
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Los usuarios regulares pueden participar en proyectos. Los administradores tienen acceso completo.
+                                    Asignar a proyectos agrega al equipo general. Los equipos personalizados son para roles específicos.
                                 </p>
                             </div>
 
@@ -282,7 +339,6 @@
                     </div>
 
                     <!-- Roles de equipo disponibles -->
-                    @if($availableTeams->count() > 0)
                     <div class="card shadow-sm mt-4">
                         <div class="card-header bg-warning text-dark py-3">
                             <h6 class="card-title mb-0">
@@ -299,7 +355,6 @@
                             @endforeach
                         </div>
                     </div>
-                    @endif
 
                     <!-- Estadísticas del sistema -->
                     <div class="card shadow-sm mt-4">
@@ -396,10 +451,11 @@
 
 @push('scripts')
 <script>
+    let projectIndex = 1;
     let teamIndex = 1;
 
-    // Preparar los datos de equipos y roles para JavaScript
-    const availableTeams = @json($availableTeams);
+    // Preparar los datos para JavaScript
+    const projects = @json($projects);
     const teamRoles = @json($teamRoles);
 
     function togglePassword(fieldId) {
@@ -417,14 +473,66 @@
         }
     }
 
+    function addProject() {
+        const container = document.getElementById('user-projects');
+
+        // Generar opciones de proyectos
+        let projectOptions = '<option value="">Seleccionar proyecto...</option>';
+        projects.forEach(project => {
+            const membersCount = project.teams.length > 0 ? project.teams[0].users.filter(user => user.pivot.is_active).length : 0;
+            projectOptions += `<option value="${project.id}">${project.title} (${membersCount} miembros)</option>`;
+        });
+
+        // Generar opciones de roles
+        let roleOptions = '';
+        Object.entries(teamRoles).forEach(([value, label]) => {
+            const selected = value === 'DEVELOPER' ? 'selected' : '';
+            roleOptions += `<option value="${value}" ${selected}>${label}</option>`;
+        });
+
+        const newProjectHtml = `
+        <div class="row g-3 mb-3 project-assignment-row">
+            <div class="col-md-6">
+                <label class="form-label">Proyecto</label>
+                <select class="form-select" name="projects[${projectIndex}][project_id]">
+                    ${projectOptions}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Rol en el proyecto</label>
+                <select class="form-select" name="projects[${projectIndex}][role]">
+                    ${roleOptions}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger w-100" onclick="removeProject(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+        container.insertAdjacentHTML('beforeend', newProjectHtml);
+        projectIndex++;
+    }
+
+    function removeProject(button) {
+        const projectRow = button.closest('.project-assignment-row');
+        projectRow.remove();
+    }
+
     function addTeam() {
         const container = document.getElementById('user-teams');
 
-        // Generar opciones de equipos
+        // Generar opciones de equipos personalizados
         let teamOptions = '<option value="">Seleccionar equipo...</option>';
-        availableTeams.forEach(team => {
-            const activeMembers = team.users.filter(user => user.pivot.is_active).length;
-            teamOptions += `<option value="${team.id}">${team.name} (${activeMembers} miembros)</option>`;
+        projects.forEach(project => {
+            project.teams.forEach(team => {
+                if (!team.is_general) {
+                    const activeMembers = team.users.filter(user => user.pivot.is_active).length;
+                    teamOptions += `<option value="${team.id}">${project.title} - ${team.name} (${activeMembers} miembros)</option>`;
+                }
+            });
         });
 
         // Generar opciones de roles
@@ -436,13 +544,13 @@
 
         const newTeamHtml = `
         <div class="row g-3 mb-3 team-assignment-row">
-            <div class="col-md-5">
-                <label class="form-label">Equipo</label>
+            <div class="col-md-6">
+                <label class="form-label">Equipo Personalizado</label>
                 <select class="form-select" name="teams[${teamIndex}][team_id]">
                     ${teamOptions}
                 </select>
             </div>
-            <div class="col-md-5">
+            <div class="col-md-4">
                 <label class="form-label">Rol en el equipo</label>
                 <select class="form-select" name="teams[${teamIndex}][role]">
                     ${roleOptions}

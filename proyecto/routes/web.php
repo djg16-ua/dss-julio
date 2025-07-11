@@ -389,7 +389,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/tasks', [App\Http\Controllers\AdminController::class, 'tasks'])->name('tasks');
 
     // Crear tarea
-    Route::get('/tasks/create', [App\Http\Controllers\AdminController::class, 'createTask'])->name('tasks.create');
+    Route::get('/tasks/create/{module?}', [App\Http\Controllers\AdminController::class, 'createTask'])->name('tasks.create');
     Route::post('/tasks', [App\Http\Controllers\AdminController::class, 'storeTask'])->name('tasks.store');
 
     // Editar tarea
@@ -409,4 +409,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // Gestión de módulos del equipo (agregar después de las rutas de teams existentes)
     Route::post('/teams/{team}/modules', [App\Http\Controllers\AdminController::class, 'assignTeamModule'])->name('teams.assign-module');
     Route::delete('/teams/{team}/modules/{module}', [App\Http\Controllers\AdminController::class, 'unassignTeamModule'])->name('teams.unassign-module');
+
+    Route::get('/projects/{project}/teams', [App\Http\Controllers\AdminController::class, 'getProjectTeams'])->name('projects.teams');
+
 });

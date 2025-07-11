@@ -54,11 +54,15 @@
                                     <div class="col-md-6">
                                         <label for="project_id" class="form-label fw-bold">Proyecto</label>
                                         <select class="form-select @error('project_id') is-invalid @enderror" id="project_id" name="project_id" required>
-                                            @foreach($projects as $project)
-                                            <option value="{{ $project->id }}" {{ old('project_id', $module->project_id) == $project->id ? 'selected' : '' }}>
-                                                {{ $project->title }} ({{ $project->status }})
-                                            </option>
-                                            @endforeach
+                                            @if($projects->count() > 0)
+                                                @foreach($projects as $project)
+                                                <option value="{{ $project->id }}" {{ old('project_id', $module->project_id) == $project->id ? 'selected' : '' }}>
+                                                    {{ $project->title }} ({{ $project->status }})
+                                                </option>
+                                                @endforeach
+                                            @else
+                                                <option value="{{ $module->project_id }}" selected>{{ $module->project->title ?? 'Proyecto actual' }}</option>
+                                            @endif
                                         </select>
                                         @error('project_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -79,9 +83,7 @@
                                         <label for="category" class="form-label fw-bold">Categoría</label>
                                         <select class="form-select @error('category') is-invalid @enderror" id="category" name="category" required>
                                             @foreach($moduleCategories as $value => $label)
-                                            <option value="{{ $value }}" {{ old('category', $module->category) === $value ? 'selected' : '' }}>
-                                                {{ $label }}
-                                            </option>
+                                            <option value="{{ $value }}" {{ old('category', $module->category) === $value ? 'selected' : '' }}>{{ $label }}</option>
                                             @endforeach
                                         </select>
                                         @error('category')
@@ -93,9 +95,7 @@
                                         <label for="priority" class="form-label fw-bold">Prioridad</label>
                                         <select class="form-select @error('priority') is-invalid @enderror" id="priority" name="priority" required>
                                             @foreach($priorities as $value => $label)
-                                            <option value="{{ $value }}" {{ old('priority', $module->priority) === $value ? 'selected' : '' }}>
-                                                {{ $label }}
-                                            </option>
+                                            <option value="{{ $value }}" {{ old('priority', $module->priority) === $value ? 'selected' : '' }}>{{ $label }}</option>
                                             @endforeach
                                         </select>
                                         @error('priority')
@@ -122,11 +122,9 @@
                                         <select class="form-select @error('depends_on') is-invalid @enderror" id="depends_on" name="depends_on">
                                             <option value="">Sin dependencias</option>
                                             @foreach($projectModules as $otherModule)
-                                            @if($otherModule->id !== $module->id)
                                             <option value="{{ $otherModule->id }}" {{ old('depends_on', $module->depends_on) == $otherModule->id ? 'selected' : '' }}>
                                                 {{ $otherModule->name }}
                                             </option>
-                                            @endif
                                             @endforeach
                                         </select>
                                         @error('depends_on')
@@ -167,37 +165,41 @@
                             </h5>
                         </div>
                         <div class="card-body">
+                            @php
+                                $totalTasks = $module->tasks->count();
+                                $completedTasks = $module->tasks->where('status', 'DONE')->count();
+                                $totalTeams = $module->teams->count();
+                                $totalDependents = $module->dependents->count();
+                                $progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+                            @endphp
+                            
                             <div class="row g-3">
                                 <div class="col-6">
                                     <div class="text-center">
-                                        <div class="fw-bold h4 text-primary">{{ $module->tasks->count() }}</div>
+                                        <div class="fw-bold h4 text-primary">{{ $totalTasks }}</div>
                                         <small class="text-muted">Tareas Totales</small>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="text-center">
-                                        <div class="fw-bold h4 text-success">{{ $module->tasks->where('status', 'DONE')->count() }}</div>
+                                        <div class="fw-bold h4 text-success">{{ $completedTasks }}</div>
                                         <small class="text-muted">Completadas</small>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="text-center">
-                                        <div class="fw-bold h4 text-warning">{{ $module->teams->count() }}</div>
+                                        <div class="fw-bold h4 text-warning">{{ $totalTeams }}</div>
                                         <small class="text-muted">Equipos</small>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="text-center">
-                                        <div class="fw-bold h4 text-info">{{ $module->dependents->count() }}</div>
+                                        <div class="fw-bold h4 text-info">{{ $totalDependents }}</div>
                                         <small class="text-muted">Dependientes</small>
                                     </div>
                                 </div>
                             </div>
 
-                            @php
-                            $progress = $module->tasks->count() > 0 ?
-                            round(($module->tasks->where('status', 'DONE')->count() / $module->tasks->count()) * 100) : 0;
-                            @endphp
                             <div class="mt-3">
                                 <div class="d-flex justify-content-between mb-1">
                                     <small class="fw-bold">Progreso</small>
@@ -211,11 +213,11 @@
                             <hr>
 
                             <div class="small text-muted">
-                                <div><strong>Proyecto:</strong> {{ $module->project->title }}</div>
+                                <div><strong>Proyecto:</strong> {{ $module->project->title ?? 'N/A' }}</div>
                                 <div><strong>Creado:</strong> {{ $module->created_at->format('d/m/Y H:i') }}</div>
                                 <div><strong>Actualizado:</strong> {{ $module->updated_at->format('d/m/Y H:i') }}</div>
                                 <div><strong>ID:</strong> {{ $module->id }}</div>
-                                @if($module->depends_on)
+                                @if($module->depends_on && $module->dependency)
                                 <div><strong>Depende de:</strong> {{ $module->dependency->name }}</div>
                                 @endif
                             </div>
@@ -233,7 +235,7 @@
                                 <div class="col">
                                     <h5 class="card-title mb-0">
                                         <i class="bi bi-people-fill me-2"></i>
-                                        Equipos Asignados ({{ $module->teams->count() }})
+                                        Equipos Asignados ({{ $totalTeams }})
                                     </h5>
                                 </div>
                                 <div class="col-auto">
@@ -244,23 +246,26 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            @if($module->teams->count() > 0)
+                            @if($totalTeams > 0)
                             <div class="row g-3">
                                 @foreach($module->teams as $team)
                                 <div class="col-lg-6">
                                     <div class="card border-primary">
                                         <div class="card-body">
                                             <div class="d-flex align-items-start">
-                                                <div class="feature-icon primary me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                                <div class="me-3" style="width: 40px; height: 40px; font-size: 1rem; background: var(--bs-primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                                     <i class="bi bi-people-fill"></i>
                                                 </div>
                                                 <div class="flex-grow-1">
                                                     <h6 class="fw-bold">{{ $team->name }}</h6>
-                                                    <p class="text-muted small mb-2">{{ Str::limit($team->description, 80) }}</p>
+                                                    <p class="text-muted small mb-2">{{ Str::limit($team->description ?? '', 80) }}</p>
                                                     <div class="d-flex gap-2 mb-2">
                                                         <span class="badge bg-light text-dark">
-                                                            {{ $team->users->where('pivot.is_active', true)->count() }} miembros
+                                                            {{ $team->active_users_count ?? 0 }} miembros
                                                         </span>
+                                                        @if($team->is_general)
+                                                        <span class="badge bg-warning text-dark">General</span>
+                                                        @endif
                                                     </div>
                                                     <small class="text-muted">
                                                         <i class="bi bi-calendar me-1"></i>
@@ -294,7 +299,7 @@
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                <form method="POST" action="{{ route('admin.modules.unassign-team', [$module, $team]) }}" class="d-inline">
+                                                <form method="POST" action="{{ route('admin.teams.unassign-module', [$team, $module]) }}" class="d-inline">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-danger">Desasignar</button>
@@ -310,6 +315,9 @@
                                 <i class="bi bi-people display-1 text-muted"></i>
                                 <h5 class="text-muted">No hay equipos asignados</h5>
                                 <p class="text-muted">Asigna equipos al módulo para gestionar el trabajo</p>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignTeamModal">
+                                    <i class="bi bi-plus-circle me-2"></i>Asignar Primer Equipo
+                                </button>
                             </div>
                             @endif
                         </div>
@@ -326,18 +334,18 @@
                                 <div class="col">
                                     <h5 class="card-title mb-0">
                                         <i class="bi bi-check-square me-2"></i>
-                                        Tareas del Módulo ({{ $module->tasks->count() }})
+                                        Tareas del Módulo ({{ $totalTasks }})
                                     </h5>
                                 </div>
                                 <div class="col-auto">
-                                    <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#assignTaskModal">
-                                        <i class="bi bi-plus-circle me-1"></i>Asignar Tarea
-                                    </button>
+                                    <a href="{{ route('admin.tasks.create', $module) }}" class="btn btn-success btn-sm">
+                                        <i class="bi bi-plus-lg me-1"></i>Nueva Tarea
+                                    </a>
                                 </div>
                             </div>
                         </div>
                         <div class="card-body">
-                            @if($module->tasks->count() > 0)
+                            @if($totalTasks > 0)
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead class="table-light">
@@ -347,7 +355,6 @@
                                             <th>Prioridad</th>
                                             <th>Asignado a</th>
                                             <th>Fecha límite</th>
-                                            <th>Progreso</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
@@ -356,16 +363,16 @@
                                         <tr>
                                             <td>
                                                 <div class="fw-bold">{{ Str::limit($task->title, 40) }}</div>
-                                                <small class="text-muted">{{ Str::limit($task->description, 60) }}</small>
+                                                <small class="text-muted">{{ Str::limit($task->description ?? '', 60) }}</small>
                                             </td>
                                             <td>
                                                 @php
                                                 $statusColors = [
-                                                'PENDING' => 'secondary',
-                                                'IN_PROGRESS' => 'warning',
-                                                'DONE' => 'success',
-                                                'PAUSED' => 'info',
-                                                'CANCELLED' => 'danger'
+                                                    'PENDING' => 'secondary',
+                                                    'ACTIVE' => 'warning',
+                                                    'DONE' => 'success',
+                                                    'PAUSED' => 'info',
+                                                    'CANCELLED' => 'danger'
                                                 ];
                                                 @endphp
                                                 <span class="badge bg-{{ $statusColors[$task->status] ?? 'secondary' }}">
@@ -375,10 +382,10 @@
                                             <td>
                                                 @php
                                                 $priorityColors = [
-                                                'LOW' => 'secondary',
-                                                'MEDIUM' => 'info',
-                                                'HIGH' => 'warning',
-                                                'URGENT' => 'danger'
+                                                    'LOW' => 'secondary',
+                                                    'MEDIUM' => 'info',
+                                                    'HIGH' => 'warning',
+                                                    'URGENT' => 'danger'
                                                 ];
                                                 @endphp
                                                 <span class="badge bg-{{ $priorityColors[$task->priority] ?? 'secondary' }}">
@@ -386,10 +393,12 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                @if($task->assignedUser)
-                                                {{ $task->assignedUser->name }}
+                                                @if($task->assignedUsers && $task->assignedUsers->count() > 0)
+                                                    @foreach($task->assignedUsers as $user)
+                                                        <span class="badge bg-primary me-1">{{ $user->name }}</span>
+                                                    @endforeach
                                                 @else
-                                                <span class="text-muted">No asignado</span>
+                                                    <span class="text-muted">No asignado</span>
                                                 @endif
                                             </td>
                                             <td>
@@ -403,109 +412,29 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <button class="btn btn-outline-danger"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#unassignTaskModal{{ $task->id }}">
-                                                        <i class="bi bi-x-lg"></i>
-                                                    </button>
-                                                </div>
+                                                <a href="{{ route('admin.tasks.edit', $task) }}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
                                             </td>
                                         </tr>
                                         @endforeach
                                     </tbody>
                                 </table>
                             </div>
-
-                            <!-- Modales para desasignar tareas -->
-                            @foreach($module->tasks as $task)
-                            <div class="modal fade" id="unassignTaskModal{{ $task->id }}" tabindex="-1">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header bg-danger text-white">
-                                            <h5 class="modal-title">Desasignar Tarea</h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>¿Estás seguro de que quieres desasignar la tarea <strong>{{ $task->title }}</strong> de este módulo?</p>
-                                            <div class="alert alert-warning">
-                                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                                La tarea quedará sin módulo asignado.
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                            <form method="POST" action="{{ route('admin.modules.unassign-task', [$module, $task]) }}" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-danger">Desasignar</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            @endforeach
                             @else
                             <div class="text-center py-4">
                                 <i class="bi bi-check-square display-1 text-muted"></i>
                                 <h5 class="text-muted">No hay tareas creadas</h5>
                                 <p class="text-muted">Crea tareas para este módulo para organizar el trabajo</p>
+                                <a href="{{ route('admin.tasks.create', $module) }}" class="btn btn-success">
+                                    <i class="bi bi-plus-lg me-2"></i>Crear Primera Tarea
+                                </a>
                             </div>
                             @endif
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para asignar tarea existente -->
-<div class="modal fade" id="assignTaskModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">Asignar Tarea al Módulo</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="{{ route('admin.modules.assign-task', $module) }}">
-                @csrf
-                <div class="modal-body">
-                    @if($availableTasks->count() > 0)
-                    <div class="mb-3">
-                        <label for="task_id" class="form-label">Tarea</label>
-                        <select class="form-select" name="task_id" required>
-                            <option value="">Seleccionar tarea...</option>
-                            @foreach($availableTasks as $task)
-                            <option value="{{ $task->id }}">
-                                {{ $task->title }}
-                                @if($task->assignedUser)
-                                <small>(Asignada a: {{ $task->assignedUser->name }})</small>
-                                @else
-                                <small>(Sin asignar)</small>
-                                @endif
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <small>Solo se muestran tareas que no están asignadas a ningún módulo o tareas sin módulo específico.</small>
-                    </div>
-                    @else
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        No hay tareas disponibles para asignar a este módulo.
-                    </div>
-                    @endif
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    @if($availableTasks->count() > 0)
-                    <button type="submit" class="btn btn-success">Asignar Tarea</button>
-                    @endif
-                </div>
-            </form>
         </div>
     </div>
 </div>
@@ -518,33 +447,52 @@
                 <h5 class="modal-title">Asignar Equipo al Módulo</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ route('admin.modules.assign-team', $module) }}">
+            
+            <form method="POST" action="#" id="assignTeamForm">
                 @csrf
+                <input type="hidden" name="module_id" value="{{ $module->id }}">
                 <div class="modal-body">
                     @if($availableTeams->count() > 0)
                     <div class="mb-3">
-                        <label for="team_id" class="form-label">Equipo</label>
-                        <select class="form-select" name="team_id" required>
+                        <label for="team_select" class="form-label">Equipo</label>
+                        <select class="form-select" name="team_select" id="team_select" required onchange="updateFormAction(this)">
                             <option value="">Seleccionar equipo...</option>
                             @foreach($availableTeams as $team)
-                            <option value="{{ $team->id }}">
+                            <option value="{{ $team->id }}" data-route="{{ route('admin.teams.assign-module', $team) }}">
                                 {{ $team->name }}
-                                <small>({{ $team->users->where('pivot.is_active', true)->count() }} miembros)</small>
+                                <small>({{ $team->active_users_count ?? 0 }} miembros{{ $team->is_general ? ' - General' : '' }})</small>
                             </option>
                             @endforeach
                         </select>
                     </div>
-                    @else
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
-                        No hay equipos disponibles para asignar a este módulo.
+                        <small>Solo se muestran equipos del mismo proyecto que no están ya asignados a este módulo.</small>
+                    </div>
+                    @else
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>No hay equipos disponibles</strong>
+                        <hr>
+                        <small>
+                            <strong>Posibles causas:</strong><br>
+                            • Todos los equipos del proyecto ya están asignados a este módulo<br>
+                            • El proyecto no tiene equipos creados<br>
+                            • Solo existe el equipo general y ya está asignado
+                        </small>
+                        <hr>
+                        <a href="{{ route('admin.teams.create') }}" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-plus-circle me-1"></i>Crear Nuevo Equipo
+                        </a>
                     </div>
                     @endif
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     @if($availableTeams->count() > 0)
-                    <button type="submit" class="btn btn-primary">Asignar Equipo</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>Asignar Equipo
+                    </button>
                     @endif
                 </div>
             </form>
@@ -604,13 +552,27 @@
 
 @push('scripts')
 <script>
+    function updateFormAction(select) {
+        const form = select.closest('form');
+        const selectedOption = select.options[select.selectedIndex];
+        const route = selectedOption.getAttribute('data-route');
+        
+        if (route) {
+            form.action = route;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Auto-hide toasts after 5 seconds
         const toasts = document.querySelectorAll('.toast');
         toasts.forEach(function(toast) {
             setTimeout(function() {
-                const bsToast = new bootstrap.Toast(toast);
-                bsToast.hide();
+                try {
+                    const bsToast = new bootstrap.Toast(toast);
+                    bsToast.hide();
+                } catch (e) {
+                    console.log('Error hiding toast:', e);
+                }
             }, 5000);
         });
     });

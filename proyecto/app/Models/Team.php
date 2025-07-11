@@ -98,8 +98,6 @@ class Team extends Model
      */
     public function getModulesCountAttribute(): int
     {
-        return $this->projects->sum(function($project) {
-            return $project->modules->count();
-        });
+        return $this->modules ? $this->modules->count() : 0;
     }
 }

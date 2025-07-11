@@ -179,20 +179,14 @@
                                             Puedes asignar equipos al módulo ahora o hacerlo después desde la edición.
                                         </div>
 
-                                        @if($availableTeams->count() > 0)
                                         <div id="module-teams">
                                             <!-- Equipo 1 -->
                                             <div class="row g-3 mb-3 team-assignment-row">
                                                 <div class="col-md-10">
                                                     <label class="form-label">Equipo</label>
-                                                    <select class="form-select" name="teams[0][team_id]">
+                                                    <select class="form-select team-select" name="teams[0][team_id]">
                                                         <option value="">Seleccionar equipo...</option>
-                                                        @foreach($availableTeams as $team)
-                                                        <option value="{{ $team->id }}">
-                                                            {{ $team->name }}
-                                                            <small>({{ $team->users->where('pivot.is_active', true)->count() }} miembros activos)</small>
-                                                        </option>
-                                                        @endforeach
+                                                        <!-- Se llenará dinámicamente -->
                                                     </select>
                                                 </div>
                                                 <div class="col-md-2 d-flex align-items-end">
@@ -206,12 +200,6 @@
                                         <button type="button" class="btn btn-outline-warning" onclick="addTeam()">
                                             <i class="bi bi-people-plus me-2"></i>Agregar Otro Equipo
                                         </button>
-                                        @else
-                                        <div class="alert alert-warning">
-                                            <i class="bi bi-exclamation-triangle me-2"></i>
-                                            No hay equipos disponibles. Puedes crear equipos desde la sección de gestión de equipos.
-                                        </div>
-                                        @endif
                                     </div>
                                 </div>
 
@@ -415,50 +403,142 @@
 @push('scripts')
 <script>
     let teamIndex = 1;
+    
+    // OPTIMIZACIÓN: Solo cargar datos básicos inicialmente
+    const allProjects = @json($projects->map(function($project) {
+        return [
+            'id' => $project->id,
+            'title' => $project->title,
+            'status' => $project->status
+        ];
+    }));
 
-    // Preparar los datos para JavaScript
-    const availableTeams = @json($availableTeams);
-    const allProjects = @json($projects);
+    // NO cargar todos los equipos de una vez - usar AJAX cuando sea necesario
+    let projectTeamsCache = {};
 
-    // Cargar módulos del proyecto seleccionado para dependencias
+    // Función optimizada para cargar equipos por proyecto via AJAX
+    function loadProjectTeams(projectId) {
+        if (!projectId) {
+            clearTeamSelects();
+            return;
+        }
+
+        // Mostrar loading
+        showTeamsLoading();
+
+        // Verificar cache
+        if (projectTeamsCache[projectId]) {
+            updateTeamSelects(projectTeamsCache[projectId]);
+            return;
+        }
+
+        // Hacer petición AJAX optimizada
+        fetch(`/admin/projects/${projectId}/teams`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error cargando equipos');
+                }
+                return response.json();
+            })
+            .then(teams => {
+                // Guardar en cache
+                projectTeamsCache[projectId] = teams;
+                updateTeamSelects(teams);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showTeamsError();
+            });
+    }
+
+    function showTeamsLoading() {
+        const infoAlert = document.querySelector('.alert-info');
+        if (infoAlert) {
+            infoAlert.style.display = 'block';
+            infoAlert.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Cargando equipos del proyecto...';
+        }
+    }
+
+    function showTeamsError() {
+        const infoAlert = document.querySelector('.alert-info');
+        if (infoAlert) {
+            infoAlert.style.display = 'block';
+            infoAlert.className = 'alert alert-danger';
+            infoAlert.innerHTML = '<i class="bi bi-exclamation-circle me-2"></i>Error cargando equipos. Intenta recargar la página.';
+        }
+    }
+
+    function clearTeamSelects() {
+        const teamSelects = document.querySelectorAll('.team-select');
+        teamSelects.forEach(select => {
+            select.innerHTML = '<option value="">Seleccionar equipo...</option>';
+        });
+        
+        const infoAlert = document.querySelector('.alert-info');
+        if (infoAlert) {
+            infoAlert.style.display = 'block';
+            infoAlert.className = 'alert alert-info';
+            infoAlert.innerHTML = '<i class="bi bi-info-circle me-2"></i><strong>Selecciona primero un proyecto</strong> para ver los equipos disponibles.';
+        }
+    }
+
+    function updateTeamSelects(teams) {
+        const teamSelects = document.querySelectorAll('.team-select');
+        
+        teamSelects.forEach(select => {
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Seleccionar equipo...</option>';
+            
+            if (teams && teams.length > 0) {
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    const activeUsersCount = team.active_users_count || 0;
+                    option.textContent = `${team.name} (${activeUsersCount} miembros${team.is_general ? ' - General' : ''})`;
+                    select.appendChild(option);
+                });
+                
+                // Restaurar valor si existía
+                if (currentValue) {
+                    select.value = currentValue;
+                }
+                
+                // Ocultar mensaje de info
+                const infoAlert = document.querySelector('.alert-info');
+                if (infoAlert) infoAlert.style.display = 'none';
+            } else {
+                // No hay equipos
+                const infoAlert = document.querySelector('.alert-info');
+                if (infoAlert) {
+                    infoAlert.style.display = 'block';
+                    infoAlert.className = 'alert alert-warning';
+                    infoAlert.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Este proyecto no tiene equipos disponibles.';
+                }
+            }
+        });
+    }
+
+    // Cargar módulos del proyecto seleccionado para dependencias (simplificado)
     function loadProjectModules(projectId) {
         const dependsOnSelect = document.getElementById('depends_on');
         dependsOnSelect.innerHTML = '<option value="">Sin dependencias</option>';
 
         if (projectId) {
-            // Hacer llamada AJAX para obtener los módulos del proyecto
-            fetch(`/admin/projects/${projectId}/modules`)
-                .then(response => response.json())
-                .then(modules => {
-                    modules.forEach(module => {
-                        const option = document.createElement('option');
-                        option.value = module.id;
-                        option.textContent = module.name;
-                        dependsOnSelect.appendChild(option);
-                    });
-                })
-                .catch(error => {
-                    console.log('Error loading modules:', error);
-                });
+            // Para crear un módulo nuevo, no hay módulos previos del mismo proyecto
+            // El select queda solo con "Sin dependencias"
+            console.log(`Proyecto seleccionado: ${projectId}`);
         }
     }
 
     function addTeam() {
         const container = document.getElementById('module-teams');
 
-        // Generar opciones de equipos
-        let teamOptions = '<option value="">Seleccionar equipo...</option>';
-        availableTeams.forEach(team => {
-            const activeMembers = team.users.filter(user => user.pivot.is_active).length;
-            teamOptions += `<option value="${team.id}">${team.name} (${activeMembers} miembros activos)</option>`;
-        });
-
         const newTeamHtml = `
         <div class="row g-3 mb-3 team-assignment-row">
             <div class="col-md-10">
                 <label class="form-label">Equipo</label>
-                <select class="form-select" name="teams[${teamIndex}][team_id]">
-                    ${teamOptions}
+                <select class="form-select team-select" name="teams[${teamIndex}][team_id]">
+                    <option value="">Seleccionar equipo...</option>
                 </select>
             </div>
             <div class="col-md-2 d-flex align-items-end">
@@ -467,15 +547,35 @@
                 </button>
             </div>
         </div>
-    `;
+        `;
 
         container.insertAdjacentHTML('beforeend', newTeamHtml);
         teamIndex++;
+        
+        // Cargar equipos para el nuevo select si hay proyecto seleccionado
+        const projectId = document.getElementById('project_id').value;
+        if (projectId && projectTeamsCache[projectId]) {
+            // Solo actualizar el nuevo select
+            const newSelect = container.querySelector('.team-assignment-row:last-child .team-select');
+            const teams = projectTeamsCache[projectId];
+            
+            if (teams && teams.length > 0) {
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    const activeUsersCount = team.active_users_count || 0;
+                    option.textContent = `${team.name} (${activeUsersCount} miembros${team.is_general ? ' - General' : ''})`;
+                    newSelect.appendChild(option);
+                });
+            }
+        }
     }
 
     function removeTeam(button) {
         const teamRow = button.closest('.team-assignment-row');
-        teamRow.remove();
+        if (teamRow) {
+            teamRow.remove();
+        }
     }
 
     // Auto-hide toasts after 5 seconds
@@ -483,15 +583,59 @@
         const toasts = document.querySelectorAll('.toast');
         toasts.forEach(function(toast) {
             setTimeout(function() {
-                const bsToast = new bootstrap.Toast(toast);
-                bsToast.hide();
+                try {
+                    const bsToast = new bootstrap.Toast(toast);
+                    bsToast.hide();
+                } catch (e) {
+                    console.log('Error hiding toast:', e);
+                }
             }, 5000);
         });
 
-        // Listener para cambios en el proyecto
+        // Listener para cambios en el proyecto (con debounce para evitar múltiples llamadas)
+        let projectChangeTimeout;
         document.getElementById('project_id').addEventListener('change', function() {
-            loadProjectModules(this.value);
+            const projectId = this.value;
+            
+            // Clear previous timeout
+            if (projectChangeTimeout) {
+                clearTimeout(projectChangeTimeout);
+            }
+            
+            // Set new timeout
+            projectChangeTimeout = setTimeout(() => {
+                loadProjectModules(projectId);
+                loadProjectTeams(projectId);
+            }, 300);
         });
+
+        // Prevenir envío múltiple del formulario
+        const form = document.querySelector('form');
+        if (form) {
+            let isSubmitting = false;
+            form.addEventListener('submit', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                isSubmitting = true;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Creando...';
+                }
+                
+                // Re-habilitar después de 10 segundos para evitar bloqueo permanente
+                setTimeout(() => {
+                    isSubmitting = false;
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Crear Módulo';
+                    }
+                }, 10000);
+            });
+        }
     });
 </script>
 @endpush

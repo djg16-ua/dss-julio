@@ -129,50 +129,23 @@
 
                                 <hr class="my-4">
 
-                                <!-- Equipos iniciales -->
+                                <!-- Información sobre equipos automáticos -->
                                 <div class="row">
                                     <div class="col-12">
-                                        <h6 class="fw-bold text-success mb-3">
-                                            <i class="bi bi-people me-2"></i>Equipos Iniciales (Opcional)
-                                        </h6>
+                                        <div class="alert alert-success">
+                                            <i class="bi bi-shield-check me-2"></i>
+                                            <strong>Equipo General Automático:</strong> Al crear este proyecto, se generará automáticamente un equipo "General" que contendrá todos los miembros del proyecto. Después podrás crear equipos personalizados adicionales.
+                                        </div>
                                         <div class="alert alert-info">
                                             <i class="bi bi-info-circle me-2"></i>
-                                            Puedes asignar equipos ahora o hacerlo después desde la página de edición del proyecto.
+                                            <strong>Próximos pasos:</strong> Una vez creado el proyecto, podrás:
+                                            <ul class="mb-0 mt-2">
+                                                <li>Crear equipos personalizados específicos</li>
+                                                <li>Asignar usuarios a equipos</li>
+                                                <li>Crear módulos para organizar el trabajo</li>
+                                                <li>Definir tareas y dependencias</li>
+                                            </ul>
                                         </div>
-
-                                        @if($availableTeams->count() > 0)
-                                        <div id="project-teams">
-                                            <!-- Equipo 1 -->
-                                            <div class="row g-3 mb-3 team-assignment-row">
-                                                <div class="col-md-10">
-                                                    <label class="form-label">Equipo</label>
-                                                    <select class="form-select" name="teams[0][team_id]">
-                                                        <option value="">Seleccionar equipo...</option>
-                                                        @foreach($availableTeams as $team)
-                                                        <option value="{{ $team->id }}">
-                                                            {{ $team->name }}
-                                                            <small>({{ $team->users->where('pivot.is_active', true)->count() }} miembros activos)</small>
-                                                        </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-2 d-flex align-items-end">
-                                                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeTeam(this)">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <button type="button" class="btn btn-outline-success" onclick="addTeam()">
-                                            <i class="bi bi-people-plus me-2"></i>Agregar Otro Equipo
-                                        </button>
-                                        @else
-                                        <div class="alert alert-warning">
-                                            <i class="bi bi-exclamation-triangle me-2"></i>
-                                            No hay equipos disponibles. Puedes crear equipos desde la sección de gestión de equipos.
-                                        </div>
-                                        @endif
                                     </div>
                                 </div>
 
@@ -232,10 +205,10 @@
 
                             <div>
                                 <h6 class="fw-bold text-info">
-                                    <i class="bi bi-4-circle me-2"></i>Equipos y Módulos
+                                    <i class="bi bi-4-circle me-2"></i>Gestión Automática
                                 </h6>
                                 <p class="small text-muted mb-0">
-                                    Después de crear el proyecto, podrás asignar equipos específicos y crear módulos para organizar el trabajo.
+                                    El sistema creará automáticamente un equipo general. Después podrás crear equipos específicos y módulos.
                                 </p>
                             </div>
                         </div>
@@ -356,46 +329,6 @@
 
 @push('scripts')
 <script>
-    let teamIndex = 1;
-
-    // Preparar los datos de equipos para JavaScript
-    const availableTeams = @json($availableTeams);
-
-    function addTeam() {
-        const container = document.getElementById('project-teams');
-
-        // Generar opciones de equipos
-        let teamOptions = '<option value="">Seleccionar equipo...</option>';
-        availableTeams.forEach(team => {
-            const activeMembers = team.users.filter(user => user.pivot.is_active).length;
-            teamOptions += `<option value="${team.id}">${team.name} (${activeMembers} miembros activos)</option>`;
-        });
-
-        const newTeamHtml = `
-        <div class="row g-3 mb-3 team-assignment-row">
-            <div class="col-md-10">
-                <label class="form-label">Equipo</label>
-                <select class="form-select" name="teams[${teamIndex}][team_id]">
-                    ${teamOptions}
-                </select>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="button" class="btn btn-outline-danger w-100" onclick="removeTeam(this)">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        </div>
-    `;
-
-        container.insertAdjacentHTML('beforeend', newTeamHtml);
-        teamIndex++;
-    }
-
-    function removeTeam(button) {
-        const teamRow = button.closest('.team-assignment-row');
-        teamRow.remove();
-    }
-
     // Auto-hide toasts after 5 seconds
     document.addEventListener('DOMContentLoaded', function() {
         const toasts = document.querySelectorAll('.toast');

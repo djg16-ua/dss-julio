@@ -231,8 +231,7 @@
                                     <div class="card text-center bg-light">
                                         <div class="card-body p-2">
                                             <div class="fw-bold text-info">
-                                                {{ $project->modules->sum(function($module) { return $module->tasks->count(); }) }}
-                                            </div>
+                                                {{ $project->modules->sum('tasks_count') ?: 0 }}                                            </div>
                                             <small class="text-muted">
                                                 <i class="bi bi-check-square me-1"></i>Tareas Total
                                             </small>
