@@ -140,6 +140,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/project/{project}/members', [ProjectController::class, 'addMember'])->name('project.add-member');
     Route::delete('/project/{project}/members/{user}', [ProjectController::class, 'removeMember'])->name('project.remove-member');
     Route::get('/project/{project}/tasks/filter', [ProjectController::class, 'getFilteredTasks'])->name('project.filter-tasks');
+    
+    // Ruta para búsqueda de miembros en creación de equipos
+    Route::get('/project/{project}/available-members', [TeamController::class, 'getAvailableMembersForCreate'])->name('project.available-members');
 });
 
 // ============================================
@@ -160,7 +163,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/project/{project}/team/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('team.remove-member');
     Route::patch('/project/{project}/team/{team}/members/{user}/role', [TeamController::class, 'updateMemberRole'])->name('team.update-member-role');
     
-    // Rutas API para AJAX
+    // Rutas API para AJAX (ORDEN IMPORTANTE: las rutas específicas van ANTES que las que usan parámetros)
+    Route::get('/project/{project}/team/available-members-create', [TeamController::class, 'getAvailableMembersForCreate'])->name('team.available-members-create');
     Route::get('/project/{project}/team/{team}/available-members', [TeamController::class, 'getAvailableMembers'])->name('team.available-members');
     Route::get('/project/{project}/team/{team}/available-modules', [TeamController::class, 'getAvailableModules'])->name('team.available-modules');
 
@@ -182,6 +186,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/project/{project}/modules/{module}/edit', [ModuleController::class, 'edit'])->name('module.edit');
     Route::put('/project/{project}/modules/{module}', [ModuleController::class, 'update'])->name('module.update');
     Route::delete('/project/{project}/modules/{module}', [ModuleController::class, 'destroy'])->name('module.destroy');
+    
+    // RUTAS API PARA AJAX - ORDEN CRÍTICO: rutas específicas ANTES que las con parámetros
+    // Ruta específica para crear módulos (ID 0)
+    Route::get('/project/{project}/modules/create/available-teams', [ModuleController::class, 'getAvailableTeamsForCreate'])->name('module.available-teams-create');
     
     // Rutas para gestión de equipos asignados a módulos
     Route::post('/project/{project}/modules/{module}/teams', [ModuleController::class, 'assignTeam'])->name('module.assign-team');

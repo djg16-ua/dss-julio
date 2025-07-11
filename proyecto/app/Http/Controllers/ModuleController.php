@@ -118,6 +118,8 @@ class ModuleController extends Controller
             'is_core' => 'boolean',
             'teams' => 'nullable|array',
             'teams.*' => 'exists:teams,id',
+            'tasks' => 'nullable|array',
+            'tasks.*' => 'string', // JSON strings
         ]);
 
         // Validar que el nombre no esté duplicado en el proyecto
@@ -153,6 +155,23 @@ class ModuleController extends Controller
                     if ($project->teams()->where('teams.id', $teamId)->exists()) {
                         $module->teams()->attach($teamId, [
                             'assigned_at' => now(),
+                        ]);
+                    }
+                }
+            }
+            
+            // Crear tareas iniciales si se especificaron
+            if ($request->has('tasks') && is_array($request->tasks)) {
+                foreach ($request->tasks as $taskJson) {
+                    $taskData = json_decode($taskJson, true);
+                    if ($taskData && !empty($taskData['title'])) {
+                        Task::create([
+                            'title' => $taskData['title'],
+                            'description' => $taskData['description'] ?? null,
+                            'priority' => $taskData['priority'],
+                            'status' => self::TASK_STATUS_PENDING,
+                            'module_id' => $module->id,
+                            'created_by' => Auth::id(),
                         ]);
                     }
                 }
@@ -441,6 +460,41 @@ class ModuleController extends Controller
                 'name' => $team->name,
                 'description' => $team->description,
                 'members_count' => $team->users->where('pivot.is_active', true)->count(),
+                'is_general' => $team->is_general,
+            ];
+        })->values());
+    }
+
+    /**
+     * Obtener equipos disponibles para asignar a un módulo en creación
+     */
+    public function getAvailableTeamsForCreate(Request $request, Project $project)
+    {
+        // Verificar que el usuario tiene acceso al proyecto
+        $this->checkProjectAccess($project);
+
+        // Obtener todos los equipos del proyecto excepto el general
+        $query = $project->teams()->where('is_general', false);
+        
+        // Filtrar por búsqueda si se proporciona
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('teams.name', 'like', "%{$search}%")
+                  ->orWhere('teams.description', 'like', "%{$search}%");
+            });
+        }
+        
+        $teams = $query->with(['users' => function($query) {
+            $query->where('team_user.is_active', true);
+        }])->get();
+
+        return response()->json($teams->map(function($team) {
+            return [
+                'id' => $team->id,
+                'name' => $team->name,
+                'description' => $team->description,
+                'members_count' => $team->users->count(),
                 'is_general' => $team->is_general,
             ];
         })->values());

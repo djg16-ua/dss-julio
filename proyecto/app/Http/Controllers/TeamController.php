@@ -95,6 +95,8 @@ class TeamController extends Controller
             'members.*' => 'exists:users,id',
             'roles' => 'nullable|array',
             'roles.*' => 'in:LEAD,SENIOR_DEV,DEVELOPER,JUNIOR_DEV,DESIGNER,TESTER,ANALYST,OBSERVER',
+            'modules' => 'nullable|array',
+            'modules.*' => 'exists:modules,id',
         ]);
 
         // Validar que el nombre no esté duplicado en el proyecto
@@ -135,6 +137,18 @@ class TeamController extends Controller
                             'is_active' => true,
                             'role' => $role,
                             'joined_at' => now(),
+                        ]);
+                    }
+                }
+            }
+
+            // Asignar módulos si se especificaron
+            if ($request->has('modules') && is_array($request->modules)) {
+                foreach ($request->modules as $moduleId) {
+                    // Verificar que el módulo pertenece al proyecto
+                    if ($project->modules()->where('id', $moduleId)->exists()) {
+                        $team->modules()->attach($moduleId, [
+                            'assigned_at' => now(),
                         ]);
                     }
                 }
@@ -413,8 +427,6 @@ class TeamController extends Controller
         return response()->json(['success' => 'Rol actualizado exitosamente']);
     }
 
-    
-
     /**
      * Verificar que el usuario tiene acceso al proyecto
      */
@@ -466,6 +478,42 @@ class TeamController extends Controller
         $projectMembers = $query->get();
         $currentTeamMemberIds = $team->users()->pluck('users.id')->toArray();
         $availableMembers = $projectMembers->whereNotIn('id', $currentTeamMemberIds);
+
+        return response()->json($availableMembers->map(function($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ];
+        })->values());
+    }
+
+    /**
+     * Obtener miembros del proyecto disponibles para crear un nuevo equipo
+     */
+    public function getAvailableMembersForCreate(Request $request, Project $project)
+    {
+        // Verificar que el usuario tiene acceso al proyecto
+        $this->checkProjectAccess($project);
+
+        // Obtener todos los miembros del proyecto (equipo general)
+        $generalTeam = $project->getGeneralTeam();
+        if (!$generalTeam) {
+            return response()->json([]);
+        }
+
+        $query = $generalTeam->users()->where('team_user.is_active', true);
+        
+        // Filtrar por búsqueda si se proporciona
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                ->orWhere('users.email', 'like', "%{$search}%");
+            });
+        }
+        
+        $availableMembers = $query->get();
 
         return response()->json($availableMembers->map(function($user) {
             return [
@@ -613,14 +661,44 @@ class TeamController extends Controller
 
         return response()->json(['success' => 'Estado del módulo actualizado exitosamente']);
     }
+
     /**
      * Obtener módulos disponibles para asignar a un equipo
      */
-    public function getAvailableModules(Request $request, Project $project, Team $team)
+    public function getAvailableModules(Request $request, Project $project, $teamId)
     {
         // Verificar que el usuario tiene acceso al proyecto
         $this->checkProjectAccess($project);
 
+        // Si teamId es 0, es para crear un nuevo equipo - mostrar todos los módulos
+        if ($teamId == 0) {
+            $query = $project->modules();
+            
+            // Filtrar por búsqueda si se proporciona
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('modules.name', 'like', "%{$search}%")
+                    ->orWhere('modules.description', 'like', "%{$search}%");
+                });
+            }
+            
+            $availableModules = $query->get();
+
+            return response()->json($availableModules->map(function($module) {
+                return [
+                    'id' => $module->id,
+                    'name' => $module->name,
+                    'description' => $module->description,
+                    'status' => $module->status,
+                    'priority' => $module->priority,
+                ];
+            })->values());
+        }
+
+        // Para equipos existentes
+        $team = Team::findOrFail($teamId);
+        
         // Verificar que el equipo pertenece al proyecto
         if ($team->project_id !== $project->id) {
             return response()->json(['error' => 'Equipo no encontrado en este proyecto'], 404);
