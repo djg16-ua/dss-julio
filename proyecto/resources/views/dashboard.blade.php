@@ -77,9 +77,6 @@
                                     <i class="bi bi-list-task text-primary me-2"></i>
                                     Tareas en Curso
                                 </h5>
-                                <a href="#" class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-eye me-1"></i>Ver más
-                                </a>
                             </div>
                         </div>
                         <div class="card-body">
@@ -218,9 +215,6 @@
                                     <i class="bi bi-chat-dots text-primary me-2"></i>
                                     Comentarios en Curso
                                 </h5>
-                                <a href="#" class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-eye me-1"></i>Ver más
-                                </a>
                             </div>
                         </div>
                         <div class="card-body">
